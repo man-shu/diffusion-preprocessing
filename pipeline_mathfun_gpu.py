@@ -5,7 +5,7 @@ import subprocess
 import configparser
 
 from nipype import DataGrabber, DataSink, IdentityInterface, Node, Workflow, MapNode, JoinNode, Merge
-#from niflow.nipype1.workflows.dmri.fsl.dti import bedpostx_parallel
+from niflow.nipype1.workflows.dmri.fsl import bedpostx_parallel 
 from nipype.interfaces.fsl.utils import CopyGeom
 from nipype.interfaces import utility
 import nipype.interfaces.fsl as fsl
@@ -18,7 +18,7 @@ from datetime import datetime
 #from diffusion_pipelines import diffusion_preprocessing
 
 from nipype import config, logging
-config.update_config({'logging': {'log_directory': os.path.join(os.getcwd(), 'logs_7014'),
+config.update_config({'logging': {'log_directory': os.path.join(os.getcwd(), 'logs'),
                                   'workflow_level': 'DEBUG',
                                   'interface_level': 'DEBUG',
                                   'log_to_file': True,
@@ -101,7 +101,8 @@ def create_diffusion_prep_pipeline(name='dMRI_preprocessing', bet_frac=0.34):
   output = Node(
     IdentityInterface(
       fields=[
-        'dwi_rigid_registered', 'bval', 'bvec_rotated', 'mask', 'rigid_dwi_2_template'
+        'dwi_rigid_registered', 'bval', 'bvec_rotated', 'mask', 'rigid_dwi_2_template',
+	'dwi_subject_space', 'mask_subject_space', 'bvec_subject_space', 'transform_subject_2_template',
       ]
     ),
     name='output'
@@ -176,6 +177,12 @@ def create_diffusion_prep_pipeline(name='dMRI_preprocessing', bet_frac=0.34):
     (transforms_to_list, apply_registration_mask, [('out', 'transforms')]),
     (bet, apply_registration_mask, [('mask_file', 'input_image')]),
     (input_template, apply_registration_mask, [('T2', 'reference_image')]),
+
+
+    (eddycorrect, output, [('outputnode.eddy_corrected', 'dwi_subject_space')]),
+    (input_subject, output, [('bvec', 'bvec_subject_space')]),
+    (bet, output, [('mask_file', 'mask_subject_space')]),
+    (transforms_to_list, output, [('out', 'transform_subject_2_template')]),
 
     (conv_affine, output, [('affine_ras', 'rigid_dwi_2_template')]),
     (apply_registration, output, [('output_image', 'dwi_rigid_registered')]),
@@ -335,10 +342,9 @@ def bvec_flip(bvecs_in, flip):
 
 
 if __name__ == '__main__':
-    print('hello')
+    print('start')
     dmri_preprocess_workflow = create_diffusion_prep_pipeline(
         'dmri_preprocess')
-    print('ok')
     config = configparser.ConfigParser()
     config.read(sys.argv[1])
     #PATH = '/oak/stanford/groups/menon/projects/cdla/2019_dwi_mathfun/results/' 
@@ -443,7 +449,10 @@ if __name__ == '__main__':
     recon_all.inputs.parallel = True
     recon_all.interface.num_threads =16
     recon_all.n_procs = 16
-    recon_all.plugin_args={'sbatch_args':'--time=48:00:00 -c 16 --mem=16G','overwrite':True}
+    recon_all.plugin_args={
+	'sbatch_args':'--time=48:00:00 -c 16 --mem=16G --oversubscribe --exclude=node[22-32] ',
+	'overwrite':True
+    }
 
     ras_conversion_matrix = Node(
             interface=Function(
@@ -475,18 +484,35 @@ if __name__ == '__main__':
         iterfield=['freesurfer_gii_surface']
     )
 
-    bedpostx = Node(interface=fsl.BEDPOSTX5(), name='bedpostx', iterfield=['dwi'])
-    bedpostx.inputs.n_fibres = 3
-    bedpostx.inputs.fudge = 1
-    bedpostx.inputs.burn_in = 1000
-    bedpostx.inputs.n_jumps=1250
-    bedpostx.inputs.sample_every=25
-    bedpostx.inputs.use_gpu = False
-    bedpostx.interface.num_threads=16
-    bedpostx.n_procs=16
+    #bedpostx = Node(interface=fsl.BEDPOSTX5(), name='bedpostx', iterfield=['dwi'])
+    bedpostx = bedpostx_parallel(
+	params=dict(
+		fudge=1,
+		burn_in=1000,
+		n_jumps=1250,
+		sample_every=25,
+		n_fibres=3,
+	)
+    )
+    bedpostx.get_node('xfibres').plugin_args={
+	'sbatch_args':'--time=72:00:00 -c 4 -n 1 --mem=16G --oversubscribe --exclude=node[22-32]',
+	'max_jobs': 4,
+	'overwrite':True
+    }
+
+    #bedpostx.inputs.n_fibres = 3
+    #bedpostx.inputs.fudge = 1
+    #bedpostx.inputs.burn_in = 1000
+    #bedpostx.inputs.n_jumps=1250
+    #bedpostx.inputs.sample_every=25
+    #bedpostx.inputs.use_gpu = False
+    #bedpostx.interface.num_threads=16
+    #bedpostx.n_procs=16
+
+
     #bedpostx.plugin_args={'sbatch_args':'--time=4:00:00 -c 16 --mem=128G --account=menon --partition=nih_s10 --gres=gpu:1','overwrite':True}
     #bedpostx.plugin_args={'sbatch_args':'--time=8:00:00 -c 4 --mem=16G --partition=gpu --gpus=1','overwrite':True}
-    bedpostx.plugin_args={'sbatch_args':'--time=8:00:00 -c 4 --mem=16G','overwrite':True}
+    #bedpostx.plugin_args={'sbatch_args':'--time=72:00:00 -c 4 -n 1 --mem=16G --oversubscribe --comment="7014"','overwrite':True}
     join_seeds = Node(
         interface=Merge(2),
         name='join_seeds',
@@ -502,7 +528,7 @@ if __name__ == '__main__':
     pbx2.inputs.omatrix1 = True
     pbx2.inputs.distthresh1 = 5
     pbx2.inputs.args = " --ompl --fibthresh=0.01 --verbose=1 "
-    pbx2.plugin_args={'sbatch_args':'--time=48:00:00 -c 4 --mem=16G --partition=gpu --gpus=1','overwrite':True}
+    pbx2.plugin_args={'sbatch_args':'--time=48:00:00 -c 4 --mem=16G','overwrite':True}
     pbx2.interface.num_threads=16
     pbx2.n_procs=16
 
@@ -668,10 +694,15 @@ if __name__ == '__main__':
         (
             dmri_preprocess_workflow,
             bedpostx,
-            [('output.bval', 'bvals'),
-             ('output.bvec_rotated', 'bvecs'),
-             ('output.dwi_rigid_registered', 'dwi'),
-             ('output.mask', 'mask')],
+            #[('output.bval', 'bvals'),
+            # ('output.bvec_rotated', 'bvecs'),
+            # ('output.dwi_rigid_registered', 'dwi'),
+            # ('output.mask', 'mask')],
+            [('output.bval', 'inputnode.bvals'),
+             ('output.bvec_subject_space', 'inputnode.bvecs'),
+             ('output.dwi_subject_space', 'inputnode.dwi'),
+             ('output.mask_subject_space', 'inputnode.mask')],
+
         ),
         (
             freesurfer_surf_2_native,   
@@ -683,14 +714,14 @@ if __name__ == '__main__':
             shrink_surface_node,
             [('out_file', 'image')],
         ),
-         (
-              bedpostx, pbx2,
-              [
-               ('merged_thsamples', 'thsamples'),
-               ('merged_fsamples', 'fsamples'),
-               ('merged_phsamples', 'phsamples'),
-              ]
-         ),
+        # (
+        #      bedpostx, pbx2,
+        #      [
+        #       ('merged_thsamples', 'thsamples'),
+        #       ('merged_fsamples', 'fsamples'),
+        #       ('merged_phsamples', 'phsamples'),
+        #      ]
+        # ),
 
         (
             dmri_preprocess_workflow, fslcpgeom_mask,
@@ -704,12 +735,12 @@ if __name__ == '__main__':
             ('out_file','in_file')
             ]
         ),
-         (
-             fslcpgeom_mask, pbx2,
-             [
-              ('out_file', 'mask')
-             ]
-         ),
+#         (
+#             fslcpgeom_mask, pbx2,
+#             [
+#              ('out_file', 'mask')
+#             ]
+#         ),
         (
             shrink_surface_node, join_seeds,
             [
@@ -735,13 +766,18 @@ if __name__ == '__main__':
                 ('out_file','in2')
             ]
         ),
-         (
-             join_seeds, pbx2,
-             [
-              ('out', 'seed'),
-             ]
-         ),
+#         (
+#             join_seeds, pbx2,
+#             [
+#              ('out', 'seed'),
+#             ]
+#         ),
     ])
+
+    slurm_logs = (
+	 f' -e {os.path.join(os.getcwd(), "slurm_out")}/slurm_%40j.out ' +
+	 f'-o {os.path.join(os.getcwd(), "slurm_out")}/slurm_%40j.out '
+    )
 
 #    workflow.write_graph(format='pdf', simple_form=False)
     if False and (config['DEFAULT'].get('server', '').lower() == 'margaret'):
@@ -759,8 +795,10 @@ if __name__ == '__main__':
                      })
     else:
         #workflow.run(plugin='SLURM',plugin_args={'dont_resubmit_completed_jobs': True,'max_jobs':128,'sbatch_args':'-p menon'})
-        workflow.run(plugin='Linear', plugin_args={'n_procs': 20, 'memory_gb' :32})
+        #workflow.run(plugin='Linear', plugin_args={'n_procs': 20, 'memory_gb' :32})
         #workflow.write_graph(graph2use='colored', dotfilename='/oak/stanford/groups/menon/projects/cdla/2019_dwi_mathfun/scripts/2019_dwi_pipeline_mathfun/graph_orig.dot')
-        #workflow.run(plugin='MultiProc', plugin_args={'n_procs':16, 'memory_gb' :32})
+        #workflow.run(plugin='MultiProc', plugin_args={'n_procs':16, 'memory_gb' :64})
         #workflow.run(plugin='SLURMGraph',plugin_args={'dont_resubmit_completed_jobs': True,'sbatch_args':' -p menon -c 4 --mem=16G -t 4:00:00'})
-        #workflow.run(plugin='SLURMGraph',plugin_args={'dont_resubmit_completed_jobs': True,'sbatch_args':'-c 4 --mem=16G -t 2:00:00','max_jobs':40},)
+        workflow.run(plugin='SLURM',plugin_args={
+        		'dont_resubmit_completed_jobs': True,'sbatch_args':'--mem=16G -t 6:00:00 --oversubscribe -n 2 --exclude=node[22-32] -c 2','max_jobs':4
+	},)
