@@ -22,14 +22,14 @@ ANTSCommand.set_default_num_threads(16)
 #from diffusion_pipelines import diffusion_preprocessing
 
 config.update_config({'logging': {'log_directory': os.path.join(os.getcwd(), 'logs'),
-                                  'workflow_level': 'DEBUG',
-                                  'interface_level': 'DEBUG',
+                                  'workflow_level': 'INFO',
+                                  'interface_level': 'INFO',
                                   'log_to_file': True,
                                   },
                       'execution': {'stop_on_first_crash': False,
                                     'keep_inputs': True},
                       })
-config.enable_debug_mode()
+# config.enable_debug_mode()
 logging.update_logging(config)
 
 
@@ -154,10 +154,6 @@ def create_diffusion_prep_pipeline(name='dMRI_preprocessing', bet_frac=0.34):
     apply_registration_mask.inputs.input_image_type = 3
     apply_registration_mask.inputs.interpolation = 'NearestNeighbor'
 
-    register_template_to_dwi = Node(
-
-    )
-
     workflow = Workflow(
         name=name,
     )
@@ -175,7 +171,6 @@ def create_diffusion_prep_pipeline(name='dMRI_preprocessing', bet_frac=0.34):
         (eddycorrect, apply_registration, [
             ('outputnode.eddy_corrected', 'input_image')]),
         (input_template, apply_registration, [('T2', 'reference_image')]),
-
         (transforms_to_list, apply_registration_mask, [('out', 'transforms')]),
         (bet, apply_registration_mask, [('mask_file', 'input_image')]),
         (input_template, apply_registration_mask, [('T2', 'reference_image')]),
@@ -601,6 +596,61 @@ if __name__ == '__main__':
         True]  # This is the default
     registration_nl.inputs.output_warped_image = 'output_warped_image.nii.gz'
 
+    affine_initializer_2_dwi = Node(
+        interface=ants.AffineInitializer(), name='affine_initializer_2_dwi')
+    affine_initializer_2_dwi.inputs.num_threads = 16
+
+    affine_initializer_2_dwi.interface.num_threads = 16
+    affine_initializer_2_dwi.n_procs = 16
+
+    registration_affine_2_dwi = Node(interface=ants.Registration(), name='reg_aff_2_dwi')
+    registration_affine_2_dwi.inputs.num_threads = 16
+    registration_affine_2_dwi.n_procs = 4
+    registration_affine_2_dwi.inputs.metric = ['MI'] * 2
+    registration_affine_2_dwi.inputs.metric_weight = [1] * 2
+    registration_affine_2_dwi.inputs.radius_or_number_of_bins = [32] * 2
+    registration_affine_2_dwi.inputs.sampling_strategy = ['Random', 'Random']
+    registration_affine_2_dwi.inputs.sampling_percentage = [0.05, 0.05]
+    registration_affine_2_dwi.inputs.convergence_threshold = [1.e-6] * 2
+    registration_affine_2_dwi.inputs.convergence_window_size = [10] * 2
+    registration_affine_2_dwi.inputs.transforms = ['Rigid', 'Affine']
+    registration_affine_2_dwi.inputs.output_transform_prefix = "output_"
+    registration_affine_2_dwi.inputs.transform_parameters = [(0.1,), (0.1,)]
+    registration_affine_2_dwi.inputs.number_of_iterations = [
+        [1000, 500, 250, 0], [1000, 500, 250, 0]]
+    registration_affine_2_dwi.inputs.smoothing_sigmas = [[3, 2, 1, 0]] * 2
+    registration_affine_2_dwi.inputs.sigma_units = ['vox'] * 2
+    registration_affine_2_dwi.inputs.shrink_factors = [[8, 4, 2, 1]] * 2
+    registration_affine_2_dwi.inputs.use_estimate_learning_rate_once = [True, True]
+    registration_affine_2_dwi.inputs.use_histogram_matching = [
+        True, True]  # This is the default
+    registration_affine_2_dwi.inputs.output_warped_image = 'output_warped_image.nii.gz'
+
+    registration_nl_2_dwi = Node(interface=ants.Registration(), name='reg_nl_2_dwi')
+    registration_nl_2_dwi.inputs.num_threads = 16
+    registration_nl_2_dwi.interface.num_threads = 16
+    registration_nl_2_dwi.n_procs = 4
+    registration_nl_2_dwi.inputs.metric = ['MI']
+    registration_nl_2_dwi.inputs.metric_weight = [1]
+    registration_nl_2_dwi.inputs.radius_or_number_of_bins = [32]
+    registration_nl_2_dwi.inputs.sampling_strategy = [None]
+    registration_nl_2_dwi.inputs.sampling_percentage = [None]
+    registration_nl_2_dwi.inputs.convergence_threshold = [1.e-6]
+    registration_nl_2_dwi.inputs.convergence_window_size = [10]
+    registration_nl_2_dwi.inputs.transforms = ['SyN']
+    registration_nl_2_dwi.inputs.output_transform_prefix = "output_"
+    registration_nl_2_dwi.inputs.transform_parameters = [(0.1, 3.0, 0.0)]
+    registration_nl_2_dwi.inputs.number_of_iterations = [[1000, 700, 400, 100]]
+    registration_nl_2_dwi.inputs.smoothing_sigmas = [[3, 2, 1, 0]]
+    registration_nl_2_dwi.inputs.sigma_units = ['vox']
+    registration_nl_2_dwi.inputs.shrink_factors = [[8, 4, 2, 1]]
+    registration_nl_2_dwi.inputs.use_estimate_learning_rate_once = [True]
+    registration_nl_2_dwi.inputs.use_histogram_matching = [
+        True]  # This is the default
+    registration_nl_2_dwi.inputs.output_warped_image = 'output_warped_image.nii.gz'
+    registration_nl_2_dwi.inputs.output_inverse_warped_image = 'output_inverse_warped_image.nii.gz'
+
+
     select_nl_transform = Node(
         interface=utility.Select(), name='select_nl_transform')
     select_nl_transform.inputs.index = [1]
@@ -636,6 +686,18 @@ if __name__ == '__main__':
     apply_registration.inputs.input_image_type = 3
     apply_registration.inputs.interpolation = 'NearestNeighbor'
 
+    apply_registration_template_2_dwi = Node(
+        interface=ants.ApplyTransforms(),
+        name='apply_registration_template_2_dwi'
+    )
+    apply_registration_template_2_dwi.inputs.dimension = 3
+    apply_registration_template_2_dwi.inputs.input_image_type = 3
+    apply_registration_template_2_dwi.inputs.invert_transform_flags = [False]
+
+    template_2_dwi_transforms = Node(
+        interface=utility.Merge(1),
+        name='template_2_dwi_transforms'
+    )
     shrink_surface_node = MapNode(
         interface=Function(
             input_names=['surface', 'image', 'distance'],
@@ -676,6 +738,7 @@ if __name__ == '__main__':
         (template_source, registration_affine, [
             ('T1_brain', 'fixed_image'),
         ]),
+
         (affine_initializer, registration_affine, [
          ('out_file', 'initial_moving_transform')]),
 
@@ -684,6 +747,26 @@ if __name__ == '__main__':
             ('T1_brain', 'fixed_image'),
         ]),
         (registration_affine, registration_nl, [
+            ('forward_transforms', 'initial_moving_transform'),
+            ('forward_invert_flags', 'invert_initial_moving_transform')
+        ]),
+
+        (dmri_preprocess_workflow, affine_initializer_2_dwi, [('fslroi.roi_file', 'moving_image')]),
+        (template_source, affine_initializer_2_dwi, [('T2_brain', 'fixed_image')]),
+
+        (dmri_preprocess_workflow, registration_affine_2_dwi, [('fslroi.roi_file', 'moving_image')]),
+        (template_source, registration_affine_2_dwi, [
+            ('T2_brain', 'fixed_image'),
+        ]),
+
+        (affine_initializer_2_dwi, registration_affine_2_dwi, [
+         ('out_file', 'initial_moving_transform')]),
+
+        (dmri_preprocess_workflow, registration_nl_2_dwi, [('fslroi.roi_file', 'moving_image')]),
+        (template_source, registration_nl_2_dwi, [
+            ('T2_brain', 'fixed_image'),
+        ]),
+        (registration_affine_2_dwi, registration_nl_2_dwi, [
             ('forward_transforms', 'initial_moving_transform'),
             ('forward_invert_flags', 'invert_initial_moving_transform')
         ]),
@@ -737,14 +820,14 @@ if __name__ == '__main__':
             shrink_surface_node,
             [('out_file', 'image')],
         ),
-        (
-            bedpostx, pbx2,
-            [
-                ('outputnode.merged_thsamples', 'thsamples'),
-                ('outputnode.merged_fsamples', 'fsamples'),
-                ('outputnode.merged_phsamples', 'phsamples'),
-            ]
-        ),
+        #(
+        #    bedpostx, pbx2,
+        #    [
+        #        ('outputnode.merged_thsamples', 'thsamples'),
+        #        ('outputnode.merged_fsamples', 'fsamples'),
+        #        ('outputnode.merged_phsamples', 'phsamples'),
+        #    ]
+        #),
         (
             dmri_preprocess_workflow, fslcpgeom_mask,
             [
@@ -776,6 +859,25 @@ if __name__ == '__main__':
                 ('output_image', 'dest_file')
             ]
         ),
+        (   
+            template_source, apply_registration_template_2_dwi,
+            [('T1_brain', 'input_image')],
+        ),
+        (   
+            dmri_preprocess_workflow, apply_registration_template_2_dwi,
+            [('fslroi.roi_file', 'reference_image')],
+        ),
+        (
+            dmri_preprocess_workflow, template_2_dwi_transforms,
+            [('affine_reg.out_matrix', 'in1')]
+        ),
+        (
+            registration_nl, apply_registration_template_2_dwi,
+            [
+                ('reverse_transforms', 'transforms'),
+                ('reverse_invert_flags', 'invert_transform_flags')
+            ],
+        ),
         (
             mri_convert, fslcpgeom_roi,
             [
@@ -795,12 +897,43 @@ if __name__ == '__main__':
         #             ]
         #         ),
         (
+            infosource, data_sink,
+            [
+                ('subject_id', 'container'),
+            ]
+        ),
+        (
             bedpostx,
             data_sink,
             [
                 ('outputnode.merged_thsamples', 'merged_thsamples.@T'),
             ]
         ),
+        (
+            dmri_preprocess_workflow, data_sink,
+            [
+                ('fslroi.roi_file', 'b0'),
+                ('output.dwi_rigid_registered', 'dwi_acpc')
+            ]
+        ),
+        (
+            apply_registration_template_2_dwi, data_sink,
+            [
+                ('output_image', 'template_2_dwi')
+            ]
+        ),
+        (
+            mri_convert, data_sink,
+            [('out_file', 'T1_freesurfer')]
+        ),
+        (
+            registration_nl_2_dwi, data_sink,
+            [('warped_image', 'DWI_2_MNI')]
+        ),
+        (
+            registration_nl_2_dwi, data_sink,
+            [('inverse_warped_image', 'MNI_2_DWI')]
+        )
     ])
 
     slurm_logs = (
@@ -828,6 +961,6 @@ if __name__ == '__main__':
         #workflow.write_graph(graph2use='colored', dotfilename='/oak/stanford/groups/menon/projects/cdla/2019_dwi_mathfun/scripts/2019_dwi_pipeline_mathfun/graph_orig.dot')
         #workflow.run(plugin='MultiProc', plugin_args={'n_procs':16, 'memory_gb' :64})
         #workflow.run(plugin='SLURMGraph',plugin_args={'dont_resubmit_completed_jobs': True,'sbatch_args':' -p menon -c 4 --mem=16G -t 4:00:00'})
-        workflow.run(plugin='Linear', plugin_args={
-            'dont_resubmit_completed_jobs': True, 'sbatch_args': '--mem=16G -t 6:00:00 --oversubscribe -n 2 --exclude=node[22-32] -c 2', 'max_jobs': 4
+        workflow.run(plugin='SLURM', plugin_args={
+            'dont_resubmit_completed_jobs': True, 'sbatch_args': '--mem=16G -t 6:00:00 --oversubscribe -n 2 --exclude=node[22-32] -c 2', 'max_jobs': 20
         },)
