@@ -2,7 +2,7 @@
 from nipype.interfaces.utility.wrappers import Function
 from niflow.nipype1.workflows.dmri.fsl.epi import create_eddy_correct_pipeline
 from nipype import IdentityInterface, Node, Workflow
-from nipype import config, logging
+from nipype import config as config_nipype, logging
 from datetime import datetime
 from nipype.interfaces.utility import Function
 from nipype.interfaces.freesurfer import ReconAll, MRIsConvert, MRIConvert
@@ -21,18 +21,6 @@ from nipype.interfaces.ants.base import ANTSCommand
 ANTSCommand.set_default_num_threads(16)
 #from diffusion_pipelines import diffusion_preprocessing
 
-config.update_config({'logging': {'log_directory': os.path.join(os.getcwd(), 'logs'),
-                                  'workflow_level': 'INFO',
-                                  'interface_level': 'INFO',
-                                  'log_to_file': True,
-                                  },
-                      'execution': {'stop_on_first_crash': False,
-                                    'keep_inputs': True},
-                      })
-# config.enable_debug_mode()
-logging.update_logging(config)
-
-
 def convert_affine_itk_2_ras(input_affine):
     import subprocess
     import os
@@ -48,6 +36,31 @@ def convert_affine_itk_2_ras(input_affine):
         shell=True
     ).decode('utf8')
     return output_file
+
+
+def convert_affine_itk_2_fsl(input_affine, ref_file, src_file):
+    import subprocess
+    import os
+    import os.path
+    output_file = os.path.join(
+        os.getcwd(),
+        f'{os.path.basename(input_affine)}.fsl'
+    )
+    subprocess.check_output(
+        f'c3d_affine_tool '
+        f'-itk {input_affine} '
+        f'-ref {ref_file} -src {src_file} '
+        f'-o {output_file} -info-full -ras2fsl',
+        shell=True
+    ).decode('utf8')
+    return output_file
+
+
+ConvertITKAffine2FSL = Function(
+    input_names=['input_affine', 'ref_file', 'src_file'],
+    output_names=['affine_fsl'],
+    function=convert_affine_itk_2_fsl
+)
 
 
 def rotate_gradients_(input_affine, gradient_file):
@@ -348,6 +361,20 @@ if __name__ == '__main__':
         'dmri_preprocess')
     config = configparser.ConfigParser()
     config.read(sys.argv[1])
+    log_directory = config['DEFAULT'].get('log_directory', os.path.join(os.getcwd(), 'logs'))
+    config_nipype.update_config({'logging': {'log_directory': log_directory,
+                                      'workflow_level': 'INFO',
+                                      'interface_level': 'INFO',
+                                      'log_to_file': True,
+                                      },
+                          'execution': {'stop_on_first_crash': False,
+                                        'keep_inputs': True},
+                          })
+    # config_nipype.enable_debug_mode()
+    logging.update_logging(config_nipype)
+
+
+
     #PATH = '/oak/stanford/groups/menon/projects/cdla/2019_dwi_mathfun/results/'
     # PATH = '/tmp/cdla/dwi_mathfun_gpu_group/'#+sys.argv[1].split('.')[0]
     subjects = config['DEFAULT']['id_list']
@@ -650,6 +677,14 @@ if __name__ == '__main__':
     registration_nl_2_dwi.inputs.output_warped_image = 'output_warped_image.nii.gz'
     registration_nl_2_dwi.inputs.output_inverse_warped_image = 'output_inverse_warped_image.nii.gz'
 
+    affine_2_dwi_itk2fsl = Node(interface=ConvertITKAffine2FSL, name='affine_2_dwi_itk2fsl')
+
+
+    apply_registration_seeds_2_dwi = MapNode(interface=ants.ApplyTransforms(),
+                                 name='apply_registration_seeds_2_dwi', iterfield=['input_image'])
+    apply_registration_seeds_2_dwi.inputs.dimension = 3
+    apply_registration_seeds_2_dwi.inputs.input_image_type = 3
+    apply_registration_seeds_2_dwi.inputs.interpolation = 'NearestNeighbor'
 
     select_nl_transform = Node(
         interface=utility.Select(), name='select_nl_transform')
@@ -759,8 +794,9 @@ if __name__ == '__main__':
             ('T2_brain', 'fixed_image'),
         ]),
 
-        (affine_initializer_2_dwi, registration_affine_2_dwi, [
-         ('out_file', 'initial_moving_transform')]),
+        (affine_initializer_2_dwi, registration_affine_2_dwi,
+            [('out_file', 'initial_moving_transform')]
+        ),
 
         (dmri_preprocess_workflow, registration_nl_2_dwi, [('fslroi.roi_file', 'moving_image')]),
         (template_source, registration_nl_2_dwi, [
@@ -770,6 +806,30 @@ if __name__ == '__main__':
             ('forward_transforms', 'initial_moving_transform'),
             ('forward_invert_flags', 'invert_initial_moving_transform')
         ]),
+
+        (registration_affine_2_dwi, affine_2_dwi_itk2fsl, 
+            [('forward_transforms', 'input_affine')]
+        ),
+        (template_source, affine_2_dwi_itk2fsl, 
+            [('T2_brain', 'ref_file')]
+        ),
+        (dmri_preprocess_workflow, affine_2_dwi_itk2fsl, 
+            [('fslroi.roi_file', 'src_file')]
+        ),
+
+        (
+            registration_nl_2_dwi, apply_registration_seeds_2_dwi,
+            [
+                ('forward_transforms', 'initial_moving_transform'),
+                ('forward_invert_flags', 'invert_initial_moving_transform')
+            ]
+        ),
+        (
+            roi_source, apply_registration_seeds_2_dwi,
+            [
+                ('rois', 'input_image')
+            ]
+        ),
 
         (ras_conversion_matrix, freesurfer_surf_2_native,
          [('output_mat', 'ras_conversion_matrix')]),
@@ -826,8 +886,16 @@ if __name__ == '__main__':
         #        ('outputnode.merged_thsamples', 'thsamples'),
         #        ('outputnode.merged_fsamples', 'fsamples'),
         #        ('outputnode.merged_phsamples', 'phsamples'),
+        #        ('inputnode.mask', 'mask'),
         #    ]
         #),
+        #(
+        #    affine_2_dwi_itk2fsl, pbx2,
+        #    [
+        #        ('affine_fsl', 'thsamples'),
+        #    ]
+        #),
+
         (
             dmri_preprocess_workflow, fslcpgeom_mask,
             [
@@ -955,12 +1023,26 @@ if __name__ == '__main__':
                          f'-o {os.path.join(os.getcwd(), "slurm_out")}/slurm_%40j.out '
                          #'--exclude=node[25-32] '
                      })
+    elif config['DEFAULT'].get('server', '').lower() == 'linear':
+        workflow.run(plugin='MultiProc', plugin_args={
+            'dont_resubmit_completed_jobs': True,
+            'sbatch_args': 
+                '--mem=16G -t 6:00:00 --oversubscribe -n 2 '
+                '--exclude=node[22-32] -c 2 ' +
+                slurm_logs,
+                'max_jobs': 20
+        },)
     else:
         #workflow.run(plugin='SLURM',plugin_args={'dont_resubmit_completed_jobs': True,'max_jobs':128,'sbatch_args':'-p menon'})
         #workflow.run(plugin='Linear', plugin_args={'n_procs': 20, 'memory_gb' :32})
         #workflow.write_graph(graph2use='colored', dotfilename='/oak/stanford/groups/menon/projects/cdla/2019_dwi_mathfun/scripts/2019_dwi_pipeline_mathfun/graph_orig.dot')
         #workflow.run(plugin='MultiProc', plugin_args={'n_procs':16, 'memory_gb' :64})
         #workflow.run(plugin='SLURMGraph',plugin_args={'dont_resubmit_completed_jobs': True,'sbatch_args':' -p menon -c 4 --mem=16G -t 4:00:00'})
-        workflow.run(plugin='SLURM', plugin_args={
-            'dont_resubmit_completed_jobs': True, 'sbatch_args': '--mem=16G -t 6:00:00 --oversubscribe -n 2 --exclude=node[22-32] -c 2', 'max_jobs': 20
+        workflow.run(plugin='SLURMGraph', plugin_args={
+            'dont_resubmit_completed_jobs': True,
+            'sbatch_args': 
+                '--mem=16G -t 6:00:00 --oversubscribe -n 2 '
+                '--exclude=node[25-32] -c 2 ' +
+                slurm_logs,
+                'max_jobs': 20
         },)
