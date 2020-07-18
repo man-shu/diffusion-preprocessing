@@ -356,21 +356,36 @@ def bvec_flip(bvecs_in, flip):
 
 
 if __name__ == '__main__':
+    from multiprocessing import set_start_method, Process, Manager
+    set_start_method('forkserver')
+    import filelock
+
     print('start')
     dmri_preprocess_workflow = create_diffusion_prep_pipeline(
         'dmri_preprocess')
     config = configparser.ConfigParser()
     config.read(sys.argv[1])
-    log_directory = config['DEFAULT'].get('log_directory', os.path.join(os.getcwd(), 'logs'))
-    config_nipype.update_config({'logging': {'log_directory': log_directory,
-                                      'workflow_level': 'INFO',
-                                      'interface_level': 'INFO',
-                                      'log_to_file': True,
-                                      },
-                          'execution': {'stop_on_first_crash': False,
-                                        'keep_inputs': True},
-                          })
-    # config_nipype.enable_debug_mode()
+    log_directory = os.path.abspath(
+        config['DEFAULT'].get('log_directory', os.path.join(os.getcwd(), 'logs'))
+    )
+    config_nipype.update_config({
+        'logging': {
+            'log_directory': log_directory,
+            'workflow_level': 'DEBUG',
+            'interface_level': 'DEBUG',
+            'filemanip_level': 'DEBUG',
+            'log_to_file': True,
+        },
+        'execution': {
+            'stop_on_first_crash': False,
+            'keep_inputs': True,
+            'job_finished_timeout': 30,
+        },
+        'monitoring': {
+            'enabled': True,
+        },
+    })
+    config_nipype.enable_debug_mode()
     logging.update_logging(config_nipype)
 
 
@@ -467,11 +482,11 @@ if __name__ == '__main__':
         for template in template_source.inputs.field_template.keys()
     }
 
-    roi_source = Node(DataGrabber(infields=[]),
+    roi_source = Node(interface=DataGrabber(infields=[], outfields=['outfiles']),
                       name='rois')
     roi_source.inputs.sort_filelist = True
     roi_source.inputs.base_directory = config['ROIS']['directory']
-    roi_source.inputs.template = '*.nii.gz'
+    roi_source.inputs.template = '*1mm_bin.nii.gz'
 
     recon_all = Node(interface=ReconAll(), name='recon_all')
     recon_all.inputs.directive = 'all'
@@ -807,29 +822,36 @@ if __name__ == '__main__':
             ('forward_invert_flags', 'invert_initial_moving_transform')
         ]),
 
-        (registration_affine_2_dwi, affine_2_dwi_itk2fsl, 
-            [('forward_transforms', 'input_affine')]
-        ),
-        (template_source, affine_2_dwi_itk2fsl, 
-            [('T2_brain', 'ref_file')]
-        ),
-        (dmri_preprocess_workflow, affine_2_dwi_itk2fsl, 
-            [('fslroi.roi_file', 'src_file')]
-        ),
+        # (registration_affine_2_dwi, affine_2_dwi_itk2fsl,
+        #    [('forward_transforms', 'input_affine')]
+        #),
+        #(template_source, affine_2_dwi_itk2fsl,
+        #    [('T2_brain', 'ref_file')]
+        #),
+        #(dmri_preprocess_workflow, affine_2_dwi_itk2fsl,
+        #    [('fslroi.roi_file', 'src_file')]
+        #),
 
         (
             registration_nl_2_dwi, apply_registration_seeds_2_dwi,
             [
-                ('forward_transforms', 'initial_moving_transform'),
-                ('forward_invert_flags', 'invert_initial_moving_transform')
+                ('forward_transforms', 'transforms'),
+                ('forward_invert_flags', 'invert_transform_flags')
             ]
         ),
         (
             roi_source, apply_registration_seeds_2_dwi,
             [
-                ('rois', 'input_image')
+                ('outfiles', 'input_image')
             ]
         ),
+        (
+            dmri_preprocess_workflow, apply_registration_seeds_2_dwi,
+            [
+                ('fslroi.roi_file', 'reference_image')
+            ]
+        ),
+
 
         (ras_conversion_matrix, freesurfer_surf_2_native,
          [('output_mat', 'ras_conversion_matrix')]),
@@ -927,11 +949,11 @@ if __name__ == '__main__':
                 ('output_image', 'dest_file')
             ]
         ),
-        (   
+        (
             template_source, apply_registration_template_2_dwi,
             [('T1_brain', 'input_image')],
         ),
-        (   
+        (
             dmri_preprocess_workflow, apply_registration_template_2_dwi,
             [('fslroi.roi_file', 'reference_image')],
         ),
@@ -991,6 +1013,12 @@ if __name__ == '__main__':
             ]
         ),
         (
+            apply_registration_seeds_2_dwi, data_sink,
+            [
+                ('output_image', 'seeds')
+            ]
+        ),
+        (
             mri_convert, data_sink,
             [('out_file', 'T1_freesurfer')]
         ),
@@ -1024,14 +1052,24 @@ if __name__ == '__main__':
                          #'--exclude=node[25-32] '
                      })
     elif config['DEFAULT'].get('server', '').lower() == 'linear':
-        workflow.run(plugin='MultiProc', plugin_args={
-            'dont_resubmit_completed_jobs': True,
-            'sbatch_args': 
-                '--mem=16G -t 6:00:00 --oversubscribe -n 2 '
-                '--exclude=node[22-32] -c 2 ' +
-                slurm_logs,
-                'max_jobs': 20
-        },)
+        workflow.run(plugin='Linear',
+        #    plugin_args={
+        #        'dont_resubmit_completed_jobs': True,
+        #        'sbatch_args':
+        #            '--mem=16G -t 6:00:00 --oversubscribe -n 2 '
+        #            '--exclude=node[22-32] -c 2 ' +
+        #            slurm_logs,
+        #        'max_jobs': 20
+        #    },
+        )
+    elif config['DEFAULT'].get('server', '').lower() == 'multiproc':
+        workflow.run(plugin='MultiProc',
+            plugin_args={
+                'dont_resubmit_completed_jobs': True,
+                'n_procs': 40
+            },
+        )
+
     else:
         #workflow.run(plugin='SLURM',plugin_args={'dont_resubmit_completed_jobs': True,'max_jobs':128,'sbatch_args':'-p menon'})
         #workflow.run(plugin='Linear', plugin_args={'n_procs': 20, 'memory_gb' :32})
@@ -1040,9 +1078,9 @@ if __name__ == '__main__':
         #workflow.run(plugin='SLURMGraph',plugin_args={'dont_resubmit_completed_jobs': True,'sbatch_args':' -p menon -c 4 --mem=16G -t 4:00:00'})
         workflow.run(plugin='SLURMGraph', plugin_args={
             'dont_resubmit_completed_jobs': True,
-            'sbatch_args': 
+            'sbatch_args':
                 '--mem=16G -t 6:00:00 --oversubscribe -n 2 '
                 '--exclude=node[25-32] -c 2 ' +
                 slurm_logs,
-                'max_jobs': 20
+            'max_jobs': 20
         },)
