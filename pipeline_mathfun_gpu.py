@@ -83,6 +83,17 @@ def rotate_gradients_(input_affine, gradient_file):
     return output_name
 
 
+def cross_product(lst):
+    ret = [
+        [i, j] for i_, i in enumerate(lst) for j_, j in enumerate(lst)
+        if i_ < j_
+    ]
+    return ret
+
+
+CrossProduct = Function(input_names=['lst'], output_names=['out'], function=cross_product)
+
+
 def create_diffusion_prep_pipeline(name='dMRI_preprocessing', bet_frac=0.34):
     ConvertAffine2RAS = Function(
         input_names=['input_affine'], output_names=['affine_ras'],
@@ -372,20 +383,20 @@ if __name__ == '__main__':
         'logging': {
             'log_directory': log_directory,
             'workflow_level': 'DEBUG',
-            'interface_level': 'DEBUG',
-            'filemanip_level': 'DEBUG',
+            'interface_level': 'INFO',
+            'filemanip_level': 'INFO',
             'log_to_file': True,
         },
         'execution': {
             'stop_on_first_crash': False,
             'keep_inputs': True,
-            'job_finished_timeout': 30,
+            # 'job_finished_timeout': 30,
         },
         'monitoring': {
             'enabled': True,
         },
     })
-    config_nipype.enable_debug_mode()
+    # config_nipype.enable_debug_mode()
     logging.update_logging(config_nipype)
 
 
@@ -549,6 +560,9 @@ if __name__ == '__main__':
         'overwrite': True
     }
 
+    dtifit = Node(interface=fsl.DTIFit(), name='dti')
+    dtifit.inputs.save_tensor = True
+
     #bedpostx.inputs.n_fibres = 3
     #bedpostx.inputs.fudge = 1
     #bedpostx.inputs.burn_in = 1000
@@ -562,24 +576,34 @@ if __name__ == '__main__':
     #bedpostx.plugin_args={'sbatch_args':'--time=8:00:00 -c 4 --mem=16G --partition=gpu --gpus=1','overwrite':True}
     #bedpostx.plugin_args={'sbatch_args':'--time=72:00:00 -c 4 -n 1 --mem=16G --oversubscribe --comment="7014"','overwrite':True}
     join_seeds = Node(
-        interface=Merge(2),
+        interface=Merge(5),
         name='join_seeds',
     )
 
-    pbx2 = Node(
+    pbx2 = MapNode(
         interface=fsl.ProbTrackX2(),
         name='probtrackx2',
+        iterfield=['seed']
     )
     pbx2.inputs.n_samples = 5000
     pbx2.inputs.n_steps = 2000
     pbx2.inputs.step_length = 0.5
     pbx2.inputs.omatrix1 = True
     pbx2.inputs.distthresh1 = 5
-    pbx2.inputs.args = " --ompl --fibthresh=0.01 --verbose=1 "
+    pbx2.inputs.network = True
+    pbx2.inputs.correct_path_distribution = True
+    pbx2.inputs.os2t = False
+    pbx2.inputs.verbose = 2
+    pbx2.inputs.args = " --ompl --fibthresh=0.01 "
+    pbx2.inputs.out_dir = '.'
     pbx2.plugin_args = {
         'sbatch_args': '--time=48:00:00 -c 4 --mem=16G', 'overwrite': True}
     pbx2.interface.num_threads = 16
     pbx2.n_procs = 16
+
+    cross_product = Node(
+        interface=CrossProduct, name='seed_cross_product'
+    )
 
     fslroi = Node(interface=fsl.ExtractROI(), name='fslroi')
     fslroi.inputs.t_min = 0
@@ -704,6 +728,12 @@ if __name__ == '__main__':
     select_nl_transform = Node(
         interface=utility.Select(), name='select_nl_transform')
     select_nl_transform.inputs.index = [1]
+
+    select_seed_0 = Node(interface=utility.Select(), name='select_seed_0', iterfield=['inlist'])
+    select_seed_0.inputs.index=[0]
+
+    select_seed_1 = Node(interface=utility.Select(), name='select_seed_1', iterfield=['inlist'])
+    select_seed_1.inputs.index=[1]
 
     registration = Node(interface=ants.Registration(), name='reg')
     registration.inputs.num_threads = 16
@@ -835,8 +865,8 @@ if __name__ == '__main__':
         (
             registration_nl_2_dwi, apply_registration_seeds_2_dwi,
             [
-                ('forward_transforms', 'transforms'),
-                ('forward_invert_flags', 'invert_transform_flags')
+                ('reverse_transforms', 'transforms'),
+                ('reverse_invert_flags', 'invert_transform_flags')
             ]
         ),
         (
@@ -893,6 +923,19 @@ if __name__ == '__main__':
 
         ),
         (
+            dmri_preprocess_workflow,
+            dtifit,
+            # [('output.bval', 'bvals'),
+            # ('output.bvec_rotated', 'bvecs'),
+            # ('output.dwi_rigid_registered', 'dwi'),
+            # ('output.mask', 'mask')],
+            [('output.bval', 'bvals'),
+             ('output.bvec_subject_space', 'bvecs'),
+             ('output.dwi_subject_space', 'dwi'),
+             ('output.mask_subject_space', 'mask')],
+
+        ),
+        (
             freesurfer_surf_2_native,
             shrink_surface_node,
             [('out_surf', 'surface')],
@@ -902,15 +945,25 @@ if __name__ == '__main__':
             shrink_surface_node,
             [('out_file', 'image')],
         ),
-        #(
-        #    bedpostx, pbx2,
-        #    [
-        #        ('outputnode.merged_thsamples', 'thsamples'),
-        #        ('outputnode.merged_fsamples', 'fsamples'),
-        #        ('outputnode.merged_phsamples', 'phsamples'),
-        #        ('inputnode.mask', 'mask'),
-        #    ]
-        #),
+        (
+            bedpostx, pbx2,
+            [
+                ('outputnode.merged_thsamples', 'thsamples'),
+                ('outputnode.merged_fsamples', 'fsamples'),
+                ('outputnode.merged_phsamples', 'phsamples'),
+                ('inputnode.mask', 'mask'),
+            ]
+        ),
+        (
+            apply_registration_seeds_2_dwi, cross_product,
+            [
+                ('output_image', 'lst'),
+            ]
+        ),
+        (
+            cross_product, pbx2,
+            [('out', 'seed')]
+        ),
         #(
         #    affine_2_dwi_itk2fsl, pbx2,
         #    [
@@ -936,12 +989,12 @@ if __name__ == '__main__':
         #              ('out_file', 'mask')
         #             ]
         #         ),
-        (
-            shrink_surface_node, join_seeds,
-            [
-                ('out_file', 'in1')
-            ]
-        ),
+        # (
+        #    shrink_surface_node, join_seeds,
+        #    [
+        #        ('out_file', 'in1')
+        #    ]
+        # ),
 
         (
             apply_registration, fslcpgeom_roi,
@@ -974,12 +1027,12 @@ if __name__ == '__main__':
                 ('out_file', 'in_file')
             ]
         ),
-        (
-            fslcpgeom_roi, join_seeds,
-            [
-                ('out_file', 'in2')
-            ]
-        ),
+        # (
+        #    fslcpgeom_roi, join_seeds,
+        #    [
+        #        ('out_file', 'in2')
+        #    ]
+        #),
         #         (
         #             join_seeds, pbx2,
         #             [
@@ -996,7 +1049,20 @@ if __name__ == '__main__':
             bedpostx,
             data_sink,
             [
-                ('outputnode.merged_thsamples', 'merged_thsamples.@T'),
+                ('outputnode.merged_thsamples', 'bedpostx.@merged_thsamples'),
+            ]
+        ),
+        (
+            dtifit,
+            data_sink,
+            [
+                ('FA', 'dti.@fa'),
+                ('MD', 'dti.@md'),
+                ('MO', 'dti.@mo'),
+                ('L1', 'dti.@ad'),
+                ('L3', 'dti.@pd'),
+                ('S0', 'dti.@s0'),
+                ('tensor', 'dti.@tensor'),
             ]
         ),
         (
@@ -1029,7 +1095,34 @@ if __name__ == '__main__':
         (
             registration_nl_2_dwi, data_sink,
             [('inverse_warped_image', 'MNI_2_DWI')]
-        )
+        ),
+        (
+            pbx2, data_sink,
+            [
+                ('fdt_paths', 'pbx2.@fdt_paths'),
+                ('targets', 'pbx2.@targets'),
+                ('matrix1_dot', 'pbx2.@matrix1'),
+                ('network_matrix', 'pbx2.@matrix1_network'),
+                ('lookup_tractspace', 'pbx2.@lookup_tractspace'),
+                ('log', 'pbx2.@log')
+            ]
+        ),
+        (
+            cross_product, select_seed_0,
+            [('out', 'inlist')]
+        ),
+        (
+            cross_product, select_seed_1,
+            [('out', 'inlist')]
+        ),
+        (
+            select_seed_0, data_sink,
+            [('out', 'pbx2.seed0')],
+        ),
+        (
+            select_seed_1, data_sink,
+            [('out', 'pbx2.seed1')],
+        ),
     ])
 
     slurm_logs = (
