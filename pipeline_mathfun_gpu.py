@@ -467,6 +467,7 @@ if __name__ == '__main__':
     data_sink = Node(DataSink(), name="datasink")
     data_sink.inputs.base_directory = os.path.abspath('results')
 
+
     flip_bvectors_node = Node(
         interface=Function(
             input_names=['bvecs_in', 'flip'], output_names=['bvecs_out'],
@@ -1049,20 +1050,20 @@ if __name__ == '__main__':
             bedpostx,
             data_sink,
             [
-                ('outputnode.merged_thsamples', 'bedpostx.@merged_thsamples'),
+                ('outputnode.merged_thsamples', 'bedpostx.@merged_thsamples.@subject'),
             ]
         ),
         (
             dtifit,
             data_sink,
             [
-                ('FA', 'dti.@fa'),
-                ('MD', 'dti.@md'),
-                ('MO', 'dti.@mo'),
-                ('L1', 'dti.@ad'),
-                ('L3', 'dti.@pd'),
-                ('S0', 'dti.@s0'),
-                ('tensor', 'dti.@tensor'),
+                ('FA', 'dti.@fa.@subject'),
+                ('MD', 'dti.@md.@subject'),
+                ('MO', 'dti.@mo.@subject'),
+                ('L1', 'dti.@ad.@subject'),
+                ('L3', 'dti.@pd.@subject'),
+                ('S0', 'dti.@s0.@subject'),
+                ('tensor', 'dti.@tensor.@subject'),
             ]
         ),
         (
