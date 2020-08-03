@@ -1,4 +1,4 @@
-#!/bin/env python
+# #!/bin/env python
 from nipype.interfaces.utility.wrappers import Function
 from niflow.nipype1.workflows.dmri.fsl.epi import create_eddy_correct_pipeline
 from nipype import IdentityInterface, Node, Workflow
@@ -191,10 +191,10 @@ def create_diffusion_prep_pipeline(name='dMRI_preprocessing', bet_frac=0.34):
         (rigid_registration, conv_affine, [('out_matrix', 'input_affine')]),
         (input_subject, rotate_gradients, [('bvec', 'gradient_file')]),
         (conv_affine, rotate_gradients, [('affine_ras', 'input_affine')]),
-        (transforms_to_list, apply_registration, [('out', 'transforms')]),
-        (eddycorrect, apply_registration, [
-            ('outputnode.eddy_corrected', 'input_image')]),
-        (input_template, apply_registration, [('T2', 'reference_image')]),
+        #(transforms_to_list, apply_registration, [('out', 'transforms')]),
+        #(eddycorrect, apply_registration, [
+        #    ('outputnode.eddy_corrected', 'input_image')]),
+        #(input_template, apply_registration, [('T2', 'reference_image')]),
         (transforms_to_list, apply_registration_mask, [('out', 'transforms')]),
         (bet, apply_registration_mask, [('mask_file', 'input_image')]),
         (input_template, apply_registration_mask, [('T2', 'reference_image')]),
@@ -208,8 +208,8 @@ def create_diffusion_prep_pipeline(name='dMRI_preprocessing', bet_frac=0.34):
          ('out', 'transform_subject_2_template')]),
 
         (conv_affine, output, [('affine_ras', 'rigid_dwi_2_template')]),
-        (apply_registration, output, [
-         ('output_image', 'dwi_rigid_registered')]),
+        #(apply_registration, output, [
+        # ('output_image', 'dwi_rigid_registered')]),
         (rotate_gradients, output, [('rotated_gradients', 'bvec_rotated')]),
         (input_subject, output, [('bval', 'bval')]),
         (apply_registration_mask, output, [('output_image', 'mask')]),
@@ -383,7 +383,7 @@ if __name__ == '__main__':
         'logging': {
             'log_directory': log_directory,
             'workflow_level': 'DEBUG',
-            'interface_level': 'INFO',
+            'interface_level': 'DEBUG',
             'filemanip_level': 'INFO',
             'log_to_file': True,
         },
@@ -581,13 +581,13 @@ if __name__ == '__main__':
         name='join_seeds',
     )
 
-    pbx2 = MapNode(
+    pbx2 = Node(
         interface=fsl.ProbTrackX2(),
         name='probtrackx2',
-        iterfield=['seed']
+        #iterfield=['seed']
     )
-    pbx2.inputs.n_samples = 5000
-    pbx2.inputs.n_steps = 2000
+    pbx2.inputs.n_samples = 50 #00
+    pbx2.inputs.n_steps = 20 #00
     pbx2.inputs.step_length = 0.5
     pbx2.inputs.omatrix1 = True
     pbx2.inputs.distthresh1 = 5
@@ -730,10 +730,10 @@ if __name__ == '__main__':
         interface=utility.Select(), name='select_nl_transform')
     select_nl_transform.inputs.index = [1]
 
-    select_seed_0 = Node(interface=utility.Select(), name='select_seed_0', iterfield=['inlist'])
+    select_seed_0 = MapNode(interface=utility.Select(), name='select_seed_0', iterfield=['inlist'])
     select_seed_0.inputs.index=[0]
 
-    select_seed_1 = Node(interface=utility.Select(), name='select_seed_1', iterfield=['inlist'])
+    select_seed_1 = MapNode(interface=utility.Select(), name='select_seed_1', iterfield=['inlist'])
     select_seed_1.inputs.index=[1]
 
     registration = Node(interface=ants.Registration(), name='reg')
@@ -962,9 +962,19 @@ if __name__ == '__main__':
             ]
         ),
         (
-            cross_product, pbx2,
-            [('out', 'seed')]
+            apply_registration_seeds_2_dwi, pbx2,
+            [
+                ('output_image', 'seed'),
+                # ('output_image', 'target_masks')
+            ]
         ),
+        #(
+        #    cross_product, pbx2,
+        #    [
+        #        ('out', 'seed'),
+        #        ('out', 'target_masks'),
+        #    ]
+        #),
         #(
         #    affine_2_dwi_itk2fsl, pbx2,
         #    [
@@ -997,12 +1007,12 @@ if __name__ == '__main__':
         #    ]
         # ),
 
-        (
-            apply_registration, fslcpgeom_roi,
-            [
-                ('output_image', 'dest_file')
-            ]
-        ),
+        #(
+        #    apply_registration, fslcpgeom_roi,
+        #    [
+        #        ('output_image', 'dest_file')
+        #    ]
+        #),
         (
             template_source, apply_registration_template_2_dwi,
             [('T1_brain', 'input_image')],
@@ -1022,12 +1032,12 @@ if __name__ == '__main__':
                 ('reverse_invert_flags', 'invert_transform_flags')
             ],
         ),
-        (
-            mri_convert, fslcpgeom_roi,
-            [
-                ('out_file', 'in_file')
-            ]
-        ),
+        #(
+        #    mri_convert, fslcpgeom_roi,
+        #    [
+        #        ('out_file', 'in_file')
+        #    ]
+        #),
         # (
         #    fslcpgeom_roi, join_seeds,
         #    [
@@ -1070,7 +1080,7 @@ if __name__ == '__main__':
             dmri_preprocess_workflow, data_sink,
             [
                 ('fslroi.roi_file', 'b0'),
-                ('output.dwi_rigid_registered', 'dwi_acpc')
+                #('output.dwi_rigid_registered', 'dwi_acpc')
             ]
         ),
         (
@@ -1101,29 +1111,30 @@ if __name__ == '__main__':
             pbx2, data_sink,
             [
                 ('fdt_paths', 'pbx2.@fdt_paths'),
-                ('targets', 'pbx2.@targets'),
+                #('targets', 'pbx2.@targets'),
                 ('matrix1_dot', 'pbx2.@matrix1'),
                 ('network_matrix', 'pbx2.@matrix1_network'),
                 ('lookup_tractspace', 'pbx2.@lookup_tractspace'),
-                ('log', 'pbx2.@log')
+                ('log', 'pbx2.@log'),
+                ('way_total', 'pbx2.@way_total'),
             ]
         ),
-        (
-            cross_product, select_seed_0,
-            [('out', 'inlist')]
-        ),
-        (
-            cross_product, select_seed_1,
-            [('out', 'inlist')]
-        ),
-        (
-            select_seed_0, data_sink,
-            [('out', 'pbx2.seed0')],
-        ),
-        (
-            select_seed_1, data_sink,
-            [('out', 'pbx2.seed1')],
-        ),
+        #(
+        #    cross_product, select_seed_0,
+        #    [('out', 'inlist')]
+        #),
+        #(
+        #    cross_product, select_seed_1,
+        #    [('out', 'inlist')]
+        #),
+        #(
+        #    select_seed_0, data_sink,
+        #    [('out', 'pbx2.seed0')],
+        #),
+        #(
+        #    select_seed_1, data_sink,
+        #    [('out', 'pbx2.seed1')],
+        #),
     ])
 
     slurm_logs = (
@@ -1170,7 +1181,7 @@ if __name__ == '__main__':
         #workflow.write_graph(graph2use='colored', dotfilename='/oak/stanford/groups/menon/projects/cdla/2019_dwi_mathfun/scripts/2019_dwi_pipeline_mathfun/graph_orig.dot')
         #workflow.run(plugin='MultiProc', plugin_args={'n_procs':16, 'memory_gb' :64})
         #workflow.run(plugin='SLURMGraph',plugin_args={'dont_resubmit_completed_jobs': True,'sbatch_args':' -p menon -c 4 --mem=16G -t 4:00:00'})
-        workflow.run(plugin='SLURMGraph', plugin_args={
+        workflow.run(plugin='SLURM', plugin_args={
             'dont_resubmit_completed_jobs': True,
             'sbatch_args':
                 '--mem=16G -t 6:00:00 --oversubscribe -n 2 '
