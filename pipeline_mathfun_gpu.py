@@ -1144,7 +1144,7 @@ if __name__ == '__main__':
 
     workflow.write_graph(format='pdf', simple_form=False)
     if False and (config['DEFAULT'].get('server', '').lower() == 'margaret'):
-        workflow.run(plugin='SLURM',
+        workflow.run(plugin='SLURMGraph',
                      plugin_args={
                          'dont_resubmit_completed_jobs':
                          True,
@@ -1181,7 +1181,7 @@ if __name__ == '__main__':
         #workflow.write_graph(graph2use='colored', dotfilename='/oak/stanford/groups/menon/projects/cdla/2019_dwi_mathfun/scripts/2019_dwi_pipeline_mathfun/graph_orig.dot')
         #workflow.run(plugin='MultiProc', plugin_args={'n_procs':16, 'memory_gb' :64})
         #workflow.run(plugin='SLURMGraph',plugin_args={'dont_resubmit_completed_jobs': True,'sbatch_args':' -p menon -c 4 --mem=16G -t 4:00:00'})
-        workflow.run(plugin='SLURM', plugin_args={
+        workflow.run(plugin='SLURMGraph', plugin_args={
             'dont_resubmit_completed_jobs': True,
             'sbatch_args':
                 '--mem=16G -t 6:00:00 --oversubscribe -n 2 '
