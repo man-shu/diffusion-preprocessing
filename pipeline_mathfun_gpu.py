@@ -372,6 +372,12 @@ if __name__ == '__main__':
     import filelock
 
     print('start')
+
+    slurm_logs = (
+        f' -e {os.path.join(os.getcwd(), "slurm_out")}/slurm_%40j.out ' +
+        f'-o {os.path.join(os.getcwd(), "slurm_out")}/slurm_%40j.out '
+    )
+
     dmri_preprocess_workflow = create_diffusion_prep_pipeline(
         'dmri_preprocess')
     config = configparser.ConfigParser()
@@ -586,8 +592,8 @@ if __name__ == '__main__':
         name='probtrackx2',
         #iterfield=['seed']
     )
-    pbx2.inputs.n_samples = 50 #00
-    pbx2.inputs.n_steps = 20 #00
+    pbx2.inputs.n_samples = 5000
+    pbx2.inputs.n_steps = 2000
     pbx2.inputs.step_length = 0.5
     pbx2.inputs.omatrix1 = True
     pbx2.inputs.distthresh1 = 5
@@ -602,8 +608,30 @@ if __name__ == '__main__':
     pbx2.interface.num_threads = 16
     pbx2.n_procs = 16
 
+    pbx2_cp = MapNode(
+        interface=fsl.ProbTrackX2(),
+        name='probtrackx2_bypairs',
+        iterfield=['seed']
+    )
+    pbx2_cp.inputs.n_samples = 5000
+    pbx2_cp.inputs.n_steps = 2000
+    pbx2_cp.inputs.step_length = 0.5
+    pbx2_cp.inputs.omatrix1 = True
+    pbx2_cp.inputs.distthresh1 = 5
+    pbx2_cp.inputs.network = True
+    pbx2_cp.inputs.correct_path_distribution = True
+    pbx2_cp.inputs.os2t = False
+    pbx2_cp.inputs.verbose = 2
+    pbx2_cp.inputs.args = " --ompl --fibthresh=0.01 "
+    pbx2_cp.inputs.out_dir = '.'
+    pbx2_cp.plugin_args = {
+            'sbatch_args': '--time=48:00:00 -c 4 --mem=16G ' + slurm_logs, 'overwrite': True}
+    pbx2_cp.interface.num_threads = 16
+    pbx2_cp.n_procs = 16
+
     cross_product = Node(
-        interface=CrossProduct, name='seed_cross_product'
+        interface=CrossProduct, name='seed_cross_product',
+        #joinfield='lst', joinsource='apply_registration_seeds_2_dwi'
     )
 
     fslroi = Node(interface=fsl.ExtractROI(), name='fslroi')
@@ -774,6 +802,15 @@ if __name__ == '__main__':
     apply_registration_template_2_dwi.inputs.dimension = 3
     apply_registration_template_2_dwi.inputs.input_image_type = 3
     apply_registration_template_2_dwi.inputs.invert_transform_flags = [False]
+
+    apply_registration_fdt = Node(
+        interface=ants.ApplyTransforms(),
+        name='apply_registration_fdt'
+    )
+    apply_registration_fdt.inputs.dimension = 3
+    apply_registration_fdt.inputs.input_image_type = 3
+    apply_registration_fdt.inputs.interpolation = 'Linear'
+
 
     template_2_dwi_transforms = Node(
         interface=utility.Merge(1),
@@ -956,6 +993,15 @@ if __name__ == '__main__':
             ]
         ),
         (
+            bedpostx, pbx2_cp,
+            [
+                ('outputnode.merged_thsamples', 'thsamples'),
+                ('outputnode.merged_fsamples', 'fsamples'),
+                ('outputnode.merged_phsamples', 'phsamples'),
+                ('inputnode.mask', 'mask'),
+            ]
+        ),
+        (
             apply_registration_seeds_2_dwi, cross_product,
             [
                 ('output_image', 'lst'),
@@ -968,13 +1014,26 @@ if __name__ == '__main__':
                 # ('output_image', 'target_masks')
             ]
         ),
-        #(
-        #    cross_product, pbx2,
-        #    [
-        #        ('out', 'seed'),
-        #        ('out', 'target_masks'),
-        #    ]
-        #),
+        (
+            cross_product, pbx2_cp,
+            [
+                ('out', 'seed'),
+                # ('out', 'target_masks'),
+            ]
+        ),
+        (
+            registration_nl_2_dwi, apply_registration_fdt,
+            [
+                ('forward_transforms', 'transforms'),
+                ('forward_invert_flags', 'invert_transform_flags')
+            ]
+        ),
+        (
+            pbx2_cp, apply_registration_fdt,
+            [
+                ('fdt_paths', 'input_image')
+            ]
+        ),
         #(
         #    affine_2_dwi_itk2fsl, pbx2,
         #    [
@@ -1119,6 +1178,30 @@ if __name__ == '__main__':
                 ('way_total', 'pbx2.@way_total'),
             ]
         ),
+        (
+            pbx2_cp, data_sink,
+            [
+                ('fdt_paths', 'pbx2_cp.@fdt_paths'),
+                #('targets', 'pbx2.@targets'),
+                ('matrix1_dot', 'pbx2_cp.@matrix1'),
+                ('network_matrix', 'pbx2_cp.@matrix1_network'),
+                ('lookup_tractspace', 'pbx2_cp.@lookup_tractspace'),
+                ('log', 'pbx2_cp.@log'),
+                ('way_total', 'pbx2_cp.@way_total'),
+            ]
+        ),
+        (
+            apply_registration_seeds_2_dwi, data_sink,
+            [
+                ('output_image', 'seed.@seed'),
+            ]
+        ),
+        (
+            apply_registration_fdt, data_sink,
+            [
+                ('output_image', 'pair_fdt_MNI'),
+            ]
+        ),
         #(
         #    cross_product, select_seed_0,
         #    [('out', 'inlist')]
@@ -1137,11 +1220,6 @@ if __name__ == '__main__':
         #),
     ])
 
-    slurm_logs = (
-        f' -e {os.path.join(os.getcwd(), "slurm_out")}/slurm_%40j.out ' +
-        f'-o {os.path.join(os.getcwd(), "slurm_out")}/slurm_%40j.out '
-    )
-
     workflow.write_graph(format='pdf', simple_form=False)
     if False and (config['DEFAULT'].get('server', '').lower() == 'margaret'):
         workflow.run(plugin='SLURMGraph',
@@ -1152,9 +1230,8 @@ if __name__ == '__main__':
                          '--oversubscribe ' +
                          '-N 1 -n 1 ' +
                          '--time 5-0 ' +
-                         f'-e {os.path.join(os.getcwd(), "slurm_out")}/slurm_%40j.out ' +
-                         f'-o {os.path.join(os.getcwd(), "slurm_out")}/slurm_%40j.out '
-                         #'--exclude=node[25-32] '
+                         slurm_logs +
+                         '--exclude=node[25-32] '
                      })
     elif config['DEFAULT'].get('server', '').lower() == 'linear':
         workflow.run(plugin='Linear',
