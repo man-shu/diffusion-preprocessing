@@ -604,7 +604,7 @@ if __name__ == '__main__':
     pbx2.inputs.args = " --ompl --fibthresh=0.01 "
     pbx2.inputs.out_dir = '.'
     pbx2.plugin_args = {
-        'sbatch_args': '--time=48:00:00 -c 4 --mem=16G', 'overwrite': True}
+        'sbatch_args': '--time=48:00:00 -c 4 --mem=16G --exclude=node[25-32] ' + slurm_logs, 'overwrite': True}
     pbx2.interface.num_threads = 16
     pbx2.n_procs = 16
 
@@ -625,7 +625,7 @@ if __name__ == '__main__':
     pbx2_cp.inputs.args = " --ompl --fibthresh=0.01 "
     pbx2_cp.inputs.out_dir = '.'
     pbx2_cp.plugin_args = {
-            'sbatch_args': '--time=48:00:00 -c 4 --mem=16G ' + slurm_logs, 'overwrite': True}
+            'sbatch_args': '--time=48:00:00 -c 4 --mem=16G --exclude=node[25-32] ' + slurm_logs, 'overwrite': True}
     pbx2_cp.interface.num_threads = 16
     pbx2_cp.n_procs = 16
 
@@ -803,9 +803,10 @@ if __name__ == '__main__':
     apply_registration_template_2_dwi.inputs.input_image_type = 3
     apply_registration_template_2_dwi.inputs.invert_transform_flags = [False]
 
-    apply_registration_fdt = Node(
+    apply_registration_fdt = MapNode(
         interface=ants.ApplyTransforms(),
-        name='apply_registration_fdt'
+        name='apply_registration_fdt',
+        iterfield=['input_image']
     )
     apply_registration_fdt.inputs.dimension = 3
     apply_registration_fdt.inputs.input_image_type = 3
@@ -1034,6 +1035,13 @@ if __name__ == '__main__':
                 ('fdt_paths', 'input_image')
             ]
         ),
+        (
+            template_source, apply_registration_fdt,
+            [
+                ('T2_brain', 'reference_image')
+            ]
+        ),
+
         #(
         #    affine_2_dwi_itk2fsl, pbx2,
         #    [
