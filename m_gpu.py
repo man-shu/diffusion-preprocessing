@@ -31,17 +31,12 @@ config.update_config({'logging': {'log_directory': os.path.join(os.getcwd(), 'lo
 
 
 
-
-
 # Define the paths to the input and output files
  
 out_dir = '/data/parietal/store/work/zmohamed/mathfun/output'
 PATH = '/data/parietal/store/work/zmohamed/mathfun/'
 
 
-# Create a Nipype workflow
-
-tractography_wf = pe.Workflow(name='tractography_wf',  base_dir=PATH)
 
 
 config = configparser.ConfigParser()
@@ -73,43 +68,25 @@ data_source.inputs.sort_filelist = True
 data_source.inputs.base_directory = '/data/parietal/store/work/zmohamed/mathfun/tp2'
 data_source.inputs.template = ''
 
-'''
-data_source.inputs.field_template = {
-        'mask': '/data/parietal/store/work/zmohamed/mathfun/hcp_templates/MNI152_T1_1mm_brain_mask.nii.gz' ,
-        'parc': '/data/parietal/store/work/zmohamed/mathfun/dwi_rois/combined_BN_L_Hipp_roi.nii',  
-        'roi':'/data/parietal/store/work/zmohamed/mathfun/dwi_rois/1mm/L_PPC_6mm_-44_-42_52_1mmiso_roi.nii.gz',
-        'dwi': '/data/parietal/store/work/zmohamed/mathfun/tp2/7014/visit2/session1/dwi/dwi_raw.nii.gz',
-        'bval': '/data/parietal/store/work/zmohamed/mathfun/tp2/7014/visit2/session1/dwi/dti_raw.bvals',
-        'bvec': '/data/parietal/store/work/zmohamed/mathfun/tp2/7014/visit2/session1/dwi/dti_raw.bvecs',
-        'T1': '/data/parietal/store/work/zmohamed/mathfun/hcp_templates/MNI152_T1_1mm.nii.gz',
-        'T1_brain': '/data/parietal/store/work/zmohamed/mathfun/hcp_templates/MNI152_T1_1mm_brain.nii.gz',
-    
-    }
-'''
+
 data_source.inputs.field_template = {
         'T1': '%s/visit%s/session%s/anat/T1w.nii',
         'dwi': '%s/visit%s/session%s/dwi/dwi_raw.nii.gz',
         'bval': '%s/visit%s/session%s/dwi/dti_raw.bvals',
         'bvec': '%s/visit%s/session%s/dwi/dti_raw.bvecs',
         
-        #'bval': '%s/visit%s/session%s/dwi/dwepi.150.bvals',
-        #'bvec': '%s/visit%s/session%s/dwi/dwepi.150.grads'
     }
 data_source.inputs.template_args = {
         template: [['subject_id', 'visit','session']]
         for template in data_source.inputs.field_template.keys()
     }
 
-tractography_wf.connect(infosource, 'subject_id', data_source, 'subject_id')
-tractography_wf.connect(infosource, 'visit', data_source, 'visit')
-tractography_wf.connect(infosource, 'session', data_source, 'session')
-
 
 roi_source = pe.Node(DataGrabber(infields=[]),
                            name='rois')
 roi_source.inputs.sort_filelist = True
-roi_source.inputs.base_directory = '/data/parietal/store/work/zmohamed/mathfun/dwi_rois/1mm/'
-roi_source.inputs.template = '*.nii.gz'
+roi_source.inputs.base_directory = config['ROIS']['directory']
+roi_source.inputs.template = 'combined_BN*bin*.nii.gz'
 
 
 template_source = pe.Node(DataGrabber(infields=[], outfields=['T1', 'T1_brain', 'T1_mask', 'T2', 'T2_brain', 'T2_mask']),
@@ -130,76 +107,90 @@ template_source.inputs.template_args = {
     }
 
 
-# Create a Node for the Merge interface
-merge = pe.Node(interface=fslu.Merge(dimension='t',
-                                      output_type='NIFTI_GZ'),
-                name='merge')
-
-# Set the input files to be merged and the output file name
-merge.inputs.merged_file = '/data/parietal/store/work/zmohamed/mathfun/parcellations/merged_roi.nii.gz'
-
-tractography_wf.connect(roi_source, 'outfiles', merge, 'in_files')
 
 
-
-def mergeROI (roi_paths):
+def mergeROI (in_files):
     import nibabel as nib
     from nilearn import plotting 
     import os, os.path
+    from nilearn import image
+    
   
-    # Load the ROI images using nibabel
-    roi_images = [nib.load(roi_path) for roi_path in roi_paths]
-    merged_roi = nib.concat_images(roi_images, check_affines=True)
+    roi_images = {
+        f'img{i}': image.binarize_img(roi_path,  0) for i, roi_path in enumerate(in_files)
+    }
+    
+    overlap = image.math_img(
+         " + ".join(f" img{i} * img{i+1}" for i in range(len(roi_images)-1)),
+        **roi_images
+    )
 
-# Set the affine and header information for the merged NIfTI file using the first ROI file's affine and header
 
-    nib.save(merged_roi, os.path.join(os.getcwd(),'parcel_image.nii.gz')) 
-    return os.path.join(os.getcwd(),'parcel_image.nii.gz')
+    colored_img = image.math_img(
+        " + ".join(f"{i + 1} * img{i}" for i in range(len(roi_images))),
+        **roi_images
+    )
+
+    output_image = image.math_img(f'img1 - img2', img1=colored_img, img2=overlap)
+
+    nib.save(output_image, os.path.join(os.getcwd(),'parcel_image.nii.gz')) 
+    return os.path.join(os.getcwd(),'parcel_image.nii.gz'), in_files
 
 
 
 MergeROI = Function(
-    input_names=['roi_paths'], output_names=['output_image'],
+    input_names=['in_files'], output_names=['merged_file', 'roi_file_list'],
     function=mergeROI
   )
 
-merge_ROI =  pe.Node(interface = MergeROI,
+merge =  pe.Node(interface = MergeROI,
           name = 'merge_ROI')
 
 
-tractography_wf.connect(roi_source, 'outfiles', merge_ROI, 'roi_paths')
 
 
 
-
-
-
-
-def plotNiiGZ (NIIGZ_file, background):
+def outMod (labels, conn_file):
+    import pandas as pd
     import nibabel as nib
-    from nilearn import plotting 
     import os, os.path
-    output_file = os.path.join(
-        os.getcwd(),
-        f'{os.path.basename(NIIGZ_file)}.png'
-    )
-    niigz_img = nib.load(NIIGZ_file)
-    
-    plotting.plot_roi(niigz_img,bg_img = background , display_mode='mosaic', cut_coords= 5, title='NIIGZ map', output_file= output_file)
-    return output_file   
 
-PlotNiiGZ = Function(
-    input_names=['NIIGZ_file', 'background'], output_names=['output_image'],
-    function=plotNiiGZ
+
+    roi_names = []
+
+    for i in labels: 
+        text = i.split('/')
+        file_name = text[-1]
+        roi_names.append(file_name)
+    
+    df = pd.read_csv(conn_file,  header=None)
+  
+
+
+    df = df.loc[~(df==0).all(axis=1)]
+    df = df.loc[:, (df != 0).any(axis=0)]
+
+
+
+    df = df.rename(columns=dict(zip(df.columns, roi_names)))
+
+    df.index = roi_names[0:len(df.index) ]
+
+    #df
+
+    df.to_csv(os.path.join(os.getcwd(),'labeled_conn.csv'))
+                                        
+    return os.path.join(os.getcwd(),'labeled_conn.csv')
+
+    
+
+OutMod = Function(
+    input_names=['labels', 'conn_file'], output_names=['labeled_conn'],
+    function=outMod
   )
 
-plot_NiiGZ =  pe.Node(interface = PlotNiiGZ,
-          name = 'plot_NiiGZ')
-
-
-
-
-
+out_mod =  pe.Node(interface = OutMod,
+          name = 'out_mod')
 
 
 
@@ -212,7 +203,6 @@ mrconvert_nifti_to_mif = pe.Node(
 )
 
 
-tractography_wf.connect(data_source, 'dwi', mrconvert_nifti_to_mif, 'in_file')
 
 
 dwiextract = pe.Node(
@@ -222,10 +212,6 @@ dwiextract = pe.Node(
     ),
     name='dwiextract'
 )
-
-tractography_wf.connect(data_source, 'bval', dwiextract, 'in_bval')
-tractography_wf.connect(data_source, 'bvec', dwiextract, 'in_bvec')
-tractography_wf.connect(mrconvert_nifti_to_mif, 'out_file', dwiextract, 'in_file')
 
 reduce_dimension = pe.Node(
     interface=mrt.MRMath(
@@ -284,7 +270,6 @@ registration_affine.inputs.output_warped_image = 'output_warped_image.nii.gz'
 
 
 
-
 registration_nl = pe.Node(interface=ants.Registration(), name='registration_nl')
 registration_nl.inputs.num_threads = 16
 registration_nl.inputs.metric = ['MI']
@@ -327,43 +312,6 @@ dwi2response = pe.Node(
 
 
 
-
-
-tractography_wf.connect(dwiextract, 'out_file', reduce_dimension, 'in_file')
-tractography_wf.connect(reduce_dimension, 'out_file', mrconvert_mif_to_nifti_b0, 'in_file')
-
-
-
-tractography_wf.connect(template_source, 'T1_brain', affine_initializer, 'moving_image')
-tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', affine_initializer, 'fixed_image')
-
-tractography_wf.connect(template_source, 'T1_brain', registration_affine, 'moving_image')
-tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', registration_affine, 'fixed_image')
-tractography_wf.connect(affine_initializer, 'out_file', registration_affine , 'initial_moving_transform')
-
-
-tractography_wf.connect(template_source, 'T1_brain', registration_nl, 'moving_image')
-tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', registration_nl, 'fixed_image')
-
-tractography_wf.connect(registration_affine, 'forward_transforms', registration_nl, 'initial_moving_transform')
-tractography_wf.connect(registration_affine, 'forward_invert_flags', registration_nl, 'invert_initial_moving_transform')
-
-tractography_wf.connect(registration_nl, 'forward_transforms', apply_registration, 'transforms')
-tractography_wf.connect(registration_nl, 'forward_invert_flags', apply_registration, 'invert_transform_flags')
-
-
-
-tractography_wf.connect(merge, 'merged_file', apply_registration, 'input_image')   # create the parcellations 
-tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', apply_registration, 'reference_image')
-
-
-
-tractography_wf.connect(mrconvert_nifti_to_mif, 'out_file', dwi2response, 'in_file')
-tractography_wf.connect(data_source, 'bval', dwi2response, 'in_bval')
-tractography_wf.connect(data_source, 'bvec', dwi2response, 'in_bvec')
-
-
-
 # Estimate the fiber orientation distribution (FOD) using constrained spherical deconvolution (CSD)
 dwi2fod = pe.Node(
     interface=mrt.ConstrainedSphericalDeconvolution(
@@ -372,11 +320,6 @@ dwi2fod = pe.Node(
     ),
     name='dwi2fod'
 )
-  
-tractography_wf.connect(mrconvert_nifti_to_mif, 'out_file', dwi2fod, 'in_file')
-tractography_wf.connect(dwi2response, 'wm_file', dwi2fod, 'wm_txt')
-tractography_wf.connect(data_source, 'bval', dwi2fod, 'in_bval')
-tractography_wf.connect(data_source, 'bvec', dwi2fod, 'in_bvec')
 
 
 tckgen = pe.Node(
@@ -388,10 +331,6 @@ tckgen = pe.Node(
     ),
     name='tckgen'
 )
-tractography_wf.connect(dwi2fod, 'wm_odf', tckgen, 'in_file')
-tractography_wf.connect(data_source, 'bval', tckgen, 'in_bval')
-tractography_wf.connect(data_source, 'bvec', tckgen, 'in_bvec')
-tractography_wf.connect(mrconvert_nifti_to_mif, 'out_file', tckgen, 'seed_image')
 
 
 
@@ -399,21 +338,6 @@ data_sink = pe.Node(DataSink(), name="datasink")
 data_sink.inputs.base_directory = out_dir
 
 
-"""
-tractography_wf.connect(apply_registration, 'output_image', plot_NiiGZ, 'NIIGZ_file')  
-tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', plot_NiiGZ, 'background')
-tractography_wf.connect(plot_NiiGZ, 'output_image', data_sink, 'niigz_image')
-
-
-# Define the output node
-output_node = pe.Node(
-    interface=util.IdentityInterface(
-        fields=['prob_tractography']
-    ),
-    name='output_node'
-)
-#tractography_wf.connect(tckgen, 'out_file', output_node, 'prob_tractography')
-"""
 
 
 tdimap = pe.Node(
@@ -432,7 +356,6 @@ def convertfloat2int(float_image):
     import numpy as np
  
     # Load the floating-point image
-    #my_float_img = nib.load(float_image)
     my_float_img = nib.load(float_image)
 
     data = my_float_img.get_fdata()
@@ -459,9 +382,7 @@ Convert_float2int = Function(
 convert_float2int =  pe.Node(interface = Convert_float2int,
           name = 'convert_float2int')
 
-tractography_wf.connect(apply_registration, 'output_image', convert_float2int, 'float_image')  
-#tractography_wf.connect(data_source, 'parc', convert_float2int, 'float_image')  
-
+ 
 
 
 tckconn = pe.Node(
@@ -472,21 +393,6 @@ tckconn = pe.Node(
     name='tckconn'
 )
 
-
-tractography_wf.connect(tckgen, 'out_file', tdimap, 'in_file')
-tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', tdimap, 'reference') #should be b0 image (or use transformation to get higher res)
-
-
-tractography_wf.connect(tckgen, 'out_file', tckconn, 'in_file')
-tractography_wf.connect(convert_float2int, 'output_int_img', tckconn, 'in_parc')  
-
-#tractography_wf.connect(data_source, 'roi', tckconn, 'in_parc')  # this needs to be changed to b0 image as input to tckconn
-
-
-tractography_wf.connect(tckgen, 'out_file', data_sink, 'prob_tractography')
-tractography_wf.connect(tdimap, 'out_file', data_sink, 'tdi_out')
-
-tractography_wf.connect(tckconn, 'out_file', data_sink, 'conn_out')
 
 
 # Quality check of B0 and TDI 
@@ -511,11 +417,6 @@ PlotTDI = Function(
 
 plot_tdi =  pe.Node(interface = PlotTDI,
           name = 'plot_tdi')
-
-tractography_wf.connect(tdimap, 'out_file', plot_tdi, 'TDI_file')
-tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', plot_tdi, 'background')
-#tractography_wf.connect(apply_registration, 'output_image', plot_tdi, 'background')
-tractography_wf.connect(plot_tdi, 'output_image', data_sink, 'tdi_image')
 
 
 # Quality check of ROI and TDI 
@@ -544,13 +445,97 @@ plot_roi =  pe.Node(interface = PlotROI,
 
 
 
+
+# Create a Nipype workflow
+
+tractography_wf = pe.Workflow(name='tractography_wf',  base_dir=PATH)
+
+tractography_wf.connect(infosource, 'subject_id', data_source, 'subject_id')
+tractography_wf.connect(infosource, 'visit', data_source, 'visit')
+tractography_wf.connect(infosource, 'session', data_source, 'session')
+
+
+tractography_wf.connect(data_source, 'dwi', mrconvert_nifti_to_mif, 'in_file')
+
+tractography_wf.connect(data_source, 'bval', dwiextract, 'in_bval')
+tractography_wf.connect(data_source, 'bvec', dwiextract, 'in_bvec')
+tractography_wf.connect(mrconvert_nifti_to_mif, 'out_file', dwiextract, 'in_file')
+
+tractography_wf.connect(dwiextract, 'out_file', reduce_dimension, 'in_file')
+tractography_wf.connect(reduce_dimension, 'out_file', mrconvert_mif_to_nifti_b0, 'in_file')
+
+tractography_wf.connect(template_source, 'T1_brain', affine_initializer, 'moving_image')
+tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', affine_initializer, 'fixed_image')
+
+tractography_wf.connect(template_source, 'T1_brain', registration_affine, 'moving_image')
+tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', registration_affine, 'fixed_image')
+tractography_wf.connect(affine_initializer, 'out_file', registration_affine , 'initial_moving_transform')
+
+tractography_wf.connect(template_source, 'T1_brain', registration_nl, 'moving_image')
+tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', registration_nl, 'fixed_image')
+
+tractography_wf.connect(registration_affine, 'forward_transforms', registration_nl, 'initial_moving_transform')
+tractography_wf.connect(registration_affine, 'forward_invert_flags', registration_nl, 'invert_initial_moving_transform')
+
+tractography_wf.connect(registration_nl, 'forward_transforms', apply_registration, 'transforms')
+tractography_wf.connect(registration_nl, 'forward_invert_flags', apply_registration, 'invert_transform_flags')
+
+tractography_wf.connect(roi_source, 'outfiles', merge, 'in_files')
+
+# tractography_wf.connect(merge, 'roi_file_list', data_sink, 'temp')
+tractography_wf.connect(merge, 'merged_file', apply_registration, 'input_image')   # create the parcellations 
+
+
+tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', apply_registration, 'reference_image')
+
+tractography_wf.connect(mrconvert_nifti_to_mif, 'out_file', dwi2response, 'in_file')
+tractography_wf.connect(data_source, 'bval', dwi2response, 'in_bval')
+tractography_wf.connect(data_source, 'bvec', dwi2response, 'in_bvec')
+
+
+tractography_wf.connect(dwi2fod, 'wm_odf', tckgen, 'in_file')
+tractography_wf.connect(data_source, 'bval', tckgen, 'in_bval')
+tractography_wf.connect(data_source, 'bvec', tckgen, 'in_bvec')
+tractography_wf.connect(mrconvert_nifti_to_mif, 'out_file', tckgen, 'seed_image')
+  
+tractography_wf.connect(mrconvert_nifti_to_mif, 'out_file', dwi2fod, 'in_file')
+tractography_wf.connect(dwi2response, 'wm_file', dwi2fod, 'wm_txt')
+tractography_wf.connect(data_source, 'bval', dwi2fod, 'in_bval')
+tractography_wf.connect(data_source, 'bvec', dwi2fod, 'in_bvec')
+
+
+tractography_wf.connect(apply_registration, 'output_image', convert_float2int, 'float_image')  
+
+
+tractography_wf.connect(tckgen, 'out_file', tdimap, 'in_file')
+tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', tdimap, 'reference') #should be b0 image (or use transformation to get higher res)
+
+tractography_wf.connect(tckgen, 'out_file', tckconn, 'in_file')
+tractography_wf.connect(convert_float2int, 'output_int_img', tckconn, 'in_parc')  
+
+tractography_wf.connect(tckgen, 'out_file', data_sink, 'prob_tractography')
+tractography_wf.connect(tdimap, 'out_file', data_sink, 'tdi_out')
+tractography_wf.connect(tckconn, 'out_file', data_sink, 'conn_out')
+
+tractography_wf.connect(merge, 'roi_file_list', out_mod, 'labels')   
+tractography_wf.connect(tckconn, 'out_file', out_mod, 'conn_file')
+tractography_wf.connect(out_mod, 'labeled_conn', data_sink, 'labeled_conn_out')
+
+
+
+
+
+tractography_wf.connect(tdimap, 'out_file', plot_tdi, 'TDI_file')
+tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', plot_tdi, 'background')
+tractography_wf.connect(plot_tdi, 'output_image', data_sink, 'tdi_image')
+
+
 tractography_wf.connect(apply_registration, 'output_image', plot_roi, 'ROI_file')
 tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', plot_roi, 'background')
 tractography_wf.connect(plot_roi, 'output_image', data_sink, 'roi_image')
 
 #tractography_wf.connect(apply_registration, 'output_image', data_sink, 'temp')
 #tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', data_sink, 'temp1')
-
 
 
 
