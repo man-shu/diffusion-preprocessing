@@ -121,7 +121,7 @@ def mergeROI (in_files):
     }
     
     overlap = image.math_img(
-         " + ".join(f" img{i} * img{i+1}" for i in range(len(roi_images)-1)),
+         " + ".join(f"{i + 1} * img{i} * img{i+1}" for i in range(len(roi_images)-1)),
         **roi_images
     )
 
@@ -132,6 +132,8 @@ def mergeROI (in_files):
     )
 
     output_image = image.math_img(f'img1 - img2', img1=colored_img, img2=overlap)
+
+
 
     nib.save(output_image, os.path.join(os.getcwd(),'parcel_image.nii.gz')) 
     return os.path.join(os.getcwd(),'parcel_image.nii.gz'), in_files
@@ -166,6 +168,7 @@ def outMod (labels, conn_file):
     df = pd.read_csv(conn_file,  header=None)
   
 
+    print(df)
 
     df = df.loc[~(df==0).all(axis=1)]
     df = df.loc[:, (df != 0).any(axis=0)]
@@ -176,7 +179,6 @@ def outMod (labels, conn_file):
 
     df.index = roi_names[0:len(df.index) ]
 
-    #df
 
     df.to_csv(os.path.join(os.getcwd(),'labeled_conn.csv'))
                                         
@@ -325,9 +327,9 @@ dwi2fod = pe.Node(
 tckgen = pe.Node(
     interface=mrt.Tractography(
         algorithm='iFOD2',
-        select=10000,
+        select=50000,
         out_file='prob_tractography.tck',
-        n_trials = 10000,
+        n_trials = 50000,
     ),
     name='tckgen'
 )
@@ -492,7 +494,6 @@ tractography_wf.connect(mrconvert_nifti_to_mif, 'out_file', dwi2response, 'in_fi
 tractography_wf.connect(data_source, 'bval', dwi2response, 'in_bval')
 tractography_wf.connect(data_source, 'bvec', dwi2response, 'in_bvec')
 
-
 tractography_wf.connect(dwi2fod, 'wm_odf', tckgen, 'in_file')
 tractography_wf.connect(data_source, 'bval', tckgen, 'in_bval')
 tractography_wf.connect(data_source, 'bvec', tckgen, 'in_bvec')
@@ -503,9 +504,7 @@ tractography_wf.connect(dwi2response, 'wm_file', dwi2fod, 'wm_txt')
 tractography_wf.connect(data_source, 'bval', dwi2fod, 'in_bval')
 tractography_wf.connect(data_source, 'bvec', dwi2fod, 'in_bvec')
 
-
 tractography_wf.connect(apply_registration, 'output_image', convert_float2int, 'float_image')  
-
 
 tractography_wf.connect(tckgen, 'out_file', tdimap, 'in_file')
 tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', tdimap, 'reference') #should be b0 image (or use transformation to get higher res)
@@ -520,10 +519,6 @@ tractography_wf.connect(tckconn, 'out_file', data_sink, 'conn_out')
 tractography_wf.connect(merge, 'roi_file_list', out_mod, 'labels')   
 tractography_wf.connect(tckconn, 'out_file', out_mod, 'conn_file')
 tractography_wf.connect(out_mod, 'labeled_conn', data_sink, 'labeled_conn_out')
-
-
-
-
 
 tractography_wf.connect(tdimap, 'out_file', plot_tdi, 'TDI_file')
 tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', plot_tdi, 'background')
