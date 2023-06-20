@@ -65,7 +65,7 @@ data_source = pe.Node(DataGrabber(infields=[],
                        name='input_node')
 
 data_source.inputs.sort_filelist = True
-data_source.inputs.base_directory = '/data/parietal/store/work/zmohamed/mathfun/tp2'
+data_source.inputs.base_directory = config['DEFAULT']['base_directory']
 data_source.inputs.template = ''
 
 
@@ -166,19 +166,16 @@ def outMod (labels, conn_file):
         roi_names.append(file_name)
     
     df = pd.read_csv(conn_file,  header=None)
-  
+
 
     print(df)
 
     df = df.loc[~(df==0).all(axis=1)]
     df = df.loc[:, (df != 0).any(axis=0)]
 
-
-
     df = df.rename(columns=dict(zip(df.columns, roi_names)))
 
-    df.index = roi_names[0:len(df.index) ]
-
+    df.index = roi_names[0:len(df.index)]
 
     df.to_csv(os.path.join(os.getcwd(),'labeled_conn.csv'))
                                         
@@ -536,6 +533,7 @@ tractography_wf.connect(plot_roi, 'output_image', data_sink, 'roi_image')
 
 # Run the workflow
 tractography_wf.run(plugin='MultiProc', plugin_args={'dont_resubmit_completed_jobs':True})
+
 
 
 
