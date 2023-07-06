@@ -5,7 +5,7 @@ import nipype.pipeline.engine as pe
 import nipype.interfaces.fsl as fsl
 import os
 import nipype.interfaces.utility as util
-from nipype import DataGrabber, DataSink, IdentityInterface
+from nipype import DataGrabber, DataSink, IdentityInterface, MapNode, JoinNode
 from typing import List
 import numpy 
 from nilearn import plotting
@@ -35,6 +35,7 @@ config.update_config({'logging': {'log_directory': os.path.join(os.getcwd(), 'lo
  
 out_dir = '/data/parietal/store/work/zmohamed/mathfun/output'
 PATH = '/data/parietal/store/work/zmohamed/mathfun/'
+seed_num = 50000
 
 
 
@@ -158,6 +159,7 @@ def outMod (labels, conn_file):
     import os, os.path
 
 
+    
     roi_names = []
 
     for i in labels: 
@@ -168,7 +170,6 @@ def outMod (labels, conn_file):
     df = pd.read_csv(conn_file,  header=None)
 
 
-    print(df)
 
     df = df.loc[~(df==0).all(axis=1)]
     df = df.loc[:, (df != 0).any(axis=0)]
@@ -176,20 +177,97 @@ def outMod (labels, conn_file):
     df = df.rename(columns=dict(zip(df.columns, roi_names)))
 
     df.index = roi_names[0:len(df.index)]
+    
+    df = df.div(50000) #seed number from tckgen
 
-    df.to_csv(os.path.join(os.getcwd(),'labeled_conn.csv'))
+   
+    # Reshape the DataFrame with combined row and column names
+    reshaped_df = pd.melt(df.reset_index(), id_vars='index')   
+    reshaped_df["ROI"] = reshaped_df["variable"]  +"_"+ reshaped_df['index'].astype(str) 
+    desired_columns = ['ROI', 'value']
+    reshaped_df = reshaped_df.reindex(columns=desired_columns)
+    #print(reshaped_df)
+
+    df_transposed = reshaped_df.set_index('ROI').transpose()
+
+   # df_pivot = reshaped_df.pivot(columns='ROI', values='value')
+   # df_pivot.index = range(len(df_pivot))
+
+    df_transposed.to_csv(os.path.join(os.getcwd(),'labeled_conn.csv'))
                                         
-    return os.path.join(os.getcwd(),'labeled_conn.csv')
+    return os.path.join(os.getcwd(),'labeled_conn.csv'), df_transposed 
 
     
 
 OutMod = Function(
-    input_names=['labels', 'conn_file'], output_names=['labeled_conn'],
+    input_names=['labels', 'conn_file'], output_names=['labeled_conn', 'data_frame'],
     function=outMod
   )
 
 out_mod =  pe.Node(interface = OutMod,
           name = 'out_mod')
+
+
+
+
+def multi_Mod (composite_id, conn_df):
+
+    import pandas as pd
+    import os 
+    
+    print(composite_id)
+    #print(conn_df)
+
+    df2 = pd.concat(conn_df, ignore_index=True)
+    df2['subject_id'] = composite_id
+    df_renamed = df2.set_index('subject_id')
+
+    '''
+
+    # Get the len of df2 then iterate over the composite_id list, and set the string as index name for the len of each connectome (conn_df)
+    x =len(df2)
+    y=len (conn_df)
+    #n = x//y
+    n = len(composite_id)
+
+    for i, name in enumerate(composite_id):
+        print(name)
+        start_idx = i * n  
+        end_idx = (i + 1) * n 
+
+
+
+    # Assign the new name to the corresponding rows using df.rename
+        df2 = df2.rename(index=lambda x: name if start_idx <= int(x) < end_idx else x)
+        df2 = df2.rename(index=lambda x: name if int(x) % n == 0 else x)
+
+
+
+    #print(df2)
+
+    '''
+
+
+
+    df_renamed.to_csv(os.path.join(os.getcwd(),'multi_index_conn.csv'))
+
+
+    return  os.path.join(os.getcwd(),'multi_index_conn.csv') 
+
+
+
+Multi_Mod = Function(
+    input_names=['composite_id','conn_df'], output_names=['multi_index_conn'],
+    function=multi_Mod
+  )
+
+
+multi_mod =  JoinNode(interface = Multi_Mod, joinsource="subjects",
+          joinfield = ['composite_id','conn_df'], name = 'multi_mod')
+
+
+
+
 
 
 
@@ -324,7 +402,7 @@ dwi2fod = pe.Node(
 tckgen = pe.Node(
     interface=mrt.Tractography(
         algorithm='iFOD2',
-        select=50000,
+        select= 50000,
         out_file='prob_tractography.tck',
         n_trials = 50000,
     ),
@@ -453,6 +531,12 @@ tractography_wf.connect(infosource, 'subject_id', data_source, 'subject_id')
 tractography_wf.connect(infosource, 'visit', data_source, 'visit')
 tractography_wf.connect(infosource, 'session', data_source, 'session')
 
+tractography_wf.connect(infosource, 'subject_id', subject_id_visit, 'subject_id')
+tractography_wf.connect(infosource, 'visit', subject_id_visit, 'visit')
+
+tractography_wf.connect(infosource, 'subject_id', multi_mod, 'composite_id')
+#tractography_wf.connect(subject_id_visit, 'composite_id', multi_mod, 'composite_id')
+
 
 tractography_wf.connect(data_source, 'dwi', mrconvert_nifti_to_mif, 'in_file')
 
@@ -515,7 +599,12 @@ tractography_wf.connect(tckconn, 'out_file', data_sink, 'conn_out')
 
 tractography_wf.connect(merge, 'roi_file_list', out_mod, 'labels')   
 tractography_wf.connect(tckconn, 'out_file', out_mod, 'conn_file')
+
+tractography_wf.connect(out_mod, 'data_frame', multi_mod, 'conn_df')
 tractography_wf.connect(out_mod, 'labeled_conn', data_sink, 'labeled_conn_out')
+
+tractography_wf.connect(multi_mod, 'multi_index_conn', data_sink, 'multi_index_conn_out')
+
 
 tractography_wf.connect(tdimap, 'out_file', plot_tdi, 'TDI_file')
 tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', plot_tdi, 'background')
@@ -533,6 +622,8 @@ tractography_wf.connect(plot_roi, 'output_image', data_sink, 'roi_image')
 
 # Run the workflow
 tractography_wf.run(plugin='MultiProc', plugin_args={'dont_resubmit_completed_jobs':True})
+#tractography_wf.run(plugin='SLURMGraph',plugin_args={'dont_resubmit_completed_jobs': True})
+
 
 
 
