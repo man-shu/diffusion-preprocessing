@@ -180,6 +180,8 @@ def outMod (labels, conn_file):
     
     df = df.div(50000) #seed number from tckgen
 
+    print(df)
+
    
     # Reshape the DataFrame with combined row and column names
     reshaped_df = pd.melt(df.reset_index(), id_vars='index')   
@@ -277,6 +279,15 @@ mrconvert_nifti_to_mif = pe.Node(
         
     ),
     name='mrconvert'
+)
+
+
+dwidenoise = pe.Node(
+    interface=mrt.DWIDenoise( 
+        out_file='dwi_denoise.mif'
+        
+    ),
+    name='mrdenoise'
 )
 
 
@@ -542,7 +553,8 @@ tractography_wf.connect(data_source, 'dwi', mrconvert_nifti_to_mif, 'in_file')
 
 tractography_wf.connect(data_source, 'bval', dwiextract, 'in_bval')
 tractography_wf.connect(data_source, 'bvec', dwiextract, 'in_bvec')
-tractography_wf.connect(mrconvert_nifti_to_mif, 'out_file', dwiextract, 'in_file')
+tractography_wf.connect(mrconvert_nifti_to_mif, 'out_file', dwidenoise, 'in_file')
+tractography_wf.connect(dwidenoise, 'out_file', dwiextract, 'in_file')
 
 tractography_wf.connect(dwiextract, 'out_file', reduce_dimension, 'in_file')
 tractography_wf.connect(reduce_dimension, 'out_file', mrconvert_mif_to_nifti_b0, 'in_file')
@@ -571,16 +583,17 @@ tractography_wf.connect(merge, 'merged_file', apply_registration, 'input_image')
 
 tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', apply_registration, 'reference_image')
 
-tractography_wf.connect(mrconvert_nifti_to_mif, 'out_file', dwi2response, 'in_file')
+
+tractography_wf.connect(dwidenoise, 'out_file', dwi2response, 'in_file')
 tractography_wf.connect(data_source, 'bval', dwi2response, 'in_bval')
 tractography_wf.connect(data_source, 'bvec', dwi2response, 'in_bvec')
 
 tractography_wf.connect(dwi2fod, 'wm_odf', tckgen, 'in_file')
 tractography_wf.connect(data_source, 'bval', tckgen, 'in_bval')
 tractography_wf.connect(data_source, 'bvec', tckgen, 'in_bvec')
-tractography_wf.connect(mrconvert_nifti_to_mif, 'out_file', tckgen, 'seed_image')
+tractography_wf.connect(dwidenoise, 'out_file', tckgen, 'seed_image')
   
-tractography_wf.connect(mrconvert_nifti_to_mif, 'out_file', dwi2fod, 'in_file')
+tractography_wf.connect(dwidenoise, 'out_file', dwi2fod, 'in_file')
 tractography_wf.connect(dwi2response, 'wm_file', dwi2fod, 'wm_txt')
 tractography_wf.connect(data_source, 'bval', dwi2fod, 'in_bval')
 tractography_wf.connect(data_source, 'bvec', dwi2fod, 'in_bvec')
@@ -621,7 +634,7 @@ tractography_wf.connect(plot_roi, 'output_image', data_sink, 'roi_image')
 
 
 # Run the workflow
-tractography_wf.run(plugin='MultiProc', plugin_args={'dont_resubmit_completed_jobs':True})
+tractography_wf.run(plugin='MultiProc', plugin_args={'n_procs':90, 'memory_gb': 8,'dont_resubmit_completed_jobs':True})
 #tractography_wf.run(plugin='SLURMGraph',plugin_args={'dont_resubmit_completed_jobs': True})
 
 
