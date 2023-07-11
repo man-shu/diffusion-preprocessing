@@ -10,10 +10,8 @@ def plot_graph(df):
 
     row_names = np.array(df.index)
 
-    # Create an array of column names
     column_names = np.array(df.columns)
 
-    # Get the number of rows and columns
     num_rows, num_columns = df.shape
 
     # Create a figure and subplots for each column
@@ -118,10 +116,11 @@ plt.savefig('/home/parietal/dwasserm/research/data/LargeBrainNets/mathfun/script
 plot_graph(normalized_df2)
 
 
-correlation_matrix = normalized_df1.corrwith(normalized_df2)
+correlation_matrix = df1_common.corrwith(df2_common)
 
-# Print the correlation matrix
-print(correlation_matrix)
+df = pd.concat([correlation_matrix,df1_common.mean(), df1_common.std(), df2_common.mean(), df2_common.std()], axis=1).reindex(correlation_matrix.index)
+df.columns= ["R Coefficient", "Stanford Dataset Mean", "Stanford Dataset Standard Deviation", "MRTRIX3 Dataset Mean", "MRTRIX3 Dataset Standard Deviation" ]
+print(df)
 
 '''
 
