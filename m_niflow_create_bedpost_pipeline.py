@@ -328,7 +328,7 @@ tractography_wf.connect(registration_nl, 'forward_transforms', apply_registratio
 tractography_wf.connect(registration_nl, 'forward_invert_flags', apply_registration, 'invert_transform_flags')
 
 
-tractography_wf.connect(template_source, 'T1_brain', apply_registration, 'input_image')   # create the parcellations 
+tractography_wf.connect(template_source, 'T1_mask', apply_registration, 'input_image')   # create the parcellations 
 tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', apply_registration, 'reference_image')
 
 
@@ -337,6 +337,8 @@ tractography_wf.connect(data_source, 'bvec', bedp, 'inputnode.bvecs')
 tractography_wf.connect(data_source, 'dwi', bedp, 'inputnode.dwi')
 
 tractography_wf.connect(apply_registration, 'output_image', bedp, 'inputnode.mask')
+tractography_wf.connect(apply_registration, 'output_image', data_sink, 'mask_after_reg')
+
 
 #tractography_wf.connect(data_source, 'bval', bedp, 'inputnode.bvals')
 
