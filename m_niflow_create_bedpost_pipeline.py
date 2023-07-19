@@ -332,14 +332,10 @@ tractography_wf.connect(template_source, 'T1_brain', apply_registration, 'input_
 tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', apply_registration, 'reference_image')
 
 
-tractography_wf.connect(data_source, 'bvec', dmri_preprocess_workflow, 'input_subject.bvec')
-tractography_wf.connect(data_source, 'dwi', dmri_preprocess_workflow, 'input_subject.dwi')
-tractography_wf.connect(data_source, 'bval', dmri_preprocess_workflow, 'input_subject.bval')
+tractography_wf.connect(data_source, 'bval', bedp, 'inputnode.bvals')
+tractography_wf.connect(data_source, 'bvec', bedp, 'inputnode.bvecs')
+tractography_wf.connect(data_source, 'dwi', bedp, 'inputnode.dwi')
 
-
-tractography_wf.connect(dmri_preprocess_workflow, 'output.bval', bedp, 'inputnode.bvals')
-tractography_wf.connect(dmri_preprocess_workflow, 'output.bvec_rotated', bedp, 'inputnode.bvecs')
-tractography_wf.connect(dmri_preprocess_workflow, 'output.dwi_rigid_registered', bedp, 'inputnode.dwi')
 tractography_wf.connect(apply_registration, 'output_image', bedp, 'inputnode.mask')
 
 #tractography_wf.connect(data_source, 'bval', bedp, 'inputnode.bvals')
