@@ -50,6 +50,10 @@ config.update_config({'logging': {'log_directory': os.path.join(os.getcwd(), 'lo
                     })
 
 
+
+dmri_preprocess_workflow = dp.create_diffusion_prep_pipeline(
+        'dmri_preprocess')
+
 config = configparser.ConfigParser()
 config.read(sys.argv[1])
 
@@ -135,6 +139,129 @@ template_source.inputs.template_args = {
     }
 
 
+mrconvert_nifti_to_mif = pe.Node(
+    interface=mrt.MRConvert( 
+        out_file='dwi.mif'
+        
+    ),
+    name='mrconvert'
+)
+
+
+
+dwidenoise = pe.Node(
+    interface=mrt.DWIDenoise( 
+        out_file='dwi_denoise.mif'
+        
+    ),
+    name='mrdenoise'
+)
+
+
+dwiextract = pe.Node(
+    interface=mrt.DWIExtract(
+        bzero=True,
+        out_file='b0.mif'
+    ),
+    name='dwiextract'
+)
+
+reduce_dimension = pe.Node(
+    interface=mrt.MRMath(
+        operation='mean',
+        axis = 3 ,
+        out_file='b0_mean.mif'
+    ),
+    name='reduce_dimension'
+)
+
+sum_dwi_dimension = pe.Node(
+    interface=mrt.MRMath(
+        operation='sum',
+        axis = 3 ,
+        out_file='dwi.nii.gz'
+    ),
+    name='sum_dwi_dimension'
+)
+
+mrconvert_mif_to_nifti_b0 = pe.Node(
+    interface=mrt.MRConvert( 
+        out_file='b0.nii.gz'
+        
+    ),
+    name='mrconvert_mif_to_nifti_b0'
+)
+
+
+affine_initializer = pe.Node(
+    interface=ants.AffineInitializer(
+        num_threads = 20
+
+    ),                          
+    name='affine_initializer')
+
+  
+    
+registration_affine = pe.Node(
+    interface=ants.Registration(
+ 
+
+    ), name='registration_affine'
+)
+registration_affine.inputs.metric = ['MI'] * 2
+registration_affine.inputs.metric_weight = [1] * 2
+registration_affine.inputs.radius_or_number_of_bins = [32] * 2
+registration_affine.inputs.sampling_strategy = ['Random', 'Random']
+registration_affine.inputs.sampling_percentage = [0.05, 0.05]
+registration_affine.inputs.convergence_threshold = [1.e-6] * 2
+registration_affine.inputs.convergence_window_size = [10] * 2
+registration_affine.inputs.transforms = ['Rigid', 'Affine']
+registration_affine.inputs.output_transform_prefix = "output_"
+registration_affine.inputs.transform_parameters = [(0.1,), (0.1,)]
+registration_affine.inputs.number_of_iterations = [[1000, 500, 250, 0], [1000, 500, 250, 0]]
+registration_affine.inputs.smoothing_sigmas = [[3, 2, 1, 0]] * 2
+registration_affine.inputs.sigma_units = ['vox'] * 2
+registration_affine.inputs.shrink_factors = [[8, 4, 2, 1]] * 2
+registration_affine.inputs.use_estimate_learning_rate_once = [True, True]
+registration_affine.inputs.use_histogram_matching = [True, True] # This is the default
+registration_affine.inputs.output_warped_image = 'output_warped_image.nii.gz'
+
+
+
+
+registration_nl = pe.Node(interface=ants.Registration(), name='registration_nl')
+registration_nl.inputs.num_threads = 16
+registration_nl.inputs.metric = ['MI']
+registration_nl.inputs.metric_weight = [1]
+registration_nl.inputs.radius_or_number_of_bins = [32]
+registration_nl.inputs.sampling_strategy = [None]
+registration_nl.inputs.sampling_percentage = [None]
+registration_nl.inputs.convergence_threshold = [1.e-6]
+registration_nl.inputs.convergence_window_size = [10]
+registration_nl.inputs.transforms = ['SyN']
+registration_nl.inputs.output_transform_prefix = "output_"
+registration_nl.inputs.transform_parameters = [(0.1, 3.0, 0.0)]
+registration_nl.inputs.number_of_iterations = [[1000, 700, 400, 100]]
+registration_nl.inputs.smoothing_sigmas = [[3, 2, 1, 0]] 
+registration_nl.inputs.sigma_units = ['vox']
+registration_nl.inputs.shrink_factors = [[8, 4, 2, 1]]
+registration_nl.inputs.use_estimate_learning_rate_once = [True]
+registration_nl.inputs.use_histogram_matching = [True] # This is the default
+registration_nl.inputs.output_warped_image = 'output_warped_image.nii.gz'
+
+
+
+#apply_registration = pe.MapNode(interface=ants.ApplyTransforms(),
+#                              name='apply_registration', iterfield=['input_image'])
+
+apply_registration = pe.Node(interface=ants.ApplyTransforms(),
+                              name='apply_registration')
+apply_registration.inputs.dimension = 3
+apply_registration.inputs.input_image_type = 0
+apply_registration.inputs.interpolation = 'NearestNeighbor'
+
+
+
 
 bet = pe.Node(BET(frac=0.2, mask=True), name='bet')
 
@@ -162,61 +289,6 @@ data_sink.inputs.base_directory = out_dir
 
 
 # Create a Nipype workflow
-
-workflow = Workflow('diffusion_workflow_new_mgt', base_dir=PATH)
-workflow.connect([
-    (infosource, data_source, [('subject_id', 'subject_id'),
-                                ('visit', 'visit'),
-                ('session','session')]),
-
-    (infosource, subject_id_visit, [
-        ('subject_id', 'subject_id'),
-        ('visit', 'visit')
-    ]),
-
-    (data_source, flip_bvectors_node, [('bvec', 'bvecs_in')]),
- 
-    #(roi_source, apply_registration, [('outfiles', 'input_image')]),
-
-    # input to bedp
-
-    (flip_bvectors_node, bedp, [('bvecs_out', 'inputnode.bvecs')]),
-
-    (template_source,bedp,[('T1_mask', 'inputnode.mask')]),
-    
-    (data_source,bedp,[('dwi', 'inputnode.dwi'), ('bval', 'inputnode.bvals')]),
-
-    # bedp -- > pbx2
-    (bedp, pbx2,
-         [
-          ('outputnode.thsamples', 'thsamples'),
-          ('outputnode.fsamples', 'fsamples'),
-          ('outputnode.phsamples', 'phsamples'),
-         ]
-     ),
-
-     (bedp, data_sink,
-         [
-          ('outputnode.dyads_disp', 'dyads_dispersion'),
-          ('outputnode.dyads', 'mean_S0samples'),
-          ('outputnode.mean_thsamples', 'mean_dsamples'),
-            
-         ]
-     ),
-
-    (roi_source, pbx2, [('outfiles', 'seed')]),
-
-
-    (template_source, pbx2,[('T1_mask', 'mask'),]),
-
-])
-
-workflow.run(plugin='MultiProc', plugin_args={'n_procs':20, 'memory_gb': 8,'dont_resubmit_completed_jobs':True})
-
-
-
-'''
-
 tractography_wf = pe.Workflow(name='tractography_wf',  base_dir=PATH)
 
 tractography_wf.connect(infosource, 'subject_id', data_source, 'subject_id')
@@ -226,42 +298,59 @@ tractography_wf.connect(infosource, 'session', data_source, 'session')
 tractography_wf.connect(infosource, 'subject_id', subject_id_visit, 'subject_id')
 tractography_wf.connect(infosource, 'visit', subject_id_visit, 'visit')
 
-tractography_wf.connect(data_source, 'dwi', dwiextract, 'in_file')
+tractography_wf.connect(data_source, 'dwi', mrconvert_nifti_to_mif, 'in_file')
+tractography_wf.connect(mrconvert_nifti_to_mif, 'out_file', dwidenoise, 'in_file')
+tractography_wf.connect(dwidenoise, 'out_file', dwiextract, 'in_file')
+
+
 tractography_wf.connect(data_source, 'bval', dwiextract, 'in_bval')
 tractography_wf.connect(data_source, 'bvec', dwiextract, 'in_bvec')
 
 
+
 tractography_wf.connect(dwiextract, 'out_file', reduce_dimension, 'in_file')
-tractography_wf.connect(reduce_dimension, 'out_file', bet, 'in_file')
+tractography_wf.connect(reduce_dimension, 'out_file', mrconvert_mif_to_nifti_b0, 'in_file')
 
-tractography_wf.connect(bet, 'out_file', bedp, 'dwi')
-#tractography_wf.connect(data_source, 'dwi', bedp, 'dwi')
+tractography_wf.connect(template_source, 'T1_brain', affine_initializer, 'moving_image')
+tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', affine_initializer, 'fixed_image')
 
-tractography_wf.connect(data_source, 'bvec', bedp, 'bvecs')
-tractography_wf.connect(data_source, 'bval', bedp, 'bvals')
-tractography_wf.connect(template_source, 'T1_mask', bedp, 'mask')
+tractography_wf.connect(template_source, 'T1_brain', registration_affine, 'moving_image')
+tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', registration_affine, 'fixed_image')
+tractography_wf.connect(affine_initializer, 'out_file', registration_affine , 'initial_moving_transform')
 
-tractography_wf.connect(bedp, 'mean_S0samples', merge_mean_S0samples, 'in_files')
-tractography_wf.connect(bedp, 'mean_thsamples', merge_mean_thsamples, 'in_files')
-tractography_wf.connect(bedp, 'mean_phsamples', merge_mean_phsamples, 'in_files')
-tractography_wf.connect(bedp, 'mean_fsamples', merge_mean_fsamples, 'in_files')
-tractography_wf.connect(bedp, 'mean_dsamples', merge_mean_dsamples, 'in_files')
+tractography_wf.connect(template_source, 'T1_brain', registration_nl, 'moving_image')
+tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', registration_nl, 'fixed_image')
 
+tractography_wf.connect(registration_affine, 'forward_transforms', registration_nl, 'initial_moving_transform')
+tractography_wf.connect(registration_affine, 'forward_invert_flags', registration_nl, 'invert_initial_moving_transform')
 
-
-
-
+tractography_wf.connect(registration_nl, 'forward_transforms', apply_registration, 'transforms')
+tractography_wf.connect(registration_nl, 'forward_invert_flags', apply_registration, 'invert_transform_flags')
 
 
+tractography_wf.connect(template_source, 'T1_brain', apply_registration, 'input_image')   # create the parcellations 
+tractography_wf.connect(mrconvert_mif_to_nifti_b0, 'out_file', apply_registration, 'reference_image')
 
-# Run the workflow
+
+tractography_wf.connect(data_source, 'bvec', dmri_preprocess_workflow, 'input_subject.bvec')
+tractography_wf.connect(data_source, 'dwi', dmri_preprocess_workflow, 'input_subject.dwi')
+tractography_wf.connect(data_source, 'bval', dmri_preprocess_workflow, 'input_subject.bval')
+
+
+tractography_wf.connect(dmri_preprocess_workflow, 'output.bval', bedp, 'inputnode.bvals')
+tractography_wf.connect(dmri_preprocess_workflow, 'output.bvec_rotated', bedp, 'inputnode.bvecs')
+tractography_wf.connect(dmri_preprocess_workflow, 'output.dwi_rigid_registered', bedp, 'inputnode.dwi')
+tractography_wf.connect(apply_registration, 'output_image', bedp, 'inputnode.mask')
+
+#tractography_wf.connect(data_source, 'bval', bedp, 'inputnode.bvals')
+
+#tractography_wf.connect(data_source, 'dwi', sum_dwi_dimension, 'in_file')
+#tractography_wf.connect(sum_dwi_dimension, 'out_file', bedp, 'inputnode.dwi')
+
+
+
 tractography_wf.run(plugin='MultiProc', plugin_args={'n_procs':20, 'memory_gb': 8,'dont_resubmit_completed_jobs':True})
-#tractography_wf.run(plugin='SLURMGraph',plugin_args={'dont_resubmit_completed_jobs': True})
 
 
 
 
-
-
-
-'''
