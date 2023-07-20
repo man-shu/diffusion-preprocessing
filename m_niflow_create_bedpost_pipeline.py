@@ -21,25 +21,12 @@ from nipype import Merge
 from nipype.interfaces.freesurfer import ReconAll, MRIsConvert, MRIConvert
 from nipype import config, logging, Workflow
 
-
-from niflow.nipype1.workflows.dmri.fsl.dti import create_bedpostx_pipeline
+from niflow.nipype1.workflows.dmri.fsl.dti import bedpostx_parallel
 import diffusion_pipelines.diffusion_preprocessing as dp
+import warnings
 
 
-    
-def bvec_flip(bvecs_in, flip):
-    from os.path import join, basename
-    from os import getcwd
-
-    import numpy as np
-
-    print(bvecs_in)
-    bvecs = np.loadtxt(bvecs_in).T * flip
-
-    output_file = str(join(getcwd(), basename(bvecs_in)))
-    np.savetxt(output_file, bvecs)
-    
-    return output_file
+#warnings.filterwarnings("ignore")
 
 config.update_config({'logging': {'log_directory': os.path.join(os.getcwd(), 'logs'),
                                   'workflow_level': 'DEBUG',
@@ -48,11 +35,8 @@ config.update_config({'logging': {'log_directory': os.path.join(os.getcwd(), 'lo
                                   },
                       'execution': {'stop_on_first_crash': True},
                     })
+#config.enable_debug_mode()
 
-
-
-dmri_preprocess_workflow = dp.create_diffusion_prep_pipeline(
-        'dmri_preprocess')
 
 config = configparser.ConfigParser()
 config.read(sys.argv[1])
@@ -111,15 +95,6 @@ roi_source.inputs.sort_filelist = True
 roi_source.inputs.base_directory = config['ROIS']['directory']
 roi_source.inputs.template = 'combined_BN*bin*.nii.gz'
 
-flip_bvectors_node = pe.Node(
-    interface=Function(
-        input_names=['bvecs_in', 'flip'], output_names=['bvecs_out'],
-        function=bvec_flip
-    ),
-    name='flip_bvecs',
-)
-flip_bvectors_node.inputs.flip = (-1, 1, 1)
-
 
 template_source = pe.Node(DataGrabber(infields=[], outfields=['T1', 'T1_brain', 'T1_mask', 'T2', 'T2_brain', 'T2_mask']),
                            name='mni_template')
@@ -175,14 +150,6 @@ reduce_dimension = pe.Node(
     name='reduce_dimension'
 )
 
-sum_dwi_dimension = pe.Node(
-    interface=mrt.MRMath(
-        operation='sum',
-        axis = 3 ,
-        out_file='dwi.nii.gz'
-    ),
-    name='sum_dwi_dimension'
-)
 
 mrconvert_mif_to_nifti_b0 = pe.Node(
     interface=mrt.MRConvert( 
@@ -263,12 +230,12 @@ apply_registration.inputs.interpolation = 'NearestNeighbor'
 
 
 
-bet = pe.Node(BET(frac=0.2, mask=True), name='bet')
-
-
 #bedp = pe.Node(BEDPOSTX5(n_fibres=5), name = 'bedpostx')
 params = dict(n_fibres = 2, fudge = 1, burn_in = 1000, n_jumps = 1250, sample_every = 25)
-bedp = create_bedpostx_pipeline('nipype_bedpostx', params=params)
+bedp = bedpostx_parallel('nipype_bedpostx', params=params)
+
+
+
 
 pbx2 = pe.Node(
         interface=fsl.ProbTrackX2(),
@@ -299,8 +266,7 @@ tractography_wf.connect(infosource, 'subject_id', subject_id_visit, 'subject_id'
 tractography_wf.connect(infosource, 'visit', subject_id_visit, 'visit')
 
 tractography_wf.connect(data_source, 'dwi', mrconvert_nifti_to_mif, 'in_file')
-tractography_wf.connect(mrconvert_nifti_to_mif, 'out_file', dwidenoise, 'in_file')
-tractography_wf.connect(dwidenoise, 'out_file', dwiextract, 'in_file')
+tractography_wf.connect(mrconvert_nifti_to_mif, 'out_file', dwiextract, 'in_file')
 
 
 tractography_wf.connect(data_source, 'bval', dwiextract, 'in_bval')
@@ -337,18 +303,36 @@ tractography_wf.connect(data_source, 'bvec', bedp, 'inputnode.bvecs')
 tractography_wf.connect(data_source, 'dwi', bedp, 'inputnode.dwi')
 
 tractography_wf.connect(apply_registration, 'output_image', bedp, 'inputnode.mask')
+
+
+
+
+tractography_wf.connect(bedp, 'outputnode.thsamples', pbx2, 'thsamples')
+tractography_wf.connect(bedp, 'outputnode.fsamples', pbx2, 'fsamples')
+tractography_wf.connect(bedp, 'outputnode.phsamples', pbx2, 'phsamples')
+
+tractography_wf.connect(roi_source, 'outfiles', pbx2, 'seed')
+#tractography_wf.connect(template_source, 'T1_mask', pbx2, 'mask')
+tractography_wf.connect(apply_registration, 'output_image', pbx2, 'mask')
+
+
+
+
+
+
+
+
+'''
+tractography_wf.connect(data_source, 'bval', bedp, 'bvals')
+tractography_wf.connect(data_source, 'bvec', bedp, 'bvecs')
+tractography_wf.connect(data_source, 'dwi', bedp, 'dwi')
+tractography_wf.connect(apply_registration, 'output_image', bedp, 'mask')
+'''
+
 tractography_wf.connect(apply_registration, 'output_image', data_sink, 'mask_after_reg')
 
 
-#tractography_wf.connect(data_source, 'bval', bedp, 'inputnode.bvals')
-
-#tractography_wf.connect(data_source, 'dwi', sum_dwi_dimension, 'in_file')
-#tractography_wf.connect(sum_dwi_dimension, 'out_file', bedp, 'inputnode.dwi')
-
-
-
 tractography_wf.run(plugin='MultiProc', plugin_args={'n_procs':20, 'memory_gb': 8,'dont_resubmit_completed_jobs':True})
-
 
 
 
