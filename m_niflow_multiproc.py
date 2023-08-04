@@ -302,9 +302,9 @@ def create_workflow(id_values):
     tractography_wf.connect(apply_registration, 'output_image', bedp, 'inputnode.mask')
 
 
-    tractography_wf.connect(bedp, 'outputnode.thsamples', pbx2, 'thsamples')
-    tractography_wf.connect(bedp, 'outputnode.fsamples', pbx2, 'fsamples')
-    tractography_wf.connect(bedp, 'outputnode.phsamples', pbx2, 'phsamples')
+    tractography_wf.connect(bedp, 'outputnode.merged_thsamples', pbx2, 'thsamples')
+    tractography_wf.connect(bedp, 'outputnode.merged_fsamples', pbx2, 'fsamples')
+    tractography_wf.connect(bedp, 'outputnode.merged_phsamples', pbx2, 'phsamples')
 
     tractography_wf.connect(roi_source, 'outfiles', pbx2, 'seed')
     #tractography_wf.connect(template_source, 'T1_mask', pbx2, 'mask')
