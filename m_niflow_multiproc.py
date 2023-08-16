@@ -28,7 +28,6 @@ from niflow.nipype1.workflows.dmri.fsl.dti import bedpostx_parallel
 import diffusion_pipelines.diffusion_preprocessing as dp
 
 
-#warnings.filterwarnings("ignore")
 
 def create_workflow(id_values):
 
@@ -48,7 +47,6 @@ def create_workflow(id_values):
 
     # Define the paths to the input and output files
 
-    out_dir = '/data/parietal/store/work/zmohamed/mathfun/output'
     PATH = '/data/parietal/store/work/zmohamed/mathfun/'
 
 
@@ -63,8 +61,7 @@ def create_workflow(id_values):
 
     infosource = pe.Node(IdentityInterface(fields=['subject_id', 'visit','session']),
                         name='subjects')
-    #infosource.inputs.subject_id = subject_list[id_values] 
-    #infosource.inputs.subject_id = id_values
+    
 
     infosource.iterables = [('subject_id', [subject_list[id_values]] ), ('visit', visits), ('session', sessions)]
     
@@ -76,7 +73,6 @@ def create_workflow(id_values):
 
     data_source.inputs.sort_filelist = True
     data_source.inputs.base_directory = config['DEFAULT']['base_directory']
-    #data_source.inputs.base_directory = '/data/parietal/store/work/zmohamed/mathfun/raw_data_visit1'
     data_source.inputs.template = ''
 
 
@@ -133,7 +129,6 @@ def create_workflow(id_values):
                             name='mni_template')
     template_source.inputs.sort_filelist = True
     template_source.inputs.base_directory = config['TEMPLATE']['directory']
-    #template_source.inputs.base_directory  = '/data/parietal/store/work/zmohamed/mathfun/hcp_templates'
     template_source.inputs.template = ''
     
     
@@ -233,7 +228,6 @@ def create_workflow(id_values):
                             name='rois')
     roi_source.inputs.sort_filelist = True
     roi_source.inputs.base_directory = config['ROIS']['directory']
-    #roi_source.inputs.base_directory  = '/data/parietal/store/work/zmohamed/mathfun/dwi_rois/1mm'
     roi_source.inputs.template = 'combined_BN*bin*.nii.gz'
 
 
@@ -245,15 +239,15 @@ def create_workflow(id_values):
     pbx2.inputs.n_samples = 5000
     pbx2.inputs.n_steps = 2000
     pbx2.inputs.step_length = 0.5
+    #pbx2.inputs.network = True
     pbx2.inputs.omatrix1 = True
+    pbx2.inputs.out_dir = '/data/parietal/store/work/zmohamed/mathfun/tractography_wf/_session_1_subject_id_' +  subject_list[id_values] + '_visit_1/probtrackx2'
     pbx2.inputs.distthresh1 = 5
     pbx2.inputs.args = " --ompl --fibthresh=0.01 "
 
 
 
-    data_sink = pe.Node(DataSink(), name="datasink")
-    data_sink.inputs.base_directory = out_dir
-
+    
 
 
     # Create a Nipype workflow
@@ -310,6 +304,11 @@ def create_workflow(id_values):
     #tractography_wf.connect(template_source, 'T1_mask', pbx2, 'mask')
     tractography_wf.connect(apply_registration, 'output_image', pbx2, 'mask')
 
+ 
+
+
+
+
     '''
     #BEDPOSTX 5 Connections
 
@@ -320,27 +319,11 @@ def create_workflow(id_values):
 
     '''
     # Run the workflow
-    tractography_wf.run(plugin='MultiProc', plugin_args={'n_procs':20, 'memory_gb': 8, "timeout": 3600, 'dont_resubmit_completed_jobs':True})
+    tractography_wf.run(plugin='MultiProc', plugin_args={'n_procs':220, 'memory_gb': 320, 'dont_resubmit_completed_jobs':True})
 
 
 
 
-
-'''
-id_values = ['7014','7035']
-#visits = [1]
-#sessions =[1]
-
-
-log_folder = "log_test/%j"
-executor = submitit.AutoExecutor(folder=log_folder)
-# the following line tells the scheduler to only run\
-
-#jobs = executor.map_array(create_workflow, id_values)  # just a list of jobs
-
-fns = [functools.partial(create_workflow, a) for a in id_values]
-executor.submit_array(fns)
-'''
 
 
 
