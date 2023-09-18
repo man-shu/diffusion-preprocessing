@@ -1,10 +1,4 @@
-nipype.interfaces.mrtrix3
-nipype.pipeline.engine
-nipype.interfaces
 nipype
-nipype.interfaces.utility.wrappers
-nipype.interfaces.ants
 configparser
-nipype.interfaces.freesurfer
 argparse
 niflow.nipype1.workflows.dmri.fsl.dti

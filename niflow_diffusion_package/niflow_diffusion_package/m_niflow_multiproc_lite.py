@@ -3,7 +3,6 @@
 import nipype.pipeline.engine as pe
 from nipype.interfaces import fsl
 from nipype import DataGrabber, IdentityInterface
-import numpy
 from nipype.interfaces.utility.wrappers import Function
 import configparser
 import argparse
