@@ -8,8 +8,6 @@ import numpy
 from nipype.interfaces.utility.wrappers import Function
 import nipype.interfaces.ants as ants
 import configparser
-import sys
-from nipype import Merge
 from nipype.interfaces.freesurfer import ReconAll, MRIConvert
 from nipype import logging, Workflow
 import argparse
