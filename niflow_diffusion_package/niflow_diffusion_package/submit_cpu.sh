@@ -6,7 +6,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --partition=normal,parietal
-#SBATCH --mem-per-cpu=20
+#SBATCH --mem-per-cpu=40
 #SBATCH --error error_%A_%a.out
 #SBATCH --oversubscribe
 #SBATCH --cpus-per-task=10

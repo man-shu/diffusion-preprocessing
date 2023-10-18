@@ -6,7 +6,7 @@ class TestNiflow(unittest.TestCase):
 
     def setUp(self):
         self.flip = (-1, 1, 1)
-        self.bvecs_in = ('niflow_diffusion_package/niflow_diffusion_package/dti_raw.bvecs')
+        self.bvecs_in = ('/niflow_diffusion_package/tests/dti_raw.bvecs')
 
 
     def test_bvec_flip_valid(self):
