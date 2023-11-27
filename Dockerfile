@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM ubuntu:xenial-20201030
 
 RUN apt-get update && apt-get install -y make && apt-get install -y wget && \
     apt-get install -y --no-install-recommends \
@@ -41,16 +41,21 @@ RUN wget -O - https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/6.0.1/frees
 
 WORKDIR /preproc 
 
-RUN wget -O "http://neuro.debian.net/lists/$( lsb_release -c | cut -f2 ).us-ca.full" >> /etc/apt/sources.list.d/neurodebian.sources.list && \
-    apt-key add your_public_key.gpg && \
+COPY preproc/test_docker/neurodebian.gpg /usr/local/etc/neurodebian.gpg
+
+# Installing Neurodebian packages (FSL)
+
+RUN wget -O - "http://neuro.debian.net/lists/$( lsb_release -c | cut -f2 ).us-ca.full" >> /etc/apt/sources.list.d/neurodebian.sources.list && \
+    apt-key add /usr/local/etc/neurodebian.gpg && \
     (apt-key adv --refresh-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || true)
 
-ENV FSL_DIR="/preproc/fsl" \
+
+ENV FSL_DIR="/usr/share/fsl/5.0" \
     OS="Linux" \
     FS_OVERRIDE=0 \
     FIX_VERTEX_AREA="" \
     FSF_OUTPUT_FORMAT="nii.gz" \
-    FREESURFER_HOME="/preproc/freesurfer"
+    FREESURFER_HOME="/opt/freesurfer"
 ENV SUBJECTS_DIR="$FREESURFER_HOME/subjects" \
     FUNCTIONALS_DIR="$FREESURFER_HOME/sessions" \
     MNI_DIR="$FREESURFER_HOME/mni" \
@@ -62,13 +67,10 @@ ENV PERL5LIB="$MINC_LIB_DIR/perl5/5.8.5" \
     MNI_PERL5LIB="$MINC_LIB_DIR/perl5/5.8.5" \
     PATH="$FREESURFER_HOME/bin:$FSFAST_HOME/bin:$FREESURFER_HOME/tktools:$MINC_BIN_DIR:$PATH"
 
-
-#Install Diffusion Pipelines
-
-WORKDIR /preproc
-COPY diffusion_pipelines /preproc/diffusion_pipelines
-WORKDIR /preproc/diffusion_pipelines
-RUN pip install . 
+COPY /preproc/test_docker/bin/topup /usr/share/fsl/5.0/bin/topup
+COPY /preproc/test_docker/bin/imglob /usr/share/fsl/5.0/bin/imglob
+COPY /preproc/test_docker/bin/eddy_openmp  /usr/lib/fsl/eddy_openmp
+COPY /preproc/test_docker/lib/* /usr/lib/fsl/
 
 #Install Workbench
 
@@ -82,14 +84,16 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 #Install Antspath
 
 WORKDIR /preproc
-ENV ANTSPATH=/home/zmohamed/preproc/ants
+ENV ANTSPATH=/usr/lib/ants
 RUN mkdir -p $ANTSPATH
 RUN wget -O - https://dl.dropbox.com/s/gwf51ykkk5bifyj/ants-Linux-centos6_x86_64-v2.3.4.tar.gz | tar -zxv --strip-components=1
 ENV PATH=$ANTSPATH:$PATH
 
+'''
 RUN useradd -m -s /bin/bash -G users preproc
 WORKDIR /preproc
-ENV HOME="/home/zmohamed/preproc"
+ENV HOME="/preproc"
+'''
 
 WORKDIR /preproc
 #Install Minicionda
@@ -108,8 +112,16 @@ RUN conda install -y -c anaconda -c conda-forge \
                      matplotlib=2.2 \
                      numpy=1.20 \
                      pip=20.3 \
-                     niflow \
+                     niflow-nipype1-workflows \
         		     argparse \
                      nipype \
         		     configparser \
                      scikit-learn=0.19 
+
+
+#Install Diffusion Pipelines
+
+WORKDIR /preproc
+COPY /preproc/diffusion_pipelines usr/diffusion_pipelines
+WORKDIR /usr/diffusion_pipelines
+RUN pip install . 
