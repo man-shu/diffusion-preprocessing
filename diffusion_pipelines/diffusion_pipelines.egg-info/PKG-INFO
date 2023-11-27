@@ -1,0 +1,6 @@
+Metadata-Version: 2.1
+Name: diffusion-pipelines
+Version: 0.1
+Summary: Diffusion processing pipelines
+Author: Demian Wassermann
+Author-email: demian.wassermann@inria.fr
