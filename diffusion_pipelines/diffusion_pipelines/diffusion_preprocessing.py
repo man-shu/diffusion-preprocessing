@@ -1,162 +1,251 @@
 #!/bin/env python
 import inspect
-import os
-
 from nipype import IdentityInterface, Node, Workflow
 import nipype.interfaces.fsl as fsl
 import nipype.interfaces.ants as ants
 from niflow.nipype1.workflows.dmri.fsl.epi import create_eddy_correct_pipeline
 from nipype.interfaces import utility
 from nipype.interfaces.utility.wrappers import Function
+from niworkflows.interfaces.reportlets.masks import SimpleShowMaskRPT
+from niworkflows.interfaces.reportlets.registration import (
+    SimpleBeforeAfterRPT as SimpleBeforeAfter,
+)
+
+
+def get_dwi_zero(dwi_file):
+    import os
+    from niworkflows.viz.utils import _3d_in_file
+    from nilearn.image import index_img
+
+    zero_index_img = index_img(dwi_file, 26)
+    out_file = os.path.join(os.getcwd(), "zero_index.nii.gz")
+    zero_index_img.to_filename(out_file)
+
+    return out_file
+
+
+DWIZero = Function(
+    input_names=["dwi_file"], output_names=["out"], function=get_dwi_zero
+)
 
 
 def convert_affine_itk_2_ras(input_affine):
     import subprocess
     import os, os.path
+
     output_file = os.path.join(
-        os.getcwd(),
-        f'{os.path.basename(input_affine)}.ras'
+        os.getcwd(), f"{os.path.basename(input_affine)}.ras"
     )
     subprocess.check_output(
-        f'c3d_affine_tool '
-        f'-itk {input_affine} '
-        f'-o {output_file} -info-full ',
-        shell=True
-    ).decode('utf8')
+        f"c3d_affine_tool "
+        f"-itk {input_affine} "
+        f"-o {output_file} -info-full ",
+        shell=True,
+    ).decode("utf8")
     return output_file
 
 
 ConvertAffine2RAS = Function(
-    input_names=['input_affine'], output_names=['affine_ras'],
-    function=convert_affine_itk_2_ras
-  )
-
-
-def rotate_gradients_(input_affine, gradient_file):
-  import os
-  import os.path
-  import numpy as np
-  from scipy.linalg import polar
-
-  affine = np.loadtxt(input_affine)
-  u, p = polar(affine[:3, :3], side='right') 
-  gradients = np.loadtxt(gradient_file)
-  new_gradients = np.linalg.solve(u, gradients.T).T
-  name, ext = os.path.splitext(os.path.basename(gradient_file))
-  output_name = os.path.join(
-      os.getcwd(),
-      f'{name}_rot{ext}'
-  )
-  np.savetxt(output_name, new_gradients)
-          
-  return output_name
-
-RotateGradientsAffine = Function(
-  input_names=['input_affine', 'gradient_file'],
-  output_names=['rotated_gradients'],
-  function=rotate_gradients_
+    input_names=["input_affine"],
+    output_names=["affine_ras"],
+    function=convert_affine_itk_2_ras,
 )
 
 
-def create_diffusion_prep_pipeline(name='dMRI_preprocessing', bet_frac=0.34):
-  input_subject = Node(
-    IdentityInterface(
-      fields=['dwi', 'bval', 'bvec'],
-    ),
-    name='input_subject'
-  )
+def rotate_gradients_(input_affine, gradient_file):
+    import os
+    import os.path
+    import numpy as np
+    from scipy.linalg import polar
 
-  input_template = Node(
-    IdentityInterface(
-      fields=['T1', 'T2'],
-    ),
-    name='input_template'
-  )
+    affine = np.loadtxt(input_affine)
+    u, p = polar(affine[:3, :3], side="right")
+    gradients = np.loadtxt(gradient_file)
+    new_gradients = np.linalg.solve(u, gradients).T
+    name, ext = os.path.splitext(os.path.basename(gradient_file))
+    output_name = os.path.join(os.getcwd(), f"{name}_rot{ext}")
+    np.savetxt(output_name, new_gradients)
 
-  output = Node(
-    IdentityInterface(
-      fields=[
-        'dwi_rigid_registered', 'bval', 'bvec_rotated', 'mask', 'rigid_dwi_2_template'
-      ]
-    ),
-    name='output'
-  )
+    return output_name
 
-  fslroi = Node(interface=fsl.ExtractROI(), name='fslroi')
-  fslroi.inputs.t_min = 0
-  fslroi.inputs.t_size = 1
 
-  bet = Node(interface=fsl.BET(), name='bet')
-  bet.inputs.mask = True
-  bet.inputs.frac = bet_frac
+RotateGradientsAffine = Function(
+    input_names=["input_affine", "gradient_file"],
+    output_names=["rotated_gradients"],
+    function=rotate_gradients_,
+)
 
-  eddycorrect = create_eddy_correct_pipeline('eddycorrect')
-  eddycorrect.inputs.inputnode.ref_num = 0
 
-  rigid_registration = Node(
-      interface=ants.RegistrationSynQuick(),
-      name='affine_reg'
-  )
-  rigid_registration.inputs.num_threads = 8
-  rigid_registration.inputs.transform_type = 'a'
+def create_diffusion_prep_pipeline(
+    name="dMRI_preprocessing", bet_frac=0.34, output_dir="."
+):
+    input_subject = Node(
+        IdentityInterface(
+            fields=["dwi", "bval", "bvec"],
+        ),
+        name="input_subject",
+    )
 
-  conv_affine = Node(
-      interface=ConvertAffine2RAS,
-      name='convert_affine_itk_2_ras'
-  )
+    input_template = Node(
+        IdentityInterface(
+            fields=["T1", "T2"],
+        ),
+        name="input_template",
+    )
 
-  rotate_gradients = Node(
-      interface=RotateGradientsAffine,
-      name='rotate_gradients'
-  )
+    output = Node(
+        IdentityInterface(
+            fields=[
+                "dwi_rigid_registered",
+                "bval",
+                "bvec_rotated",
+                "mask",
+                "rigid_dwi_2_template",
+                "eddy_corrected",
+                "dwi_initial",
+                "bet_mask",
+            ]
+        ),
+        name="output",
+    )
 
-  transforms_to_list = Node(
-      interface=utility.Merge(1),
-      name='transforms_to_list'
-  )
+    fslroi = Node(interface=fsl.ExtractROI(), name="fslroi")
+    fslroi.inputs.t_min = 0
+    fslroi.inputs.t_size = 1
 
-  apply_registration = Node(
-      interface=ants.ApplyTransforms(),
-      name='apply_registration'
-  )
-  apply_registration.inputs.dimension = 3
-  apply_registration.inputs.input_image_type = 3
-  apply_registration.inputs.interpolation = 'NearestNeighbor'
+    bet = Node(interface=fsl.BET(), name="bet")
+    bet.inputs.mask = True
+    bet.inputs.frac = bet_frac
 
-  apply_registration_mask = Node(
-      interface=ants.ApplyTransforms(),
-      name='apply_registration_mask'
-  )
-  apply_registration_mask.inputs.dimension = 3
-  apply_registration_mask.inputs.input_image_type = 3
-  apply_registration_mask.inputs.interpolation = 'NearestNeighbor'
+    eddycorrect = create_eddy_correct_pipeline("eddycorrect")
+    eddycorrect.inputs.inputnode.ref_num = 0
 
-  workflow = Workflow(
-      name=name,
-  )
-  workflow.connect([
-    (input_subject, fslroi, [('dwi', 'in_file')]),
-    (fslroi, bet, [('roi_file', 'in_file')]),
-    (input_subject, eddycorrect, [('dwi', 'inputnode.in_file')]),
-    (fslroi, rigid_registration, [('roi_file', 'moving_image')]),
-    (input_template, rigid_registration, [('T2', 'fixed_image')]),
-    (rigid_registration, transforms_to_list, [('out_matrix', 'in1')]),
-    (rigid_registration, conv_affine, [('out_matrix', 'input_affine')]),
-    (input_subject, rotate_gradients, [('bvec', 'gradient_file')]),
-    (conv_affine, rotate_gradients, [('affine_ras', 'input_affine')]),
-    (transforms_to_list, apply_registration, [('out', 'transforms')]),
-    (eddycorrect, apply_registration, [('outputnode.eddy_corrected', 'input_image')]),
-    (input_template, apply_registration, [('T2', 'reference_image')]),
+    rigid_registration = Node(
+        interface=ants.RegistrationSynQuick(), name="affine_reg"
+    )
+    rigid_registration.inputs.num_threads = 8
+    rigid_registration.inputs.transform_type = "a"
 
-    (transforms_to_list, apply_registration_mask, [('out', 'transforms')]),
-    (bet, apply_registration_mask, [('mask_file', 'input_image')]),
-    (input_template, apply_registration_mask, [('T2', 'reference_image')]),
+    conv_affine = Node(
+        interface=ConvertAffine2RAS, name="convert_affine_itk_2_ras"
+    )
 
-    (conv_affine, output, [('affine_ras', 'rigid_dwi_2_template')]),
-    (apply_registration, output, [('output_image', 'dwi_rigid_registered')]),
-    (rotate_gradients, output, [('rotated_gradients', 'bvec_rotated')]),
-    (input_subject, output, [('bval', 'bval')]),
-    (apply_registration_mask, output, [('output_image', 'mask')]),
-  ])
+    rotate_gradients = Node(
+        interface=RotateGradientsAffine, name="rotate_gradients"
+    )
 
-  return workflow
+    transforms_to_list = Node(
+        interface=utility.Merge(1), name="transforms_to_list"
+    )
+
+    apply_registration = Node(
+        interface=ants.ApplyTransforms(), name="apply_registration"
+    )
+    apply_registration.inputs.dimension = 3
+    apply_registration.inputs.input_image_type = 3
+    apply_registration.inputs.interpolation = "NearestNeighbor"
+
+    apply_registration_mask = Node(
+        interface=ants.ApplyTransforms(), name="apply_registration_mask"
+    )
+    apply_registration_mask.inputs.dimension = 3
+    apply_registration_mask.inputs.input_image_type = 3
+    apply_registration_mask.inputs.interpolation = "NearestNeighbor"
+
+    plot_bet = Node(SimpleShowMaskRPT(), name="plot_bet")
+
+    get_eddy_zero = Node(DWIZero, name="get_eddy_zero")
+    get_intial_zero = get_eddy_zero.clone("get_intial_zero")
+
+    plot_before_after_eddy = Node(
+        SimpleBeforeAfter(), name="plot_before_after_eddy"
+    )
+    plot_before_after_eddy.inputs.before_label = "Distorted"
+    plot_before_after_eddy.inputs.after_label = "Eddy Corrected"
+
+    plot_mask = Node(SimpleShowMaskRPT(), name="plot_mask")
+
+    workflow = Workflow(name=name, base_dir=output_dir)
+    workflow.connect(
+        [
+            (input_subject, fslroi, [("dwi", "in_file")]),
+            (fslroi, bet, [("roi_file", "in_file")]),
+            (input_subject, eddycorrect, [("dwi", "inputnode.in_file")]),
+            (fslroi, rigid_registration, [("roi_file", "moving_image")]),
+            (input_template, rigid_registration, [("T2", "fixed_image")]),
+            (rigid_registration, transforms_to_list, [("out_matrix", "in1")]),
+            (
+                rigid_registration,
+                conv_affine,
+                [("out_matrix", "input_affine")],
+            ),
+            (input_subject, rotate_gradients, [("bvec", "gradient_file")]),
+            (conv_affine, rotate_gradients, [("affine_ras", "input_affine")]),
+            (transforms_to_list, apply_registration, [("out", "transforms")]),
+            (
+                eddycorrect,
+                apply_registration,
+                [("outputnode.eddy_corrected", "input_image")],
+            ),
+            (input_template, apply_registration, [("T2", "reference_image")]),
+            (
+                transforms_to_list,
+                apply_registration_mask,
+                [("out", "transforms")],
+            ),
+            (bet, apply_registration_mask, [("mask_file", "input_image")]),
+            (
+                input_template,
+                apply_registration_mask,
+                [("T2", "reference_image")],
+            ),
+            (conv_affine, output, [("affine_ras", "rigid_dwi_2_template")]),
+            (
+                apply_registration,
+                output,
+                [("output_image", "dwi_rigid_registered")],
+            ),
+            (
+                rotate_gradients,
+                output,
+                [("rotated_gradients", "bvec_rotated")],
+            ),
+            (input_subject, output, [("bval", "bval")]),
+            (bet, output, [("mask_file", "bet_mask")]),
+            (apply_registration_mask, output, [("output_image", "mask")]),
+            (
+                eddycorrect,
+                get_eddy_zero,
+                [("outputnode.eddy_corrected", "dwi_file")],
+            ),
+            (get_eddy_zero, output, [("out", "eddy_corrected")]),
+            (input_subject, get_intial_zero, [("dwi", "dwi_file")]),
+            (get_intial_zero, output, [("out", "dwi_initial")]),
+            (
+                output,
+                plot_bet,
+                [
+                    ("bet_mask", "mask_file"),
+                    ("dwi_initial", "background_file"),
+                ],
+            ),
+            (
+                output,
+                plot_before_after_eddy,
+                [
+                    ("dwi_initial", "before"),
+                    ("eddy_corrected", "after"),
+                ],
+            ),
+            (
+                output,
+                plot_mask,
+                [
+                    ("dwi_rigid_registered", "background_file"),
+                    ("mask", "mask_file"),
+                ],
+            ),
+        ]
+    )
+
+    return workflow
