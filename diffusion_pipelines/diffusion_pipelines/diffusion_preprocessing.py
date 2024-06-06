@@ -6,27 +6,7 @@ import nipype.interfaces.ants as ants
 from niflow.nipype1.workflows.dmri.fsl.epi import create_eddy_correct_pipeline
 from nipype.interfaces import utility
 from nipype.interfaces.utility.wrappers import Function
-from niworkflows.interfaces.reportlets.masks import SimpleShowMaskRPT
-from niworkflows.interfaces.reportlets.registration import (
-    SimpleBeforeAfterRPT as SimpleBeforeAfter,
-)
-
-
-def get_dwi_zero(dwi_file):
-    import os
-    from niworkflows.viz.utils import _3d_in_file
-    from nilearn.image import index_img
-
-    zero_index_img = index_img(dwi_file, 26)
-    out_file = os.path.join(os.getcwd(), "zero_index.nii.gz")
-    zero_index_img.to_filename(out_file)
-
-    return out_file
-
-
-DWIZero = Function(
-    input_names=["dwi_file"], output_names=["out"], function=get_dwi_zero
-)
+from utils.reporter import init_report_wf
 
 
 def convert_affine_itk_2_ras(input_affine):
@@ -152,18 +132,7 @@ def create_diffusion_prep_pipeline(
     apply_registration_mask.inputs.input_image_type = 3
     apply_registration_mask.inputs.interpolation = "NearestNeighbor"
 
-    plot_bet = Node(SimpleShowMaskRPT(), name="plot_bet")
-
-    get_eddy_zero = Node(DWIZero, name="get_eddy_zero")
-    get_intial_zero = get_eddy_zero.clone("get_intial_zero")
-
-    plot_before_after_eddy = Node(
-        SimpleBeforeAfter(), name="plot_before_after_eddy"
-    )
-    plot_before_after_eddy.inputs.before_label = "Distorted"
-    plot_before_after_eddy.inputs.after_label = "Eddy Corrected"
-
-    plot_mask = Node(SimpleShowMaskRPT(), name="plot_mask")
+    reporter = init_report_wf(name="reporter")
 
     workflow = Workflow(name=name, base_dir=output_dir)
     workflow.connect(
@@ -199,6 +168,7 @@ def create_diffusion_prep_pipeline(
                 apply_registration_mask,
                 [("T2", "reference_image")],
             ),
+            # collect all the outputs in the output node
             (conv_affine, output, [("affine_ras", "rigid_dwi_2_template")]),
             (
                 apply_registration,
@@ -215,34 +185,23 @@ def create_diffusion_prep_pipeline(
             (apply_registration_mask, output, [("output_image", "mask")]),
             (
                 eddycorrect,
-                get_eddy_zero,
-                [("outputnode.eddy_corrected", "dwi_file")],
+                output,
+                [("outputnode.eddy_corrected", "eddy_corrected")],
             ),
-            (get_eddy_zero, output, [("out", "eddy_corrected")]),
-            (input_subject, get_intial_zero, [("dwi", "dwi_file")]),
-            (get_intial_zero, output, [("out", "dwi_initial")]),
+            (input_subject, output, [("dwi", "dwi_initial")]),
+            # connect the reporter workflow
             (
                 output,
-                plot_bet,
+                reporter,
                 [
-                    ("bet_mask", "mask_file"),
-                    ("dwi_initial", "background_file"),
-                ],
-            ),
-            (
-                output,
-                plot_before_after_eddy,
-                [
-                    ("dwi_initial", "before"),
-                    ("eddy_corrected", "after"),
-                ],
-            ),
-            (
-                output,
-                plot_mask,
-                [
-                    ("dwi_rigid_registered", "background_file"),
-                    ("mask", "mask_file"),
+                    ("dwi_initial", "reporter_inputnode.dwi_initial"),
+                    ("eddy_corrected", "reporter_inputnode.eddy_corrected"),
+                    ("mask", "reporter_inputnode.mask"),
+                    ("bet_mask", "reporter_inputnode.bet_mask"),
+                    (
+                        "dwi_rigid_registered",
+                        "reporter_inputnode.dwi_rigid_registered",
+                    ),
                 ],
             ),
         ]
