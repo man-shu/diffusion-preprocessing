@@ -4,7 +4,6 @@ from niworkflows.interfaces.reportlets.registration import (
 )
 from nipype.interfaces.utility.wrappers import Function
 from nipype import IdentityInterface, Node, Workflow
-import os
 
 
 def _get_dwi_zero(dwi_file):
