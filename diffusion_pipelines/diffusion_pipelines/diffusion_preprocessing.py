@@ -6,7 +6,7 @@ import nipype.interfaces.ants as ants
 from niflow.nipype1.workflows.dmri.fsl.epi import create_eddy_correct_pipeline
 from nipype.interfaces import utility
 from nipype.interfaces.utility.wrappers import Function
-from utils.reporter import init_report_wf
+from .utils.reporter import init_report_wf
 
 
 def convert_affine_itk_2_ras(input_affine):

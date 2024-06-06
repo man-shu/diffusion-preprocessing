@@ -25,7 +25,7 @@ def _get_dwi_zero(dwi_file):
     return out_file
 
 
-def init_report_wf(name="reporter", output_dir="."):
+def init_report_wf(name="reporter"):
     """Create a workflow to generate a report for the diffusion preprocessing
     pipeline.
 
@@ -43,8 +43,6 @@ def init_report_wf(name="reporter", output_dir="."):
         A nipype Workflow to generate the report for the diffusion
         preprocessing pipeline.
     """
-    report_dir = os.path.join(output_dir, "report")
-    os.makedirs(report_dir, exist_ok=True)
     inputnode = Node(
         IdentityInterface(
             fields=[
@@ -78,7 +76,7 @@ def init_report_wf(name="reporter", output_dir="."):
     # this node plots the transformed mask as an outline on transformed dwi
     # image
     plot_mask = Node(SimpleShowMaskRPT(), name="plot_mask")
-    workflow = Workflow(name=name, base_dir=report_dir)
+    workflow = Workflow(name=name)
     workflow.connect(
         [
             # get the zero index of the input dwi file
