@@ -132,7 +132,7 @@ def create_diffusion_prep_pipeline(
     apply_registration_mask.inputs.input_image_type = 3
     apply_registration_mask.inputs.interpolation = "NearestNeighbor"
 
-    reporter = init_report_wf(name="reporter")
+    reporter = init_report_wf(name="reporter", output_dir=output_dir)
 
     workflow = Workflow(name=name, base_dir=output_dir)
     workflow.connect(

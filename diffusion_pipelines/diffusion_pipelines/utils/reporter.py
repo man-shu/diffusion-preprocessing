@@ -4,9 +4,17 @@ from niworkflows.interfaces.reportlets.registration import (
 )
 from nipype.interfaces.utility.wrappers import Function
 from nipype import IdentityInterface, Node, Workflow
+import os
 
 
 def _get_dwi_zero(dwi_file):
+    """Get the zero index of the input dwi file.
+
+    Not exactly zero index, but the 26th volume of the input dwi file.
+    This is because the actual zero index is the fixed image to which the
+    remaining images are moved to. So to see the changes in the eddy correction
+    + coregistration, we need to see the an image that is moved.
+    """
     import os
     from nilearn.image import index_img
 
@@ -17,10 +25,26 @@ def _get_dwi_zero(dwi_file):
     return out_file
 
 
-def init_report_wf(
-    name="reporter",
-):
+def init_report_wf(name="reporter", output_dir="."):
+    """Create a workflow to generate a report for the diffusion preprocessing
+    pipeline.
 
+    Parameters
+    ----------
+    name : str, optional, by default "reporter"
+        Name of the workflow
+    output_dir : str, optional, by default "."
+        Base directory to store the reports. The workflow will create a
+        subdirectory called 'report' in this directory to store the reports.
+
+    Returns
+    -------
+    workflow : nipype Workflow
+        A nipype Workflow to generate the report for the diffusion
+        preprocessing pipeline.
+    """
+    report_dir = os.path.join(output_dir, "report")
+    os.makedirs(report_dir, exist_ok=True)
     inputnode = Node(
         IdentityInterface(
             fields=[
@@ -33,7 +57,6 @@ def init_report_wf(
         ),
         name="reporter_inputnode",
     )
-
     # define a function to get the zero index of the input dwi file
     DWIZero = Function(
         input_names=["dwi_file"], output_names=["out"], function=_get_dwi_zero
@@ -49,12 +72,13 @@ def init_report_wf(
     # set labels for the before and after images
     plot_before_after_eddy.inputs.before_label = "Distorted"
     plot_before_after_eddy.inputs.after_label = "Eddy Corrected"
-    # this node plots the extracted brain mask as outline on the initial dwi image
+    # this node plots the extracted brain mask as outline on the initial dwi
+    # image
     plot_bet = Node(SimpleShowMaskRPT(), name="plot_bet")
-    # this node plots the transformed mask as an outline on transformed dwi image
+    # this node plots the transformed mask as an outline on transformed dwi
+    # image
     plot_mask = Node(SimpleShowMaskRPT(), name="plot_mask")
-
-    workflow = Workflow(name=name)
+    workflow = Workflow(name=name, base_dir=report_dir)
     workflow.connect(
         [
             # get the zero index of the input dwi file
