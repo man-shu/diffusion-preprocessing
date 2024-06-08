@@ -8,3 +8,9 @@ pip install -e .
 ```
 
 - Update the ` run_pipeline.py ` with the correct paths to the subject data, templates and the output directory.
+
+- Run the pipeline
+
+```bash
+python run_pipeline.py
+```
