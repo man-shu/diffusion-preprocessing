@@ -7,7 +7,7 @@ import time
 # Create output directory with timestamp in YYYYMMDD_HHMMSS format
 timestamp = time.strftime("%Y%m%d-%H%M%S")
 output_dir = os.path.join(
-    f"/storage/store3/work/haggarwa/diffusion/internal_pipeline_output_{timestamp:.0f}"
+    f"/storage/store3/work/haggarwa/diffusion/internal_pipeline_output_{timestamp}"
 )
 
 # Create the diffusion preprocessing pipeline
