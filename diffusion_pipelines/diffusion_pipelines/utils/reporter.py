@@ -3,7 +3,7 @@ from niworkflows.interfaces.reportlets.registration import (
     SimpleBeforeAfterRPT as SimpleBeforeAfter,
 )
 from nipype.interfaces.utility.wrappers import Function
-from nipype import IdentityInterface, Node, Workflow
+from nipype import IdentityInterface, Node, Workflow, Merge
 import os
 
 TEMPLATE_ROOT = os.path.join(os.path.dirname(__file__), "report_template")
@@ -31,11 +31,9 @@ def _get_dwi_zero(dwi_file):
 def create_html_report(
     calling_wf_name,
     report_wf_name,
-    plot_bet,
-    plot_before_after_eddy,
-    plot_transformed,
     template_path,
     output_root,
+    plots,
 ):
     import os
     import string
@@ -55,19 +53,25 @@ def create_html_report(
         to_embed = {}
         for plot in args:
             if plot is not None:
-                svg_path = os.path.join(plot, "report.svg")
-                with open(svg_path, "rb") as f:
-                    svg_text = str(base64.b64encode(f.read()), "utf-8")
-                to_embed[plot] = svg_text
+                with open(plot, "r", encoding="utf-8") as f:
+                    svg_text = f.read()
+                f.close()
+                # get the plot name from the path
+                plot_name = plot.split("/")[-2]
+                to_embed[plot_name] = svg_text
         return _embed_svg(to_embed)
 
-    plot_dir = [plot_bet, plot_before_after_eddy, plot_transformed]
-    html_text = _get_html_text(*plot_dir)
+    html_text = _get_html_text(*plots)
     out_file = os.path.join(
         output_root, calling_wf_name, report_wf_name, "report.html"
     )
     report_html = HTMLDocument(html_text).save_as_html(out_file)
     return out_file
+
+
+# Define a dummy function that does nothing
+def wait_func(*args, **kwargs):
+    pass
 
 
 def init_report_wf(calling_wf_name, output_root, name="reporter"):
@@ -122,16 +126,17 @@ def init_report_wf(calling_wf_name, output_root, name="reporter"):
     # image
     plot_transformed = Node(SimpleShowMaskRPT(), name="plot_transformed")
 
+    # Create a Merge node to combine the outputs of plot_bet, plot_before_after_eddy, and plot_transformed
+    merge_node = Node(Merge(3), name="merge_node")
+
     # embed plots in a html template
     CreateHTML = Function(
         input_names=[
             "calling_wf_name",
             "report_wf_name",
-            "plot_bet",
-            "plot_before_after_eddy",
-            "plot_transformed",
             "template_path",
             "output_root",
+            "plots",
         ],
         output_names=["out_file"],
         function=create_html_report,
@@ -139,9 +144,6 @@ def init_report_wf(calling_wf_name, output_root, name="reporter"):
     create_html = Node(CreateHTML, name="create_html")
     create_html.inputs.calling_wf_name = calling_wf_name
     create_html.inputs.report_wf_name = name
-    create_html.inputs.plot_bet = plot_bet.name
-    create_html.inputs.plot_before_after_eddy = plot_before_after_eddy.name
-    create_html.inputs.plot_transformed = plot_transformed.name
     create_html.inputs.template_path = REPORT_TEMPLATE
     create_html.inputs.output_root = output_root
 
@@ -186,19 +188,36 @@ def init_report_wf(calling_wf_name, output_root, name="reporter"):
                     ("mask", "mask_file"),
                 ],
             ),
+            # merge the outputs of plot_bet, plot_before_after_eddy, and plot_transformed
+            (
+                plot_bet,
+                merge_node,
+                [
+                    ("out_report", "in1"),
+                ],
+            ),
+            (
+                plot_before_after_eddy,
+                merge_node,
+                [
+                    ("out_report", "in2"),
+                ],
+            ),
+            (
+                plot_transformed,
+                merge_node,
+                [
+                    ("out_report", "in3"),
+                ],
+            ),
             # create the html report
-            # (
-            #     inputnode,
-            #     create_html,
-            #     [
-            #         ("calling_wf_name", "calling_wf_name"),
-            #         (workflow.name, "report_wf_name"),
-            #         (plot_bet.name, "plot_bet"),
-            #         (plot_before_after_eddy.name, "plot_before_after_eddy"),
-            #         (plot_transformed.name, "plot_transformed"),
-            #     ],
-            # ),
+            (
+                merge_node,
+                create_html,
+                [
+                    ("out", "plots"),
+                ],
+            ),
         ]
     )
-    workflow.add_nodes([create_html])
     return workflow
