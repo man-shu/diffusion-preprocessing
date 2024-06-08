@@ -1,4 +1,4 @@
-diffusion_pipelines/diffusion_pipelines.egg-info
-diffusion_pipelines/diffusion_pipelines/__pycache__
-diffusion_pipelines/diffusion_pipelines/utils/__pycache__
+*.egg-info
+*__pycache__
 crash*
+diffusion_pipelines/build
