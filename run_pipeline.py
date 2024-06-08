@@ -13,10 +13,13 @@ output_dir = os.path.join(
 # Create the diffusion preprocessing pipeline
 internal_dmri_pipeline = create_diffusion_prep_pipeline(output_dir=output_dir)
 
-# Connect the input node to the diffusion preprocessing pipeline
+# Provide inputs to the diffusion preprocessing pipeline
+# All subject files
 internal_dmri_pipeline.inputs.input_subject.dwi = "/storage/store3/work/haggarwa/diffusion/bids_data/sub-7014/dwi/sub-7014_dwi.nii.gz"
 internal_dmri_pipeline.inputs.input_subject.bval = "/storage/store3/work/haggarwa/diffusion/bids_data/sub-7014/dwi/sub-7014_dwi.bval"
 internal_dmri_pipeline.inputs.input_subject.bvec = "/storage/store3/work/haggarwa/diffusion/bids_data/sub-7014/dwi/sub-7014_dwi.bvec"
+
+# All template files
 internal_dmri_pipeline.inputs.input_template.T1 = "/storage/store3/work/haggarwa/diffusion/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
 internal_dmri_pipeline.inputs.input_template.T2 = "/storage/store3/work/haggarwa/diffusion/mni_icbm152_nlin_sym_09a/mni_icbm152_t2_tal_nlin_sym_09a.nii"
 
