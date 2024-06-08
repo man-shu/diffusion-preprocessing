@@ -2,10 +2,10 @@ from diffusion_pipelines.diffusion_preprocessing import (
     create_diffusion_prep_pipeline,
 )
 import os
-from time import time
+import time
 
 # Create output directory with timestamp in YYYYMMDD_HHMMSS format
-timestamp = time()
+timestamp = time.strftime("%Y%m%d-%H%M%S")
 output_dir = os.path.join(
     f"/storage/store3/work/haggarwa/diffusion/internal_pipeline_output_{timestamp:.0f}"
 )
