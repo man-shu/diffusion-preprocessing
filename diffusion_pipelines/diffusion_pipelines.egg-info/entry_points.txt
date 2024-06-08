@@ -1,0 +1,2 @@
+[console_scripts]
+shrink_surface = diffusion_pipelines.utils.shrink_surface:command_line_main
