@@ -68,7 +68,7 @@ def create_diffusion_prep_pipeline(
 
     input_template = Node(
         IdentityInterface(
-            fields=["T1", "T2"],
+            fields=["T1", "T2", "mask"],
         ),
         name="input_template",
     )
@@ -92,6 +92,8 @@ def create_diffusion_prep_pipeline(
     fslroi = Node(interface=fsl.ExtractROI(), name="fslroi")
     fslroi.inputs.t_min = 0
     fslroi.inputs.t_size = 1
+
+    strip_t2_template = Node(interface=fsl.ApplyMask(), name="apply_mask")
 
     bet = Node(interface=fsl.BET(), name="bet")
     bet.inputs.mask = True
@@ -132,17 +134,24 @@ def create_diffusion_prep_pipeline(
     apply_registration_mask.inputs.input_image_type = 3
     apply_registration_mask.inputs.interpolation = "NearestNeighbor"
 
-    reporter = init_report_wf(name="reporter", calling_wf_name=name,
-                              output_root=output_dir)
+    reporter = init_report_wf(
+        name="reporter", calling_wf_name=name, output_root=output_dir
+    )
 
     workflow = Workflow(name=name, base_dir=output_dir)
     workflow.connect(
         [
             (input_subject, fslroi, [("dwi", "in_file")]),
             (fslroi, bet, [("roi_file", "in_file")]),
+            (input_template, strip_t2_template, [("T2", "in_file")]),
+            (input_template, strip_t2_template, [("mask", "mask_file")]),
             (input_subject, eddycorrect, [("dwi", "inputnode.in_file")]),
             (fslroi, rigid_registration, [("roi_file", "moving_image")]),
-            (input_template, rigid_registration, [("T2", "fixed_image")]),
+            (
+                strip_t2_template,
+                rigid_registration,
+                [("out_file", "fixed_image")],
+            ),
             (rigid_registration, transforms_to_list, [("out_matrix", "in1")]),
             (
                 rigid_registration,
@@ -157,7 +166,11 @@ def create_diffusion_prep_pipeline(
                 apply_registration,
                 [("outputnode.eddy_corrected", "input_image")],
             ),
-            (input_template, apply_registration, [("T2", "reference_image")]),
+            (
+                strip_t2_template,
+                apply_registration,
+                [("out_file", "reference_image")],
+            ),
             (
                 transforms_to_list,
                 apply_registration_mask,
@@ -165,9 +178,9 @@ def create_diffusion_prep_pipeline(
             ),
             (bet, apply_registration_mask, [("mask_file", "input_image")]),
             (
-                input_template,
+                strip_t2_template,
                 apply_registration_mask,
-                [("T2", "reference_image")],
+                [("out_file", "reference_image")],
             ),
             # collect all the outputs in the output node
             (conv_affine, output, [("affine_ras", "rigid_dwi_2_template")]),

@@ -7,7 +7,7 @@ import time
 # Create output directory with timestamp in YYYYMMDD_HHMMSS format
 timestamp = time.strftime("%Y%m%d-%H%M%S")
 output_dir = os.path.join(
-    f"/storage/store3/work/haggarwa/diffusion/internal_pipeline_output_{timestamp:.0f}"
+    f"/storage/store3/work/haggarwa/diffusion/internal_pipeline_output_{timestamp}"
 )
 
 # Create the diffusion preprocessing pipeline
@@ -22,6 +22,7 @@ internal_dmri_pipeline.inputs.input_subject.bvec = "/storage/store3/work/haggarw
 # All template files
 internal_dmri_pipeline.inputs.input_template.T1 = "/storage/store3/work/haggarwa/diffusion/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
 internal_dmri_pipeline.inputs.input_template.T2 = "/storage/store3/work/haggarwa/diffusion/mni_icbm152_nlin_sym_09a/mni_icbm152_t2_tal_nlin_sym_09a.nii"
+internal_dmri_pipeline.inputs.input_template.mask = "/storage/store3/work/haggarwa/diffusion/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
 
 # create a visual representation of the pipeline
 internal_dmri_pipeline.write_graph(
