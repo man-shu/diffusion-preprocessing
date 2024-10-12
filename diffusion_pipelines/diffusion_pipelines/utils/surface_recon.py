@@ -3,42 +3,12 @@ import os
 import sys
 import subprocess
 import configparser
-
-from nipype import (
-    DataGrabber,
-    DataSink,
-    IdentityInterface,
-    Node,
-    Workflow,
-    MapNode,
-    JoinNode,
-    Merge,
-)
-from niflow.nipype1.workflows.dmri.fsl.dti import bedpostx_parallel
+from nipype import IdentityInterface, Node, Workflow, Merge, MapNode
+from nipype.interfaces.utility.wrappers import Function
 from nipype.interfaces import utility
 import nipype.interfaces.fsl as fsl
 import nipype.interfaces.ants as ants
 from nipype.interfaces.freesurfer import ReconAll, MRIsConvert, MRIConvert
-from nipype.interfaces.utility import Function
-from nipype.interfaces.mrtrix3 import DWIPreproc
-
-import diffusion_pipelines.diffusion_preprocessing as dp
-
-from nipype import config, logging
-
-config.update_config(
-    {
-        "logging": {
-            "log_directory": os.path.join(os.getcwd(), "logs"),
-            "workflow_level": "DEBUG",
-            "interface_level": "DEBUG",
-            "log_to_file": True,
-        },
-        "execution": {"stop_on_first_crash": True},
-    }
-)
-# config.enable_debug_mode()
-# logging.update_logging(config)
 
 
 def freesurfer_get_ras_conversion_matrix(subjects_dir, subject_id):
@@ -193,120 +163,34 @@ def bvec_flip(bvecs_in, flip):
     return output_file
 
 
-if __name__ == "__main__":
-    dmri_preprocess_workflow = dp.create_diffusion_prep_pipeline(
-        "dmri_preprocess"
-    )
-    config = configparser.ConfigParser()
-    config.read(sys.argv[1])
+def init_surface_recon_wf(name="surface_recon", output_dir="."):
 
-    # PATH = '/oak/stanford/groups/menon/projects/cdla/2019_dwi_mathfun/results/'
-    # PATH = '/oak/stanford/groups/menon/projects/cdla/scratch/dwi_mathfun/dwi_pipeline_cpu'
-    PATH = "/data/parietal/store/work/zmohamed/mathfun"
-
-    # PATH='/home/parietal/dwasserm/research/data/LargeBrainNets/mathfun/'
-
-    subject_list = config["DEFAULT"]["id_list"].split(" ")
-    visits = list(config["DEFAULT"]["visits"])
-    subjects_dir = config["DEFAULT"]["subjects_dir"]
-    sessions = list(config["DEFAULT"]["sessions"])
-
-    infosource = Node(
-        IdentityInterface(fields=["subject_id", "visit", "session"]),
-        name="subjects",
-    )
-    infosource.iterables = [
-        ("subject_id", subject_list),
-        ("visit", visits),
-        ("session", sessions),
-    ]
-
-    subject_id_visit = Node(
-        interface=Function(
-            input_names=["subject_id", "visit"],
-            output_names=["composite_id"],
-            function=lambda subject_id, visit: "{}_{}".format(
-                subject_id, visit
-            ),
+    input_subject = Node(
+        IdentityInterface(
+            fields=["T1", "dwi", "bval", "bvec", "subject_id", "subjects_dir"],
         ),
-        name="subject_id_visit",
+        name="input_subject",
     )
 
-    data_source = Node(
-        DataGrabber(
-            infields=["subject_id", "visit", "session"],
-            outfields=["dwi", "bval", "bvec", "T1"],
+    input_template = Node(
+        IdentityInterface(
+            fields=["T1", "T2", "mask"],
         ),
-        name="data_grabber",
+        name="input_template",
     )
-    data_source.inputs.sort_filelist = True
-    data_source.inputs.base_directory = config["DEFAULT"]["base_directory"]
-    data_source.inputs.template = ""
-    data_source.inputs.field_template = {
-        "T1": "%s/visit%s/session%s/anat/T1w.nii",
-        "dwi": "%s/visit%s/session%s/dwi/dwi_raw.nii.gz",
-        "bval": "%s/visit%s/session%s/dwi/dti_raw.bvals",
-        "bvec": "%s/visit%s/session%s/dwi/dti_raw.bvecs",
-        #'bval': '%s/visit%s/session%s/dwi/dwepi.150.bvals',
-        #'bvec': '%s/visit%s/session%s/dwi/dwepi.150.grads'
-    }
-    data_source.inputs.template_args = {
-        template: [["subject_id", "visit", "session"]]
-        for template in data_source.inputs.field_template.keys()
-    }
 
-    flip_bvectors_node = Node(
-        interface=Function(
-            input_names=["bvecs_in", "flip"],
-            output_names=["bvecs_out"],
-            function=bvec_flip,
-        ),
-        name="flip_bvecs",
-    )
-    flip_bvectors_node.inputs.flip = (-1, 1, 1)
-
-    template_source = Node(
-        DataGrabber(
-            infields=[],
-            outfields=[
-                "T1",
-                "T1_brain",
-                "T1_mask",
-                "T2",
-                "T2_brain",
-                "T2_mask",
-            ],
-        ),
-        name="mni_template",
-    )
-    template_source.inputs.sort_filelist = True
-    template_source.inputs.base_directory = config["TEMPLATE"]["directory"]
-    template_source.inputs.template = ""
-    template_source.inputs.field_template = {
-        "T1": config["TEMPLATE"]["T1"],
-        "T1_brain": config["TEMPLATE"]["T1_brain"],
-        "T1_mask": config["TEMPLATE"]["T1_mask"],
-        "T2": config["TEMPLATE"]["T2"],
-        "T2_brain": config["TEMPLATE"]["T2_brain"],
-    }
-    template_source.inputs.template_args = {
-        template: []
-        for template in template_source.inputs.field_template.keys()
-    }
-
-    roi_source = Node(DataGrabber(infields=[]), name="rois")
-    roi_source.inputs.sort_filelist = True
-    roi_source.inputs.base_directory = config["ROIS"]["directory"]
-    roi_source.inputs.template = "*.nii.gz"
+    output = Node(interface=Merge(2), name="output")
 
     recon_all = Node(interface=ReconAll(), name="recon_all")
     recon_all.inputs.directive = "all"
-    recon_all.inputs.subjects_dir = subjects_dir
+    # recon_all.inputs.subjects_dir = subjects_dir
     recon_all.inputs.openmp = 20
     recon_all.inputs.mprage = True
     recon_all.inputs.parallel = True
     recon_all.interface.num_threads = 20
     recon_all.inputs.flags = "-no-isrunning"
+
+    strip_t1_template = Node(interface=fsl.ApplyMask(), name="apply_mask")
 
     ras_conversion_matrix = Node(
         interface=Function(
@@ -321,11 +205,11 @@ if __name__ == "__main__":
         interface=MRIsConvert(), name="mris_convert", iterfield=["in_file"]
     )
     mris_convert.inputs.out_datatype = "gii"
-    mris_convert.inputs.subjects_dir = subjects_dir
+    # mris_convert.inputs.subjects_dir = subjects_dir
 
     mri_convert = Node(interface=MRIConvert(), name="mri_convert")
     mri_convert.inputs.out_type = "nii"
-    mri_convert.inputs.subjects_dir = subjects_dir
+    # mri_convert.inputs.subjects_dir = subjects_dir
 
     freesurfer_surf_2_native = MapNode(
         interface=Function(
@@ -341,38 +225,10 @@ if __name__ == "__main__":
         iterfield=["freesurfer_gii_surface"],
     )
 
-    bedpostx_parallel_wf_params = dict(
-        n_fibres=3, fudge=1, burn_in=1000, n_jumps=1250, sample_every=25
-    )
-    bedpostx_parallel_wf = bedpostx_parallel(
-        "nipype_bedpostx_parallel", params=bedpostx_parallel_wf_params
-    )
-
-    join_seeds = Node(
-        interface=Merge(2),
-        name="join_seeds",
-    )
-
-    pbx2 = Node(
-        interface=fsl.ProbTrackX2(),
-        name="probtrackx2",
-    )
-    pbx2.inputs.n_samples = 5000
-    pbx2.inputs.n_steps = 2000
-    pbx2.inputs.step_length = 0.5
-    pbx2.inputs.omatrix1 = True
-    pbx2.inputs.distthresh1 = 5
-    pbx2.inputs.args = " --ompl --fibthresh=0.01 "
-
-    fslroi = Node(interface=fsl.ExtractROI(), name="fslroi")
-    fslroi.inputs.t_min = 0
-    fslroi.inputs.t_size = 1
-
     affine_initializer = Node(
         interface=ants.AffineInitializer(), name="affine_initializer"
     )
     affine_initializer.inputs.num_threads = 20
-
     affine_initializer.interface.num_threads = 20
 
     registration_affine = Node(interface=ants.Registration(), name="reg_aff")
@@ -481,27 +337,15 @@ if __name__ == "__main__":
         iterfield=["surface"],
     )
     shrink_surface_node.inputs.distance = 3
+    workflow = Workflow(name=name, base_dir=output_dir)
 
-    workflow = Workflow("diffusion_workflow_new_mgt", base_dir=PATH)
     workflow.connect(
         [
-            (
-                infosource,
-                data_source,
-                [
-                    ("subject_id", "subject_id"),
-                    ("visit", "visit"),
-                    ("session", "session"),
-                ],
-            ),
-            (data_source, flip_bvectors_node, [("bvec", "bvecs_in")]),
-            (
-                infosource,
-                subject_id_visit,
-                [("subject_id", "subject_id"), ("visit", "visit")],
-            ),
-            (data_source, recon_all, [("T1", "T1_files")]),
-            (subject_id_visit, recon_all, [("composite_id", "subject_id")]),
+            (input_subject, recon_all, [("T1", "T1_files")]),
+            (input_subject, recon_all, [("subject_id", "subject_id")]),
+            (input_subject, recon_all, [("subjects_dir", "subjects_dir")]),
+            (input_template, strip_t1_template, [("T1", "in_file")]),
+            (input_template, strip_t1_template, [("mask", "mask_file")]),
             (
                 recon_all,
                 ras_conversion_matrix,
@@ -510,7 +354,9 @@ if __name__ == "__main__":
                     ("subject_id", "subject_id"),
                 ],
             ),
+            (recon_all, mris_convert, [("subjects_dir", "subjects_dir")]),
             (recon_all, mris_convert, [("white", "in_file")]),
+            (recon_all, mri_convert, [("subjects_dir", "subjects_dir")]),
             (recon_all, mri_convert, [("brain", "in_file")]),
             (
                 mris_convert,
@@ -519,16 +365,16 @@ if __name__ == "__main__":
             ),
             (mri_convert, affine_initializer, [("out_file", "moving_image")]),
             (
-                template_source,
+                strip_t1_template,
                 affine_initializer,
-                [("T1_brain", "fixed_image")],
+                [("out_file", "fixed_image")],
             ),
             (mri_convert, registration_affine, [("out_file", "moving_image")]),
             (
-                template_source,
+                strip_t1_template,
                 registration_affine,
                 [
-                    ("T1_brain", "fixed_image"),
+                    ("out_file", "fixed_image"),
                 ],
             ),
             (
@@ -538,10 +384,10 @@ if __name__ == "__main__":
             ),
             (mri_convert, registration_nl, [("out_file", "moving_image")]),
             (
-                template_source,
+                strip_t1_template,
                 registration_nl,
                 [
-                    ("T1_brain", "fixed_image"),
+                    ("out_file", "fixed_image"),
                 ],
             ),
             (
@@ -571,51 +417,6 @@ if __name__ == "__main__":
                 [("out", "warps")],
             ),
             (
-                registration_nl,
-                apply_registration,
-                [
-                    ("forward_transforms", "transforms"),
-                    ("forward_invert_flags", "invert_transform_flags"),
-                ],
-            ),
-            (roi_source, apply_registration, [("outfiles", "input_image")]),
-            (
-                mri_convert,
-                apply_registration,
-                [("out_file", "reference_image")],
-            ),
-            (
-                data_source,
-                dmri_preprocess_workflow,
-                [
-                    ("dwi", "input_subject.dwi"),
-                    ("bval", "input_subject.bval"),
-                ],
-            ),
-            (
-                flip_bvectors_node,
-                dmri_preprocess_workflow,
-                [("bvecs_out", "input_subject.bvec")],
-            ),
-            (
-                mri_convert,
-                dmri_preprocess_workflow,
-                [
-                    ("out_file", "input_template.T1"),
-                    ("out_file", "input_template.T2"),
-                ],
-            ),
-            (
-                dmri_preprocess_workflow,
-                bedpostx_parallel_wf,
-                [
-                    ("output.bval", "inputnode.bvals"),
-                    ("output.bvec_rotated", "inputnode.bvecs"),
-                    ("output.dwi_rigid_registered", "inputnode.dwi"),
-                    ("output.mask", "inputnode.mask"),
-                ],
-            ),
-            (
                 freesurfer_surf_2_native,
                 shrink_surface_node,
                 [("out_surf", "surface")],
@@ -625,60 +426,8 @@ if __name__ == "__main__":
                 shrink_surface_node,
                 [("out_file", "image")],
             ),
-            # (
-            #     bedpostx_parallel_wf, pbx2,
-            #     [
-            #      ('outputnode.merged_thsamples', 'thsamples'),
-            #      ('outputnode.merged_fsamples', 'fsamples'),
-            #      ('outputnode.merged_phsamples', 'phsamples'),
-            #     ]
-            # ),
-            (
-                dmri_preprocess_workflow,
-                pbx2,
-                [
-                    ("output.mask", "mask"),
-                ],
-            ),
-            (shrink_surface_node, join_seeds, [("out_file", "in1")]),
-            (apply_registration, join_seeds, [("output_image", "in2")]),
-            (
-                join_seeds,
-                pbx2,
-                [
-                    ("out", "seed"),
-                ],
-            ),
+            (shrink_surface_node, output, [("out_file", "in1")]),
         ]
     )
 
-    workflow.write_graph(
-        graph2use="flat",
-        dotfilename=os.path.join("graph.dot"),
-        format="svg",
-    )
-
-
-# #    workflow.write_graph(format='pdf', simple_form=False)
-#     if config['DEFAULT'].get('server', '').lower() == 'margaret':
-
-#         workflow.run(plugin='MultiProc', plugin_args={'dont_resubmit_completed_jobs':True})
-
-# #        workflow.run(plugin='SLURMGraph',
-# #                     plugin_args={
-# #                         'dont_resubmit_completed_jobs':
-# #				 True,
-# #                         'sbatch_args':
-# #				 '--oversubscribe ' +
-# #				 '-N 1 -n 10 ' +
-# #				 '--time 7-0 ' +
-# #				 f'-e {os.path.join(os.getcwd(), "slurm_out")}/slurm_%40j.out ' +
-# #				 f'-o {os.path.join(os.getcwd(), "slurm_out")}/slurm_%40j.out ' +
-# #                                 f'-p parietal,normal '
-# #				 '--exclude=node[25-32] '
-# #                     })
-#     else:
-#         #workflow.run(plugin='SLURM',plugin_args={'dont_resubmit_completed_jobs': True,'max_jobs':128,'sbatch_args':'-p menon'})
-#          #workflow.run(plugin='Linear', plugin_args={'n_procs': 8, 'memory_gb' :32})
-#          workflow.run(plugin='MultiProc', plugin_args={'n_procs':220, 'memory_gb': 320})
-#         #workflow.run(plugin='SLURM',plugin_args={'dont_resubmit_completed_jobs': True,'sbatch_args':'--account=menon -p batch -c 4 --mem=16G -t 1:00:00','max_jobs':500})
+    return workflow
