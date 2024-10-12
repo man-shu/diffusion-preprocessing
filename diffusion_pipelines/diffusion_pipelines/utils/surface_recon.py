@@ -250,7 +250,6 @@ def init_surface_recon_wf(name="surface_recon", output_dir="."):
     registration_affine.inputs.smoothing_sigmas = [[3, 2, 1, 0]] * 2
     registration_affine.inputs.sigma_units = ["vox"] * 2
     registration_affine.inputs.shrink_factors = [[8, 4, 2, 1]] * 2
-    registration_affine.inputs.use_estimate_learning_rate_once = [True, True]
     registration_affine.inputs.use_histogram_matching = [
         True,
         True,
@@ -275,7 +274,6 @@ def init_surface_recon_wf(name="surface_recon", output_dir="."):
     registration_nl.inputs.smoothing_sigmas = [[3, 2, 1, 0]]
     registration_nl.inputs.sigma_units = ["vox"]
     registration_nl.inputs.shrink_factors = [[8, 4, 2, 1]]
-    registration_nl.inputs.use_estimate_learning_rate_once = [True]
     registration_nl.inputs.use_histogram_matching = [
         True
     ]  # This is the default
