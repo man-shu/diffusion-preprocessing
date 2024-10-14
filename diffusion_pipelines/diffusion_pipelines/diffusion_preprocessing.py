@@ -84,6 +84,8 @@ def create_diffusion_prep_pipeline(
                 "eddy_corrected",
                 "dwi_initial",
                 "bet_mask",
+                "template_t2_initial",
+                "template_t2_masked",
             ]
         ),
         name="output",
@@ -184,6 +186,8 @@ def create_diffusion_prep_pipeline(
             ),
             # collect all the outputs in the output node
             (conv_affine, output, [("affine_ras", "rigid_dwi_2_template")]),
+            (input_template, output, [("T2", "template_t2_initial")]),
+            (strip_t2_template, output, [("out_file", "template_t2_masked")]),
             (
                 apply_registration,
                 output,
@@ -209,6 +213,14 @@ def create_diffusion_prep_pipeline(
                 reporter,
                 [
                     ("dwi_initial", "reporter_inputnode.dwi_initial"),
+                    (
+                        "template_t2_initial",
+                        "reporter_inputnode.template_t2_initial",
+                    ),
+                    (
+                        "template_t2_masked",
+                        "reporter_inputnode.template_t2_masked",
+                    ),
                     ("eddy_corrected", "reporter_inputnode.eddy_corrected"),
                     ("mask", "reporter_inputnode.mask"),
                     ("bet_mask", "reporter_inputnode.bet_mask"),
