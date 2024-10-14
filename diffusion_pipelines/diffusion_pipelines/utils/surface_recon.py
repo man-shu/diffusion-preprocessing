@@ -190,8 +190,6 @@ def init_surface_recon_wf(name="surface_recon", output_dir="."):
     recon_all.interface.num_threads = 20
     recon_all.inputs.flags = "-no-isrunning"
 
-    strip_t1_template = Node(interface=fsl.ApplyMask(), name="apply_mask")
-
     ras_conversion_matrix = Node(
         interface=Function(
             input_names=["subjects_dir", "subject_id"],
@@ -342,8 +340,6 @@ def init_surface_recon_wf(name="surface_recon", output_dir="."):
             (input_subject, recon_all, [("T1", "T1_files")]),
             (input_subject, recon_all, [("subject_id", "subject_id")]),
             (input_subject, recon_all, [("subjects_dir", "subjects_dir")]),
-            (input_template, strip_t1_template, [("T1", "in_file")]),
-            (input_template, strip_t1_template, [("mask", "mask_file")]),
             (
                 recon_all,
                 ras_conversion_matrix,
@@ -363,16 +359,16 @@ def init_surface_recon_wf(name="surface_recon", output_dir="."):
             ),
             (mri_convert, affine_initializer, [("out_file", "moving_image")]),
             (
-                strip_t1_template,
+                input_template,
                 affine_initializer,
-                [("out_file", "fixed_image")],
+                [("T1", "fixed_image")],
             ),
             (mri_convert, registration_affine, [("out_file", "moving_image")]),
             (
-                strip_t1_template,
+                input_template,
                 registration_affine,
                 [
-                    ("out_file", "fixed_image"),
+                    ("T1", "fixed_image"),
                 ],
             ),
             (
@@ -382,10 +378,10 @@ def init_surface_recon_wf(name="surface_recon", output_dir="."):
             ),
             (mri_convert, registration_nl, [("out_file", "moving_image")]),
             (
-                strip_t1_template,
+                input_template,
                 registration_nl,
                 [
-                    ("out_file", "fixed_image"),
+                    ("T1", "fixed_image"),
                 ],
             ),
             (
