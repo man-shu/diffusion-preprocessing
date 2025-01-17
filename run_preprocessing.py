@@ -1,4 +1,4 @@
-from diffusion_pipelines.diffusion_preprocessing import (
+from diffusion_pipelines.workflows.preprocessing import (
     init_preprocessing_wf,
 )
 import os

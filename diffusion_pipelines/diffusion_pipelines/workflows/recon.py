@@ -163,7 +163,7 @@ def bvec_flip(bvecs_in, flip):
     return output_file
 
 
-def init_surface_recon_wf(name="surface_recon", output_dir="."):
+def init_recon_wf(name="recon", output_dir="."):
 
     input_subject = Node(
         IdentityInterface(
