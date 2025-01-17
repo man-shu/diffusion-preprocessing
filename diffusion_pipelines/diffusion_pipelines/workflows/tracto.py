@@ -3,7 +3,6 @@ from nipype import DataGrabber, Node, Workflow, MapNode
 from niflow.nipype1.workflows.dmri.fsl.dti import bedpostx_parallel
 from diffusion_pipelines.workflows import init_preprocess_wf, init_recon_wf
 from pathlib import Path
-
 from nipype.interfaces.fsl import ProbTrackX2
 
 
@@ -19,7 +18,7 @@ def init_tracto_wf(
 ):
 
     config = ConfigParser()
-    config.read(sys.argv[1])
+    config.read(config_file)
 
     roi_source = Node(DataGrabber(infields=[]), name="rois")
     roi_source.inputs.sort_filelist = True
