@@ -179,7 +179,17 @@ def init_recon_wf(name="recon", output_dir="."):
         name="input_template",
     )
 
-    output = Node(interface=Merge(2), name="output")
+    output = Node(
+        IdentityInterface(
+            fields=[
+                "mnri_convert_reference_image",
+                "reg_nl_forward_transforms",
+                "reg_nl_forward_invert_flags",
+                "shrunk_surface",
+            ]
+        ),
+        name="output",
+    )
 
     recon_all = Node(interface=ReconAll(), name="recon_all")
     recon_all.inputs.directive = "all"
@@ -420,7 +430,16 @@ def init_recon_wf(name="recon", output_dir="."):
                 shrink_surface_node,
                 [("out_file", "image")],
             ),
-            (shrink_surface_node, output, [("out_file", "in1")]),
+            (mri_convert, output, [("out_file", "reference_image")]),
+            (
+                registration_nl,
+                output,
+                [
+                    ("forward_transforms", "reg_nl_forward_transforms"),
+                    ("forward_invert_flags", "reg_nl_forward_invert_flags"),
+                ],
+            ),
+            (shrink_surface_node, output, [("out_file", "shrunk_surface")]),
         ]
     )
 
