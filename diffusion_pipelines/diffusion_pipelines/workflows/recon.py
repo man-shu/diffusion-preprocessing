@@ -324,15 +324,6 @@ def init_recon_wf(name="recon", output_dir="."):
     ]  # This is the default
     registration.inputs.output_warped_image = "output_warped_image.nii.gz"
 
-    apply_registration = MapNode(
-        interface=ants.ApplyTransforms(),
-        name="apply_registration",
-        iterfield=["input_image"],
-    )
-    apply_registration.inputs.dimension = 3
-    apply_registration.inputs.input_image_type = 3
-    apply_registration.inputs.interpolation = "NearestNeighbor"
-
     shrink_surface_node = MapNode(
         interface=Function(
             input_names=["surface", "image", "distance"],
