@@ -182,7 +182,7 @@ def init_recon_wf(name="recon", output_dir="."):
     output = Node(
         IdentityInterface(
             fields=[
-                "mnri_convert_reference_image",
+                "mri_convert_reference_image",
                 "reg_nl_forward_transforms",
                 "reg_nl_forward_invert_flags",
                 "shrunk_surface",
