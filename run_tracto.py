@@ -14,16 +14,14 @@ output_dir = os.path.join(root, "result", f"tracto_output_{timestamp}")
 config_path = os.path.join(root, "diffusion-preprocessing", "config.cfg")
 
 # Create the diffusion preprocess wf
-preprocess = init_preprocess_wf(
-    output_dir=output_dir, config_file="config.cfg"
-)
+tracto = init_tracto_wf(output_dir=output_dir, config_file="config.cfg")
 
 # create a visual representation of the pipeline
-recon.write_graph(
+tracto.write_graph(
     graph2use="flat",
     dotfilename=os.path.join(output_dir, "graph.dot"),
     format="svg",
 )
 
 # Run the diffusion preprocessing pipeline
-recon.run()
+tracto.run()
