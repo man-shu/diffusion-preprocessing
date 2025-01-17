@@ -1,9 +1,10 @@
 from configparser import ConfigParser
-from nipype import DataGrabber, Node, Workflow, MapNode
+from nipype import DataGrabber, Node, Workflow, MapNode, Merge
 from niflow.nipype1.workflows.dmri.fsl.dti import bedpostx_parallel
 from diffusion_pipelines.workflows import init_preprocess_wf, init_recon_wf
 from pathlib import Path
 from nipype.interfaces.fsl import ProbTrackX2
+import nipype.interfaces.ants as ants
 
 
 def init_tracto_wf(
@@ -28,22 +29,22 @@ def init_tracto_wf(
     # setup preprocess workflow
     preprocess = init_preprocess_wf(output_dir=output_dir)
     preprocess.inputs.input_subject.dwi = Path(
-        config["SUBJECT"]["directory"] / config["SUBJECT"]["dwi"]
+        config["SUBJECT"]["directory"], config["SUBJECT"]["dwi"]
     )
     preprocess.inputs.input_subject.bval = Path(
-        config["SUBJECT"]["directory"] / config["SUBJECT"]["bval"]
+        config["SUBJECT"]["directory"], config["SUBJECT"]["bval"]
     )
     preprocess.inputs.input_subject.bvec = Path(
-        config["SUBJECT"]["directory"] / config["SUBJECT"]["bvec"]
+        config["SUBJECT"]["directory"], config["SUBJECT"]["bvec"]
     )
     preprocess.inputs.input_template.T1 = Path(
-        config["TEMPLATE"]["directory"] / config["TEMPLATE"]["T1"]
+        config["TEMPLATE"]["directory"], config["TEMPLATE"]["T1"]
     )
     preprocess.inputs.input_template.T2 = Path(
-        config["TEMPLATE"]["directory"] / config["TEMPLATE"]["T2"]
+        config["TEMPLATE"]["directory"], config["TEMPLATE"]["T2"]
     )
     preprocess.inputs.input_template.mask = Path(
-        config["TEMPLATE"]["directory"] / config["TEMPLATE"]["mask"]
+        config["TEMPLATE"]["directory"], config["TEMPLATE"]["mask"]
     )
 
     # setup recon workflow
@@ -51,25 +52,25 @@ def init_tracto_wf(
     recon.inputs.input_subject.subject_id = config["SUBJECT"]["id"]
     recon.inputs.input_subject.subjects_dir = config["SUBJECT"]["directory"]
     recon.inputs.input_subject.T1 = Path(
-        config["SUBJECT"]["directory"] / config["SUBJECT"]["T1"]
+        config["SUBJECT"]["directory"], config["SUBJECT"]["T1"]
     )
     recon.inputs.input_subject.dwi = Path(
-        config["SUBJECT"]["directory"] / config["SUBJECT"]["dwi"]
+        config["SUBJECT"]["directory"], config["SUBJECT"]["dwi"]
     )
     recon.inputs.input_subject.bval = Path(
-        config["SUBJECT"]["directory"] / config["SUBJECT"]["bval"]
+        config["SUBJECT"]["directory"], config["SUBJECT"]["bval"]
     )
     recon.inputs.input_subject.bvec = Path(
-        config["SUBJECT"]["directory"] / config["SUBJECT"]["bvec"]
+        config["SUBJECT"]["directory"], config["SUBJECT"]["bvec"]
     )
     recon.inputs.input_template.T1 = Path(
-        config["TEMPLATE"]["directory"] / config["TEMPLATE"]["T1"]
+        config["TEMPLATE"]["directory"], config["TEMPLATE"]["T1"]
     )
     recon.inputs.input_template.T2 = Path(
-        config["TEMPLATE"]["directory"] / config["TEMPLATE"]["T2"]
+        config["TEMPLATE"]["directory"], config["TEMPLATE"]["T2"]
     )
     recon.inputs.input_template.mask = Path(
-        config["TEMPLATE"]["directory"] / config["TEMPLATE"]["mask"]
+        config["TEMPLATE"]["directory"], config["TEMPLATE"]["mask"]
     )
 
     # node for applying registration from recon to ROIs
@@ -114,59 +115,59 @@ def init_tracto_wf(
 
     workflow = Workflow(name=name, base_dir=output_dir)
     workflow.connect(
-        (roi_source, apply_registration, [("outfiles", "input_image")]),
-        (
-            recon,
-            apply_registration,
-            [
-                ("output.reg_nl_forward_transforms", "transforms"),
-                (
-                    "output.reg_nl_forward_invert_flags",
-                    "invert_transform_flags",
-                ),
-            ],
-        ),
-        (
-            recon,
-            apply_registration,
-            [("output.mri_convert_reference_image", "reference_image")],
-        ),
-        (recon, join_seeds, [("output.shrunk_surface", "in1")]),
-        (apply_registration, join_seeds, [("output_image", "in2")]),
-        (
-            join_seeds,
-            pbx2,
-            [
-                ("out", "seed"),
-            ],
-        ),
-        (
-            preprocess,
-            bedpostx_parallel_wf,
-            [
-                (
+        [
+            (roi_source, apply_registration, [("outfiles", "input_image")]),
+            (
+                recon,
+                apply_registration,
+                [
+                    ("output.reg_nl_forward_transforms", "transforms"),
+                    (
+                        "output.reg_nl_forward_invert_flags",
+                        "invert_transform_flags",
+                    ),
+                ],
+            ),
+            (
+                recon,
+                apply_registration,
+                [("output.mri_convert_reference_image", "reference_image")],
+            ),
+            (recon, join_seeds, [("output.shrunk_surface", "in1")]),
+            (apply_registration, join_seeds, [("output_image", "in2")]),
+            (
+                join_seeds,
+                pbx2,
+                [
+                    ("out", "seed"),
+                ],
+            ),
+            (
+                preprocess,
+                bedpostx_parallel_wf,
+                [
                     ("output.bval", "inputnode.bvals"),
                     ("output.bvec_rotated", "inputnode.bvecs"),
                     ("output.dwi_rigid_registered", "inputnode.dwi"),
                     ("output.mask", "inputnode.mask"),
-                )
-            ],
-        ),
-        (
-            preprocess,
-            pbx2,
-            [
-                ("output.mask", "mask"),
-            ],
-        ),
-        (
-            bedpostx_parallel_wf,
-            pbx2,
-            [
-                ("outputnode.merged_thsamples", "thsamples"),
-                ("outputnode.merged_fsamples", "fsamples"),
-                ("outputnode.merged_phsamples", "phsamples"),
-            ],
-        ),
+                ],
+            ),
+            (
+                preprocess,
+                pbx2,
+                [
+                    ("output.mask", "mask"),
+                ],
+            ),
+            (
+                bedpostx_parallel_wf,
+                pbx2,
+                [
+                    ("outputnode.merged_thsamples", "thsamples"),
+                    ("outputnode.merged_fsamples", "fsamples"),
+                    ("outputnode.merged_phsamples", "phsamples"),
+                ],
+            ),
+        ]
     )
     return bedpostx_parallel_wf
