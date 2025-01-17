@@ -56,9 +56,7 @@ RotateGradientsAffine = Function(
 )
 
 
-def create_diffusion_prep_pipeline(
-    name="dMRI_preprocessing", bet_frac=0.34, output_dir="."
-):
+def init_preprocessing_wf(name="preprocessing", bet_frac=0.34, output_dir="."):
     input_subject = Node(
         IdentityInterface(
             fields=["dwi", "bval", "bvec"],
