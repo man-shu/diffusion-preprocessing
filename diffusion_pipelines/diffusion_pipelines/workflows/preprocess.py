@@ -56,7 +56,7 @@ RotateGradientsAffine = Function(
 )
 
 
-def init_preprocessing_wf(name="preprocessing", bet_frac=0.34, output_dir="."):
+def init_preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     input_subject = Node(
         IdentityInterface(
             fields=["dwi", "bval", "bvec"],
