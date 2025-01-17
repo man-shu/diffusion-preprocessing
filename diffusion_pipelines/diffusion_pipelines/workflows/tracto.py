@@ -18,7 +18,7 @@ def init_tracto_wf(
     output_dir=".",
 ):
 
-    config = configparser.ConfigParser()
+    config = ConfigParser()
     config.read(sys.argv[1])
 
     roi_source = Node(DataGrabber(infields=[]), name="rois")
