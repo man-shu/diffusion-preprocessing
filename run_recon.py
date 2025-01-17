@@ -14,10 +14,10 @@ root = "/Users/himanshu/Desktop/"
 
 output_dir = os.path.join(f"{root}diffusion/recon_output_{timestamp}")
 
-# Create the diffusion preprocessing pipeline
+# Create the surface recon pipeline
 recon = init_recon_wf(output_dir=output_dir)
 
-# Provide inputs to the diffusion preprocessing pipeline
+# Provide inputs to the surface recon pipeline
 # All subject files
 recon.inputs.input_subject.T1 = (
     f"{root}diffusion/bids_data/sub-7014/anat/sub-7014_T1w.nii"
@@ -47,5 +47,5 @@ recon.write_graph(
     format="svg",
 )
 
-# Run the diffusion preprocessing pipeline
+# Run the surface recon pipeline
 recon.run()

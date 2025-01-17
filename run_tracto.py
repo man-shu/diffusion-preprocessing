@@ -6,13 +6,24 @@ import time
 timestamp = time.strftime("%Y%m%d-%H%M%S")
 # Define the root directory
 # on local machine
-root = "/Users/himanshu/Desktop/"
+root = "/Users/himanshu/Desktop/diffusion"
 # on drago
 # root = "/storage/store3/work/haggarwa/"
 
-output_dir = os.path.join(f"{root}diffusion/preprocess_output_{timestamp}")
+output_dir = os.path.join(root, "result", f"tracto_output_{timestamp}")
+config_path = os.path.join(root, "diffusion-preprocessing", "config.cfg")
 
 # Create the diffusion preprocess wf
 preprocess = init_preprocess_wf(
     output_dir=output_dir, config_file="config.cfg"
 )
+
+# create a visual representation of the pipeline
+recon.write_graph(
+    graph2use="flat",
+    dotfilename=os.path.join(output_dir, "graph.dot"),
+    format="svg",
+)
+
+# Run the diffusion preprocessing pipeline
+recon.run()
