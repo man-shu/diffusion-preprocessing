@@ -73,13 +73,13 @@ def wait_func(*args, **kwargs):
     pass
 
 
-def init_report_wf(calling_wf_name, output_root, name="reporter"):
+def init_report_wf(calling_wf_name, output_root, name="report"):
     """Create a workflow to generate a report for the diffusion preprocessing
     pipeline.
 
     Parameters
     ----------
-    name : str, optional, by default "reporter"
+    name : str, optional, by default "report"
         Name of the workflow
     output_dir : str, optional, by default "."
         Base directory to store the reports. The workflow will create a
@@ -103,7 +103,7 @@ def init_report_wf(calling_wf_name, output_root, name="reporter"):
                 "template_t2_masked",
             ]
         ),
-        name="reporter_inputnode",
+        name="report_inputnode",
     )
     # define a function to get the zero index of the input dwi file
     DWIZero = Function(

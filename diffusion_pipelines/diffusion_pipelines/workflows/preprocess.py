@@ -6,7 +6,7 @@ import nipype.interfaces.ants as ants
 from niflow.nipype1.workflows.dmri.fsl.epi import create_eddy_correct_pipeline
 from nipype.interfaces import utility
 from nipype.interfaces.utility.wrappers import Function
-from .utils.reporter import init_report_wf
+from .reporter import init_report_wf
 
 
 def convert_affine_itk_2_ras(input_affine):
@@ -134,8 +134,8 @@ def init_preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     apply_registration_mask.inputs.input_image_type = 3
     apply_registration_mask.inputs.interpolation = "NearestNeighbor"
 
-    reporter = init_report_wf(
-        name="reporter", calling_wf_name=name, output_root=output_dir
+    report = init_report_wf(
+        name="report", calling_wf_name=name, output_root=output_dir
     )
 
     workflow = Workflow(name=name, base_dir=output_dir)
@@ -205,26 +205,26 @@ def init_preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                 [("outputnode.eddy_corrected", "eddy_corrected")],
             ),
             (input_subject, output, [("dwi", "dwi_initial")]),
-            # connect the reporter workflow
+            # connect the report workflow
             (
                 output,
-                reporter,
+                report,
                 [
-                    ("dwi_initial", "reporter_inputnode.dwi_initial"),
+                    ("dwi_initial", "report_inputnode.dwi_initial"),
                     (
                         "template_t2_initial",
-                        "reporter_inputnode.template_t2_initial",
+                        "report_inputnode.template_t2_initial",
                     ),
                     (
                         "template_t2_masked",
-                        "reporter_inputnode.template_t2_masked",
+                        "report_inputnode.template_t2_masked",
                     ),
-                    ("eddy_corrected", "reporter_inputnode.eddy_corrected"),
-                    ("mask", "reporter_inputnode.mask"),
-                    ("bet_mask", "reporter_inputnode.bet_mask"),
+                    ("eddy_corrected", "report_inputnode.eddy_corrected"),
+                    ("mask", "report_inputnode.mask"),
+                    ("bet_mask", "report_inputnode.bet_mask"),
                     (
                         "dwi_rigid_registered",
-                        "reporter_inputnode.dwi_rigid_registered",
+                        "report_inputnode.dwi_rigid_registered",
                     ),
                 ],
             ),
