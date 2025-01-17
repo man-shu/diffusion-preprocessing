@@ -170,4 +170,4 @@ def init_tracto_wf(
             ),
         ]
     )
-    return bedpostx_parallel_wf
+    return workflow
