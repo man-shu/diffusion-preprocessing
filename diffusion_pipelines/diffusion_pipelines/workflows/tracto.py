@@ -126,12 +126,8 @@ def init_tracto_wf(
                         "output.reg_nl_forward_invert_flags",
                         "invert_transform_flags",
                     ),
+                    ("output.mri_convert_reference_image", "reference_image"),
                 ],
-            ),
-            (
-                recon,
-                apply_registration,
-                [("output.mri_convert_reference_image", "reference_image")],
             ),
             (recon, join_seeds, [("output.shrunk_surface", "in1")]),
             (apply_registration, join_seeds, [("output_image", "in2")]),

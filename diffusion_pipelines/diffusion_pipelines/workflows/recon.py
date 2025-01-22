@@ -421,7 +421,11 @@ def init_recon_wf(name="recon", output_dir="."):
                 shrink_surface_node,
                 [("out_file", "image")],
             ),
-            (mri_convert, output, [("out_file", "reference_image")]),
+            (
+                mri_convert,
+                output,
+                [("out_file", "mri_convert_reference_image")],
+            ),
             (
                 registration_nl,
                 output,
