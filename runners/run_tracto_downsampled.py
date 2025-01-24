@@ -20,9 +20,7 @@ config_path = os.path.join(
 )
 
 # Create the diffusion preprocess wf
-tracto = init_tracto_wf(
-    output_dir=output_dir, config_file="config_downsampled.cfg"
-)
+tracto = init_tracto_wf(output_dir=output_dir, config_file=config_path)
 
 # create a visual representation of the pipeline
 tracto.write_graph(
