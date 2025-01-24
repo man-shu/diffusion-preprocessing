@@ -16,7 +16,7 @@ output_dir = os.path.join(
     root, "result", f"tracto_downsampled_output_{timestamp}"
 )
 config_path = os.path.join(
-    root, "diffusion-preprocessing", "config_downsampled.cfg"
+    root, "diffusion-preprocessing", "configs", "config_downsampled.cfg"
 )
 
 # Create the diffusion preprocess wf
