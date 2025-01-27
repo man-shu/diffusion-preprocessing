@@ -13,10 +13,13 @@ timestamp = time.strftime("%Y%m%d-%H%M%S")
 root = "/storage/store3/work/haggarwa/diffusion"
 
 output_dir = os.path.join(
-    root, "result", f"tracto_downsampled_output_{timestamp}"
+    root, "result", f"tracto_downsampled_trimmed_output_{timestamp}"
 )
 config_path = os.path.join(
-    root, "diffusion-preprocessing", "configs", "config_drago_downsampled.cfg"
+    root,
+    "diffusion-preprocessing",
+    "configs",
+    "config_drago_downsampled_trimmed.cfg",
 )
 
 # Create the diffusion preprocess wf

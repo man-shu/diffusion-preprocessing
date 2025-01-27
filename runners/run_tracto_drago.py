@@ -1,9 +1,7 @@
 from diffusion_pipelines.workflows import init_tracto_wf
 import os
 import time
-from nipype import config
 
-config.enable_debug_mode()
 # Create output directory with timestamp in YYYYMMDD_HHMMSS format
 timestamp = time.strftime("%Y%m%d-%H%M%S")
 # Define the root directory
@@ -12,11 +10,9 @@ timestamp = time.strftime("%Y%m%d-%H%M%S")
 # on drago
 root = "/storage/store3/work/haggarwa/diffusion"
 
-output_dir = os.path.join(
-    root, "result", f"tracto_downsampled_output_{timestamp}"
-)
+output_dir = os.path.join(root, "result", f"tracto_output_{timestamp}")
 config_path = os.path.join(
-    root, "diffusion-preprocessing", "configs", "config_drago_downsampled.cfg"
+    root, "diffusion-preprocessing", "configs", "config_drago.cfg"
 )
 
 # Create the diffusion preprocess wf
@@ -30,4 +26,4 @@ tracto.write_graph(
 )
 
 # Run the diffusion preprocessing pipeline
-tracto.run(plugin="MultiProc", plugin_args={"n_procs": 60})
+tracto.run(plugin="MultiProc", plugin_args={"n_procs": 30})
