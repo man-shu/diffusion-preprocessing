@@ -163,7 +163,7 @@ def bvec_flip(bvecs_in, flip):
     return output_file
 
 
-def init_surface_recon_wf(name="surface_recon", output_dir="."):
+def init_recon_wf(name="recon", output_dir="."):
 
     input_subject = Node(
         IdentityInterface(
@@ -179,7 +179,17 @@ def init_surface_recon_wf(name="surface_recon", output_dir="."):
         name="input_template",
     )
 
-    output = Node(interface=Merge(2), name="output")
+    output = Node(
+        IdentityInterface(
+            fields=[
+                "mri_convert_reference_image",
+                "reg_nl_forward_transforms",
+                "reg_nl_forward_invert_flags",
+                "shrunk_surface",
+            ]
+        ),
+        name="output",
+    )
 
     recon_all = Node(interface=ReconAll(), name="recon_all")
     recon_all.inputs.directive = "all"
@@ -314,15 +324,6 @@ def init_surface_recon_wf(name="surface_recon", output_dir="."):
     ]  # This is the default
     registration.inputs.output_warped_image = "output_warped_image.nii.gz"
 
-    apply_registration = MapNode(
-        interface=ants.ApplyTransforms(),
-        name="apply_registration",
-        iterfield=["input_image"],
-    )
-    apply_registration.inputs.dimension = 3
-    apply_registration.inputs.input_image_type = 3
-    apply_registration.inputs.interpolation = "NearestNeighbor"
-
     shrink_surface_node = MapNode(
         interface=Function(
             input_names=["surface", "image", "distance"],
@@ -420,7 +421,20 @@ def init_surface_recon_wf(name="surface_recon", output_dir="."):
                 shrink_surface_node,
                 [("out_file", "image")],
             ),
-            (shrink_surface_node, output, [("out_file", "in1")]),
+            (
+                mri_convert,
+                output,
+                [("out_file", "mri_convert_reference_image")],
+            ),
+            (
+                registration_nl,
+                output,
+                [
+                    ("forward_transforms", "reg_nl_forward_transforms"),
+                    ("forward_invert_flags", "reg_nl_forward_invert_flags"),
+                ],
+            ),
+            (shrink_surface_node, output, [("out_file", "shrunk_surface")]),
         ]
     )
 
