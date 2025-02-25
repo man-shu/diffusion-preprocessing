@@ -10,7 +10,9 @@ timestamp = time.strftime("%Y%m%d-%H%M%S")
 # on drago
 root = "/storage/store3/work/haggarwa/diffusion"
 
-output_dir = os.path.join(root, "result", f"tracto_output_{timestamp}")
+output_dir = os.path.join(
+    root, "result", f"tracto_output_tracto_output_20250126-215842"
+)
 config_path = os.path.join(
     root, "diffusion-preprocessing", "configs", "config_drago.cfg"
 )
