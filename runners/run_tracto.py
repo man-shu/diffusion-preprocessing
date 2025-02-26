@@ -11,10 +11,12 @@ root = "/Users/himanshu/Desktop/diffusion"
 # root = "/storage/store3/work/haggarwa/"
 
 output_dir = os.path.join(root, "result", f"tracto_output_{timestamp}")
-config_path = os.path.join(root, "diffusion-preprocessing", "config.cfg")
+config_path = os.path.join(
+    root, "diffusion-preprocessing", "configs", "config.cfg"
+)
 
 # Create the diffusion preprocess wf
-tracto = init_tracto_wf(output_dir=output_dir, config_file="config.cfg")
+tracto = init_tracto_wf(output_dir=output_dir, config_file=config_path)
 
 # create a visual representation of the pipeline
 tracto.write_graph(
