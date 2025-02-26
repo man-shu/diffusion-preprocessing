@@ -139,10 +139,10 @@ def init_tracto_wf(
                 preprocess,
                 bedpost_gpu,
                 [
-                    ("output.bval", "inputnode.bvals"),
-                    ("output.bvec_rotated", "inputnode.bvecs"),
-                    ("output.dwi_rigid_registered", "inputnode.dwi"),
-                    ("output.mask", "inputnode.mask"),
+                    ("output.bval", "input.bvals"),
+                    ("output.bvec_rotated", "input.bvecs"),
+                    ("output.dwi_rigid_registered", "input.dwi"),
+                    ("output.mask", "input.mask"),
                 ],
             ),
             (
@@ -156,9 +156,9 @@ def init_tracto_wf(
                 bedpost_gpu,
                 pbx2,
                 [
-                    ("outputnode.merged_thsamples", "thsamples"),
-                    ("outputnode.merged_fsamples", "fsamples"),
-                    ("outputnode.merged_phsamples", "phsamples"),
+                    ("output.merged_thsamples", "thsamples"),
+                    ("output.merged_fsamples", "fsamples"),
+                    ("output.merged_phsamples", "phsamples"),
                 ],
             ),
         ]
