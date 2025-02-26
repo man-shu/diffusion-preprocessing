@@ -3,7 +3,7 @@ from nipype import DataGrabber, Node, Workflow, MapNode, Merge
 from niflow.nipype1.workflows.dmri.fsl.dti import bedpostx_parallel
 from diffusion_pipelines.workflows import init_preprocess_wf, init_recon_wf
 from pathlib import Path
-from nipype.interfaces.fsl import ProbTrackX2
+from nipype.interfaces.fsl import ProbTrackX2, BEDPOSTX5
 import nipype.interfaces.ants as ants
 
 
@@ -89,17 +89,14 @@ def init_tracto_wf(
         name="join_seeds",
     )
 
-    # setup bedpostx_parallel workflow
-    bedpostx_parallel_wf = bedpostx_parallel(
-        name,
-        params={
-            "n_fibres": n_fibres,
-            "fudge": fudge,
-            "burn_in": burn_in,
-            "n_jumps": n_jumps,
-            "sample_every": sample_every,
-        },
-    )
+    # bedpost_gpu
+    bedpost_gpu = Node(interface=BEDPOSTX5(), name="bedpost_gpu")
+    bedpost_gpu.inputs.n_fibres = n_fibres
+    bedpost_gpu.inputs.fudge = fudge
+    bedpost_gpu.inputs.burn_in = burn_in
+    bedpost_gpu.inputs.n_jumps = n_jumps
+    bedpost_gpu.inputs.sample_every = sample_every
+    bedpost_gpu.inputs.use_gpu = True
 
     # setup probtrackx2 node
     pbx2 = Node(
@@ -140,7 +137,7 @@ def init_tracto_wf(
             ),
             (
                 preprocess,
-                bedpostx_parallel_wf,
+                bedpost_gpu,
                 [
                     ("output.bval", "inputnode.bvals"),
                     ("output.bvec_rotated", "inputnode.bvecs"),
@@ -156,7 +153,7 @@ def init_tracto_wf(
                 ],
             ),
             (
-                bedpostx_parallel_wf,
+                bedpost_gpu,
                 pbx2,
                 [
                     ("outputnode.merged_thsamples", "thsamples"),
