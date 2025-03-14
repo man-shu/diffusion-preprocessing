@@ -26,4 +26,4 @@ tracto.write_graph(
 )
 
 # Run the diffusion preprocessing pipeline
-tracto.run(plugin="MultiProc", plugin_args={"n_procs": 60})
+tracto.run(plugin="MultiProc", plugin_args={"n_procs": 20})
