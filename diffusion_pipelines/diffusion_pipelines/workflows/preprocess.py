@@ -93,9 +93,9 @@ def init_preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     fslroi.inputs.t_min = 0
     fslroi.inputs.t_size = 1
 
-    strip_dwi = Node(interface=fsl.ApplyMask(), name="apply_mask")
+    strip_dwi = Node(interface=fsl.ApplyMask(), name="strip_dwi")
 
-    strip_t2_template = Node(interface=fsl.ApplyMask(), name="apply_mask")
+    strip_t2_template = Node(interface=fsl.ApplyMask(), name="strip_template")
 
     bet = Node(interface=fsl.BET(), name="bet")
     bet.inputs.mask = True
