@@ -93,6 +93,8 @@ def init_preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     fslroi.inputs.t_min = 0
     fslroi.inputs.t_size = 1
 
+    strip_dwi = Node(interface=fsl.ApplyMask(), name="apply_mask")
+
     strip_t2_template = Node(interface=fsl.ApplyMask(), name="apply_mask")
 
     bet = Node(interface=fsl.BET(), name="bet")
@@ -141,25 +143,36 @@ def init_preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     workflow = Workflow(name=name, base_dir=output_dir)
     workflow.connect(
         [
+            # create mask for the dwi
             (input_subject, fslroi, [("dwi", "in_file")]),
             (fslroi, bet, [("roi_file", "in_file")]),
+            # apply the mask to the dwi
+            (fslroi, strip_dwi, [("roi_file", "in_file")]),
+            (bet, strip_dwi, [("mask_file", "mask_file")]),
+            # apply the input template mask to the template
             (input_template, strip_t2_template, [("T2", "in_file")]),
             (input_template, strip_t2_template, [("mask", "mask_file")]),
-            (input_subject, eddycorrect, [("dwi", "inputnode.in_file")]),
-            (fslroi, rigid_registration, [("roi_file", "moving_image")]),
+            # edddy correct the skull-stripped dwi
+            (strip_dwi, eddycorrect, [("out_file", "inputnode.in_file")]),
+            # register the skull-stripped dwi to the skull-stripped template
+            (strip_dwi, rigid_registration, [("out_file", "moving_image")]),
             (
                 strip_t2_template,
                 rigid_registration,
                 [("out_file", "fixed_image")],
             ),
+            # some matrix format conversions
             (rigid_registration, transforms_to_list, [("out_matrix", "in1")]),
             (
                 rigid_registration,
                 conv_affine,
                 [("out_matrix", "input_affine")],
             ),
+            # rotate the gradients
             (input_subject, rotate_gradients, [("bvec", "gradient_file")]),
             (conv_affine, rotate_gradients, [("affine_ras", "input_affine")]),
+            # apply the registration to the skull-stripped and eddy-corrected
+            # dwi
             (transforms_to_list, apply_registration, [("out", "transforms")]),
             (
                 eddycorrect,
@@ -176,6 +189,7 @@ def init_preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                 apply_registration_mask,
                 [("out", "transforms")],
             ),
+            # also apply the registration to the mask
             (bet, apply_registration_mask, [("mask_file", "input_image")]),
             (
                 strip_t2_template,
