@@ -93,6 +93,8 @@ def init_preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     fslroi.inputs.t_min = 0
     fslroi.inputs.t_size = 1
 
+    strip_fsl_roi = Node(interface=fsl.ApplyMask(), name="strip_fsl_roi")
+
     strip_dwi = Node(interface=fsl.ApplyMask(), name="strip_dwi")
 
     strip_t2_template = Node(interface=fsl.ApplyMask(), name="strip_template")
@@ -146,6 +148,9 @@ def init_preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             # create mask for the dwi
             (input_subject, fslroi, [("dwi", "in_file")]),
             (fslroi, bet, [("roi_file", "in_file")]),
+            # apply mask to fsl_roi output
+            (fslroi, strip_fsl_roi, [("roi_file", "in_file")]),
+            (bet, strip_fsl_roi, [("mask_file", "mask_file")]),
             # apply the mask to the dwi
             (input_subject, strip_dwi, [("dwi", "in_file")]),
             (bet, strip_dwi, [("mask_file", "mask_file")]),
@@ -155,7 +160,11 @@ def init_preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             # edddy correct the skull-stripped dwi
             (strip_dwi, eddycorrect, [("out_file", "inputnode.in_file")]),
             # register the skull-stripped dwi to the skull-stripped template
-            (strip_dwi, rigid_registration, [("out_file", "moving_image")]),
+            (
+                strip_fsl_roi,
+                rigid_registration,
+                [("out_file", "moving_image")],
+            ),
             (
                 strip_t2_template,
                 rigid_registration,
