@@ -4,7 +4,9 @@ from pathlib import Path
 import os
 import numpy as np
 
-root_directory = Path("/Users/himanshu/Desktop/diffusion/WAND/sub-00395")
+root_directory = Path(
+    "/data/parietal/store3/work/haggarwa/diffusion/WAND/sub-00395"
+)
 
 for protocol in ["AxCaliber", "CHARMED"]:
     # find all dwi.nii.gz files
