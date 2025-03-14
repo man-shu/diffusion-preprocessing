@@ -147,7 +147,7 @@ def init_preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             (input_subject, fslroi, [("dwi", "in_file")]),
             (fslroi, bet, [("roi_file", "in_file")]),
             # apply the mask to the dwi
-            (fslroi, strip_dwi, [("roi_file", "in_file")]),
+            (input_subject, strip_dwi, [("dwi", "in_file")]),
             (bet, strip_dwi, [("mask_file", "mask_file")]),
             # apply the input template mask to the template
             (input_template, strip_t2_template, [("T2", "in_file")]),
