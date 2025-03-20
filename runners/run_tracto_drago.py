@@ -8,7 +8,7 @@ timestamp = time.strftime("%Y%m%d-%H%M%S")
 # on local machine
 # root = "/Users/himanshu/Desktop/diffusion"
 # on drago
-root = "/storage/store3/work/haggarwa/diffusion"
+root = "/data/parietal/store3/work/haggarwa/diffusion"
 
 
 output_dir = os.path.join(root, "result", f"tracto_output_{timestamp}")
@@ -27,5 +27,4 @@ tracto.write_graph(
 )
 
 # Run the diffusion preprocessing pipeline
-tracto.run(plugin="MultiProc", plugin_args={"n_procs": 60})
-
+tracto.run(plugin="MultiProc", plugin_args={"n_procs": 100})
