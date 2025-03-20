@@ -10,10 +10,9 @@ timestamp = time.strftime("%Y%m%d-%H%M%S")
 # on drago
 root = "/storage/store3/work/haggarwa/diffusion"
 
-
-output_dir = os.path.join(root, "result", f"tracto_output_{timestamp}")
+output_dir = os.path.join(root, "result", f"tracto_output_WAND_{timestamp}")
 config_path = os.path.join(
-    root, "diffusion-preprocessing", "configs", "config_drago.cfg"
+    root, "diffusion-preprocessing", "configs", "config_drago_WAND.cfg"
 )
 
 # Create the diffusion preprocess wf
@@ -27,5 +26,4 @@ tracto.write_graph(
 )
 
 # Run the diffusion preprocessing pipeline
-tracto.run(plugin="MultiProc", plugin_args={"n_procs": 60})
-
+tracto.run(plugin="MultiProc", plugin_args={"n_procs": 20})
