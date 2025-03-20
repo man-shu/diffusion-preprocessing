@@ -7,56 +7,84 @@ from niflow.nipype1.workflows.dmri.fsl.epi import create_eddy_correct_pipeline
 from nipype.interfaces import utility
 from nipype.interfaces.utility.wrappers import Function
 from .report import init_report_wf
+from configparser import ConfigParser
 
 
-def convert_affine_itk_2_ras(input_affine):
-    import subprocess
-    import os, os.path
+def _get_config(config_file):
+    config = ConfigParser()
+    config.read(config_file)
+    return config
 
-    output_file = os.path.join(
-        os.getcwd(), f"{os.path.basename(input_affine)}.ras"
+
+def _set_inputs(config, wf):
+
+    wf.inputs.input_subject.dwi = Path(
+        config["SUBJECT"]["directory"], config["SUBJECT"]["dwi"]
     )
-    subprocess.check_output(
-        f"c3d_affine_tool "
-        f"-itk {input_affine} "
-        f"-o {output_file} -info-full ",
-        shell=True,
-    ).decode("utf8")
-    return output_file
+    wf.inputs.input_subject.bval = Path(
+        config["SUBJECT"]["directory"], config["SUBJECT"]["bval"]
+    )
+    wf.inputs.input_subject.bvec = Path(
+        config["SUBJECT"]["directory"], config["SUBJECT"]["bvec"]
+    )
+    wf.inputs.input_template.T1 = Path(
+        config["TEMPLATE"]["directory"], config["TEMPLATE"]["T1"]
+    )
+    wf.inputs.input_template.T2 = Path(
+        config["TEMPLATE"]["directory"], config["TEMPLATE"]["T2"]
+    )
+    wf.inputs.input_template.mask = Path(
+        config["TEMPLATE"]["directory"], config["TEMPLATE"]["mask"]
+    )
+
+    return wf
 
 
-ConvertAffine2RAS = Function(
-    input_names=["input_affine"],
-    output_names=["affine_ras"],
-    function=convert_affine_itk_2_ras,
-)
+def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
 
+    def convert_affine_itk_2_ras(input_affine):
+        import subprocess
+        import os, os.path
 
-def rotate_gradients_(input_affine, gradient_file):
-    import os
-    import os.path
-    import numpy as np
-    from scipy.linalg import polar
+        output_file = os.path.join(
+            os.getcwd(), f"{os.path.basename(input_affine)}.ras"
+        )
+        subprocess.check_output(
+            f"c3d_affine_tool "
+            f"-itk {input_affine} "
+            f"-o {output_file} -info-full ",
+            shell=True,
+        ).decode("utf8")
+        return output_file
 
-    affine = np.loadtxt(input_affine)
-    u, p = polar(affine[:3, :3], side="right")
-    gradients = np.loadtxt(gradient_file)
-    new_gradients = np.linalg.solve(u, gradients).T
-    name, ext = os.path.splitext(os.path.basename(gradient_file))
-    output_name = os.path.join(os.getcwd(), f"{name}_rot{ext}")
-    np.savetxt(output_name, new_gradients)
+    ConvertAffine2RAS = Function(
+        input_names=["input_affine"],
+        output_names=["affine_ras"],
+        function=convert_affine_itk_2_ras,
+    )
 
-    return output_name
+    def rotate_gradients_(input_affine, gradient_file):
+        import os
+        import os.path
+        import numpy as np
+        from scipy.linalg import polar
 
+        affine = np.loadtxt(input_affine)
+        u, p = polar(affine[:3, :3], side="right")
+        gradients = np.loadtxt(gradient_file)
+        new_gradients = np.linalg.solve(u, gradients).T
+        name, ext = os.path.splitext(os.path.basename(gradient_file))
+        output_name = os.path.join(os.getcwd(), f"{name}_rot{ext}")
+        np.savetxt(output_name, new_gradients)
 
-RotateGradientsAffine = Function(
-    input_names=["input_affine", "gradient_file"],
-    output_names=["rotated_gradients"],
-    function=rotate_gradients_,
-)
+        return output_name
 
+    RotateGradientsAffine = Function(
+        input_names=["input_affine", "gradient_file"],
+        output_names=["rotated_gradients"],
+        function=rotate_gradients_,
+    )
 
-def init_preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     input_subject = Node(
         IdentityInterface(
             fields=["dwi", "bval", "bvec"],
@@ -255,3 +283,10 @@ def init_preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     )
 
     return workflow
+
+
+def init_preprocess_wf(output_dir=".", config_file=None):
+    config = _get_config(config_file)
+    wf = _preprocess_wf(output_dir=output_dir, config=config)
+    wf = _set_inputs(config, wf)
+    return wf
