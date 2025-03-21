@@ -1,5 +1,5 @@
 from bids.layout import BIDSLayout
-from nipype.pipeline import Node, MapNode, Workflow
+from nipype.pipeline import IdentityInterface, Node, MapNode, Workflow
 from nipype.interfaces.utility import Function
 from nipype.interfaces.io import BIDSDataGrabber
 
