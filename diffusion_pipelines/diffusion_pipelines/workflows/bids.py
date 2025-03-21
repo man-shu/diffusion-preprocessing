@@ -2,6 +2,7 @@ from bids.layout import BIDSLayout
 from nipype import IdentityInterface, Node, MapNode, Workflow
 from nipype.interfaces.utility import Function
 from nipype.interfaces.io import BIDSDataGrabber
+from configparser import ConfigParser
 
 
 def _get_config(config_file):
