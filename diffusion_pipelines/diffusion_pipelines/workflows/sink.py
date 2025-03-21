@@ -6,12 +6,6 @@ from configparser import ConfigParser
 from pathlib import Path
 
 
-def _get_config(config_file):
-    config = ConfigParser()
-    config.read(config_file)
-    return config
-
-
 def _set_inputs(config, wf):
     wf.inputs.base_directory = Path(config["OUTPUT"]["directory"])
     if config["DATASET"]["subject"] == "all" or None:
@@ -39,8 +33,7 @@ def _sink_wf(name="sink_wf"):
     return workflow
 
 
-def init_sink_wf(config_file):
+def init_sink_wf(config):
     wf = _sink_wf()
-    config = _get_config(config_file)
     wf = _set_inputs(config, wf)
     return wf

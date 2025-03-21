@@ -19,8 +19,8 @@ def _get_config(config_file):
 
 
 def _set_inputs(config, wf):
-    bidsdata_wf = init_bidsdata_wf(config_file=config)
-    sink = init_sink_wf(config_file=config)
+    bidsdata_wf = init_bidsdata_wf(config=config)
+    sink = init_sink_wf(config=config)
     wf.inputs.input_template.T1 = Path(
         config["TEMPLATE"]["directory"], config["TEMPLATE"]["T1"]
     )

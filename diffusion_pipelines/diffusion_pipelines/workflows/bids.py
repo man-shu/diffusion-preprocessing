@@ -6,12 +6,6 @@ from configparser import ConfigParser
 from pathlib import Path
 
 
-def _get_config(config_file):
-    config = ConfigParser()
-    config.read(config_file)
-    return config
-
-
 def _set_inputs(config, wf):
     wf.inputs.base_dir = Path(config["DATASET"]["directory"])
     if config["DATASET"]["subject"] == "all" or None:
@@ -45,8 +39,7 @@ def _bidsdata_wf(name="bidsdata_wf", output_dir="."):
     return workflow
 
 
-def init_bidsdata_wf(config_file, output_dir="."):
+def init_bidsdata_wf(config, output_dir="."):
     wf = _bidsdata_wf(output_dir=output_dir)
-    config = _get_config(config_file)
     wf = _set_inputs(config, wf)
     return wf
