@@ -37,8 +37,8 @@ def _sink_wf(name="sink_wf"):
     return workflow
 
 
-def init_sink_wf(config_file, output_dir="."):
-    wf = _sink_wf(output_dir=output_dir)
+def init_sink_wf(config_file):
+    wf = _sink_wf()
     config = _get_config(config_file)
     wf = _set_inputs(config, wf)
     return wf

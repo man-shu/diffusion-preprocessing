@@ -19,6 +19,7 @@ def _get_config(config_file):
 
 def _set_inputs(config, wf):
     bidsdata_wf = init_bidsdata_wf(config_file=config)
+    sink = init_sink_wf(config_file=config)
     wf.inputs.input_template.T1 = Path(
         config["TEMPLATE"]["directory"], config["TEMPLATE"]["T1"]
     )
@@ -39,6 +40,22 @@ def _set_inputs(config, wf):
             ],
         )
     )
+    # connect the sink workflow
+    (
+        wf.outputs.output,
+        sink,
+        [
+            ("dwi_rigid_registered", "preprocess.@registered_dwi"),
+            ("eddy_corrected", "preprocess.@eddy_corrected"),
+            ("mask", "preprocess.@mask"),
+        ],
+    ),
+    (
+        wf.outputs.report,
+        sink,
+        [("report_outputnode.out_file", "preprocess.@report")],
+    ),
+
     return wf
 
 
@@ -282,21 +299,6 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                         "report_inputnode.dwi_rigid_registered",
                     ),
                 ],
-            ),
-            # connect the sink workflow
-            (
-                output,
-                sink,
-                [
-                    ("dwi_rigid_registered", "preprocess.@registered_dwi"),
-                    ("eddy_corrected", "preprocess.@eddy_corrected"),
-                    ("mask", "preprocess.@mask"),
-                ],
-            ),
-            (
-                report,
-                sink,
-                [("report_outputnode.out_file", "preprocess.@report")],
             ),
         ]
     )
