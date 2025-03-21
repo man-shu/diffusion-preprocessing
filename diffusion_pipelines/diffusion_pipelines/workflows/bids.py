@@ -3,6 +3,7 @@ from nipype import IdentityInterface, Node, MapNode, Workflow
 from nipype.interfaces.utility import Function
 from nipype.interfaces.io import BIDSDataGrabber
 from configparser import ConfigParser
+from pathlib import Path
 
 
 def _get_config(config_file):
