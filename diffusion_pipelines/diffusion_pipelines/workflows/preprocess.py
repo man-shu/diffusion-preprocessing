@@ -189,8 +189,6 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
         name="report", calling_wf_name=name, output_root=output_dir
     )
 
-    sink = init_sink_wf(config_file)
-
     workflow = Workflow(name=name, base_dir=output_dir)
     workflow.connect(
         [
