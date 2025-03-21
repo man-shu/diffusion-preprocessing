@@ -19,7 +19,7 @@ def _set_inputs(config, wf):
     return wf
 
 
-def _bidsdata_wf(name="bidsdata_wf", output_dir="."):
+def _bidsdata_wf(name="bidsdata_wf"):
     input_data = Node(
         IdentityInterface(
             fields=["directory", "subject"],
@@ -33,13 +33,13 @@ def _bidsdata_wf(name="bidsdata_wf", output_dir="."):
         "bvecs": dict(suffix="dwi", extension="bvec"),
         "T1": dict(suffix="T1w", extension="nii.gz"),
     }
-    workflow = Workflow(name=name, base_dir=output_dir)
+    workflow = Workflow(name=name)
     workflow.connect(input_data, "directory", bidsdata, "base_dir")
     workflow.connect(input_data, "subject", bidsdata, "subject")
     return workflow
 
 
-def init_bidsdata_wf(config, output_dir="."):
-    wf = _bidsdata_wf(output_dir=output_dir)
+def init_bidsdata_wf(config):
+    wf = _bidsdata_wf()
     wf = _set_inputs(config, wf)
     return wf
