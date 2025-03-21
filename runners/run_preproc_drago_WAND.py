@@ -8,7 +8,7 @@ import time
 timestamp = time.strftime("%Y%m%d-%H%M%S")
 # Define the root directory
 # on local machine
-root = "/Users/himanshu/Desktop/"
+# root = "/Users/himanshu/Desktop/"
 # on drago
 root = "/data/parietal/store3/work/haggarwa/diffusion"
 
