@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 def _set_inputs(config, wf):
-    wf.inputs.base_dir = Path(config["DATASET"]["directory"])
+    wf.inputs.input_data.directory = Path(config["DATASET"]["directory"])
     if config["DATASET"]["subject"] == "all" or None:
         layout = BIDSLayout(Path(config["DATASET"]["directory"]))
         wf.inputs.input_data.iterables = ("subject", layout.get_subjects())
