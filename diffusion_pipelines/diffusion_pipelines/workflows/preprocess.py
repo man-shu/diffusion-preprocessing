@@ -1,4 +1,3 @@
-#!/bin/env python
 import inspect
 from nipype import IdentityInterface, Node, Workflow
 import nipype.interfaces.fsl as fsl
@@ -8,6 +7,7 @@ from nipype.interfaces import utility
 from nipype.interfaces.utility.wrappers import Function
 from .report import init_report_wf
 from configparser import ConfigParser
+from .bids import init_bidsdata_wf
 
 
 def _get_config(config_file):
@@ -17,16 +17,7 @@ def _get_config(config_file):
 
 
 def _set_inputs(config, wf):
-
-    wf.inputs.input_subject.dwi = Path(
-        config["SUBJECT"]["directory"], config["SUBJECT"]["dwi"]
-    )
-    wf.inputs.input_subject.bval = Path(
-        config["SUBJECT"]["directory"], config["SUBJECT"]["bval"]
-    )
-    wf.inputs.input_subject.bvec = Path(
-        config["SUBJECT"]["directory"], config["SUBJECT"]["bvec"]
-    )
+    bidsdata_wf = init_bidsdata_wf(config_file=config)
     wf.inputs.input_template.T1 = Path(
         config["TEMPLATE"]["directory"], config["TEMPLATE"]["T1"]
     )
@@ -36,7 +27,17 @@ def _set_inputs(config, wf):
     wf.inputs.input_template.mask = Path(
         config["TEMPLATE"]["directory"], config["TEMPLATE"]["mask"]
     )
-
+    wf.connect(
+        (
+            bidsdata_wf,
+            wf,
+            [
+                ("dwis", "input_subject.dwi"),
+                ("bvals", "input_subject.bval"),
+                ("bvecs", "input_subject.bvec"),
+            ],
+        )
+    )
     return wf
 
 
@@ -286,7 +287,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
 
 
 def init_preprocess_wf(output_dir=".", config_file=None):
+    wf = _preprocess_wf(output_dir=output_dir)
     config = _get_config(config_file)
-    wf = _preprocess_wf(output_dir=output_dir, config=config)
     wf = _set_inputs(config, wf)
     return wf
