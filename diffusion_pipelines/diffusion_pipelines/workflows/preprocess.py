@@ -8,6 +8,7 @@ from nipype.interfaces.utility.wrappers import Function
 from .report import init_report_wf
 from configparser import ConfigParser
 from .bids import init_bidsdata_wf
+from .sink import init_sink_wf
 
 
 def _get_config(config_file):
@@ -171,6 +172,8 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
         name="report", calling_wf_name=name, output_root=output_dir
     )
 
+    sink = init_sink_wf(config_file)
+
     workflow = Workflow(name=name, base_dir=output_dir)
     workflow.connect(
         [
@@ -279,6 +282,21 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                         "report_inputnode.dwi_rigid_registered",
                     ),
                 ],
+            ),
+            # connect the sink workflow
+            (
+                output,
+                sink,
+                [
+                    ("dwi_rigid_registered", "preprocess.@registered_dwi"),
+                    ("eddy_corrected", "preprocess.@eddy_corrected"),
+                    ("mask", "preprocess.@mask"),
+                ],
+            ),
+            (
+                report,
+                sink,
+                [("report_outputnode.out_file", "preprocess.@report")],
             ),
         ]
     )

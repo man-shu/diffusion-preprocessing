@@ -1,7 +1,7 @@
 from bids.layout import BIDSLayout
 from nipype.pipeline import Node, MapNode, Workflow
 from nipype.interfaces.utility import Function
-from nipype.interfaces.io import BIDSDataGrabber
+from nipype.interfaces.io import DataSink
 
 
 def _get_config(config_file):
@@ -11,40 +11,34 @@ def _get_config(config_file):
 
 
 def _set_inputs(config, wf):
-    wf.inputs.base_dir = Path(config["DATASET"]["directory"])
+    wf.inputs.base_directory = Path(config["OUTPUT"]["directory"])
     if config["DATASET"]["subject"] == "all" or None:
         layout = BIDSLayout(Path(config["DATASET"]["directory"]))
         wf.inputs.input_data.iterables = ("subject", layout.get_subjects())
     else:
         wf.inputs.input_data.iterables = (
             "subject",
-            config["DATASET"]["subject"],
+            config["OUTPUT"]["subject"],
         )
     return wf
 
 
-def _bidsdata_wf(name="bidsdata_wf", output_dir="."):
+def _sink_wf(name="sink_wf"):
     input_data = Node(
         IdentityInterface(
             fields=["directory", "subject"],
         ),
         name="input_data",
     )
-    bidsdata = Node(BIDSDataGrabber(), name="bidsdata")
-    bidsdata.inputs.output_query = {
-        "dwis": dict(suffix="dwi", extension="nii.gz"),
-        "bvals": dict(suffix="dwi", extension="bval"),
-        "bvecs": dict(suffix="dwi", extension="bvec"),
-        "T1": dict(suffix="T1w", extension="nii.gz"),
-    }
-    workflow = Workflow(name=name, base_dir=output_dir)
-    workflow.connect(input_data, "directory", bidsdata, "base_dir")
-    workflow.connect(input_data, "subject", bidsdata, "subject")
+    sink = Node(DataSink(), name="sink")
+    workflow = Workflow(name=name)
+    workflow.connect(input_data, "directory", sink, "base_directory")
+    workflow.connect(input_data, "subject", sink, "container")
     return workflow
 
 
-def init_bidsdata_wf(config_file, output_dir="."):
-    wf = _bidsdata_wf(output_dir=output_dir)
+def init_sink_wf(config_file, output_dir="."):
+    wf = _sink_wf(output_dir=output_dir)
     config = _get_config(config_file)
     wf = _set_inputs(config, wf)
     return wf
