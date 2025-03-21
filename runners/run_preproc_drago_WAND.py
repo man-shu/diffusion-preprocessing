@@ -15,7 +15,7 @@ root = "/data/parietal/store3/work/haggarwa/diffusion"
 
 output_dir = os.path.join(root, "result", f"preproc_output_{timestamp}")
 config_path = os.path.join(
-    root, "diffusion-preprocessing", "configs", "config_drago.cfg"
+    root, "diffusion-preprocessing", "configs", "config_drago_WAND.cfg"
 )
 
 # Create the diffusion preprocess wf

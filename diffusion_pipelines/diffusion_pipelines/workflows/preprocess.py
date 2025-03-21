@@ -9,6 +9,7 @@ from .report import init_report_wf
 from configparser import ConfigParser
 from .bids import init_bidsdata_wf
 from .sink import init_sink_wf
+from pathlib import Path
 
 
 def _get_config(config_file):
