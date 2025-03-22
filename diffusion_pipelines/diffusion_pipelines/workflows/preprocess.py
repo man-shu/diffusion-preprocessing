@@ -63,7 +63,7 @@ def _set_inputs_outputs(config, preproc_wf):
             ),
         ]
     )
-    return wf
+    return full_preproc_wf
 
 
 def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
