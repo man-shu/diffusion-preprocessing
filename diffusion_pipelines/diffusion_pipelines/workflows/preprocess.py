@@ -18,23 +18,28 @@ def _get_config(config_file):
     return config
 
 
-def _set_inputs_outputs(config, wf):
-    bidsdata = bidsdata_node(config=config)
-    sink = sink_node(config=config)
-    wf.inputs.input_template.T1 = Path(
+def _set_inputs_outputs(config, preproc_wf):
+    # inputs from the config file
+    preproc_wf.inputs.input_template.T1 = Path(
         config["TEMPLATE"]["directory"], config["TEMPLATE"]["T1"]
     )
-    wf.inputs.input_template.T2 = Path(
+    preproc_wf.inputs.input_template.T2 = Path(
         config["TEMPLATE"]["directory"], config["TEMPLATE"]["T2"]
     )
-    wf.inputs.input_template.mask = Path(
+    preproc_wf.inputs.input_template.mask = Path(
         config["TEMPLATE"]["directory"], config["TEMPLATE"]["mask"]
     )
-    wf.connect(
+    # bids dataset
+    bidsdata = bidsdata_node(config=config)
+    # outputs
+    sink = sink_node(config=config)
+    # create the full workflow
+    full_preproc_wf = Workflow(name=preproc_wf.name)
+    full_preproc_wf.connect(
         [
             (
                 bidsdata,
-                wf,
+                preproc_wf,
                 [
                     ("dwis", "input_subject.dwi"),
                     ("bvals", "input_subject.bval"),
@@ -43,7 +48,7 @@ def _set_inputs_outputs(config, wf):
             ),
             # connect the sink workflow
             (
-                wf.outputs.output,
+                preproc_wf.outputs.output,
                 sink,
                 [
                     ("dwi_rigid_registered", "preprocess.@registered_dwi"),
@@ -52,7 +57,7 @@ def _set_inputs_outputs(config, wf):
                 ],
             ),
             (
-                wf.outputs.report,
+                preproc_wf.outputs.report,
                 sink,
                 [("report_outputnode.out_file", "preprocess.@report")],
             ),
