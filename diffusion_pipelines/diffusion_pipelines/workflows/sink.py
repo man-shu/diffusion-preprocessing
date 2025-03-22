@@ -6,34 +6,18 @@ from configparser import ConfigParser
 from pathlib import Path
 
 
-def _set_inputs(config, wf):
-    wf.inputs.base_directory = Path(config["OUTPUT"]["directory"])
-    if config["DATASET"]["subject"] == "all" or None:
-        layout = BIDSLayout(Path(config["DATASET"]["directory"]))
-        wf.inputs.input_data.iterables = ("subject", layout.get_subjects())
-    else:
-        wf.inputs.input_data.iterables = (
-            "subject",
-            config["OUTPUT"]["subject"],
-        )
-    return wf
-
-
-def _sink_wf(name="sink_wf"):
-    input_data = Node(
-        IdentityInterface(
-            fields=["directory", "subject"],
-        ),
-        name="input_data",
-    )
+def sink_node(name="sink_wf"):
     sink = Node(DataSink(), name="sink")
-    workflow = Workflow(name=name)
-    workflow.connect(input_data, "directory", sink, "base_directory")
-    workflow.connect(input_data, "subject", sink, "container")
-    return workflow
-
-
-def init_sink_wf(config):
-    wf = _sink_wf()
-    wf = _set_inputs(config, wf)
-    return wf
+    sink.inputs.base_directory = Path(config["OUTPUT"]["directory"])
+    # set subjects as iterables
+    # if subject is not specified, all subjects will be processed
+    if (
+        config["DATASET"]["subject"] == "all"
+        or "subject" not in config["DATASET"]
+    ):
+        layout = BIDSLayout(Path(config["DATASET"]["directory"]))
+        sink.inputs.iterables = ("subject", layout.get_subjects())
+    # otherwise pick the one specified in the config file
+    else:
+        sink.inputs.subject = config["DATASET"]["subject"]
+    return sink

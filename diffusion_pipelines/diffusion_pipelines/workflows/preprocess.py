@@ -7,8 +7,8 @@ from nipype.interfaces import utility
 from nipype.interfaces.utility.wrappers import Function
 from .report import init_report_wf
 from configparser import ConfigParser
-from .bids import init_bidsdata_wf
-from .sink import init_sink_wf
+from .bids import bidsdata_node
+from .sink import sink_node
 from pathlib import Path
 
 
@@ -18,9 +18,9 @@ def _get_config(config_file):
     return config
 
 
-def _set_inputs(config, wf):
-    bidsdata_wf = init_bidsdata_wf(config=config)
-    sink = init_sink_wf(config=config)
+def _set_inputs_outputs(config, wf):
+    bidsdata = bidsdata_node(config=config)
+    sink = sink_node(config=config)
     wf.inputs.input_template.T1 = Path(
         config["TEMPLATE"]["directory"], config["TEMPLATE"]["T1"]
     )
@@ -32,7 +32,7 @@ def _set_inputs(config, wf):
     )
     wf.connect(
         (
-            bidsdata_wf,
+            bidsdata,
             wf,
             [
                 ("dwis", "input_subject.dwi"),
@@ -308,5 +308,5 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
 def init_preprocess_wf(output_dir=".", config_file=None):
     wf = _preprocess_wf(output_dir=output_dir)
     config = _get_config(config_file)
-    wf = _set_inputs(config, wf)
+    wf = _set_inputs_outputs(config, wf)
     return wf
