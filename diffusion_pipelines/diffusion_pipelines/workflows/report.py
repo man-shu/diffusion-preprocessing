@@ -105,6 +105,10 @@ def init_report_wf(calling_wf_name, output_root, name="report"):
         ),
         name="report_inputnode",
     )
+    outputnode = Node(
+        IdentityInterface(fields=["out_file"]),
+        name="report_outputnode",
+    )
     # define a function to get the zero index of the input dwi file
     DWIZero = Function(
         input_names=["dwi_file"], output_names=["out"], function=_get_dwi_zero
@@ -287,6 +291,8 @@ def init_report_wf(calling_wf_name, output_root, name="report"):
                     ("out", "plots"),
                 ],
             ),
+            # output the html report
+            (create_html, outputnode, [("out_file", "out_file")]),
         ]
     )
     return workflow
