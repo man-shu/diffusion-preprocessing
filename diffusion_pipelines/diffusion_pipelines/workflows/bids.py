@@ -35,7 +35,7 @@ def bidsdata_node(config, name="bidsdata"):
         name="selectfiles",
     )
 
-    sf.inputs.acquisition = "AxCaliberConcat"
+    sf.inputs.acquisition = config["DATASET"]["acquisition"]
     # set subjects as iterables
     # if subject is not specified, all subjects will be processed
     if (
