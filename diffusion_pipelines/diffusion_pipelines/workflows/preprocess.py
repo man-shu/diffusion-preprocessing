@@ -204,7 +204,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     apply_registration_mask.inputs.interpolation = "NearestNeighbor"
 
     report = init_report_wf(
-        name="report", calling_wf_name=name, output_root=output_dir
+        name="report", calling_wf_name=name, output_dir=output_dir
     )
 
     workflow = Workflow(name=name, base_dir=output_dir)

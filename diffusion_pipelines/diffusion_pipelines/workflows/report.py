@@ -32,7 +32,7 @@ def create_html_report(
     calling_wf_name,
     report_wf_name,
     template_path,
-    output_root,
+    output_dir,
     plots,
 ):
     import os
@@ -63,10 +63,9 @@ def create_html_report(
 
     html_text = _get_html_text(*plots)
     out_file = os.path.join(
-        output_root,
+        output_dir,
         calling_wf_name,
         report_wf_name,
-        "create_html",
         "report.html",
     )
     report_html = HTMLDocument(html_text).save_as_html(out_file)
@@ -79,7 +78,7 @@ def wait_func(*args, **kwargs):
     pass
 
 
-def init_report_wf(calling_wf_name, output_root, name="report"):
+def init_report_wf(calling_wf_name, output_dir, name="report"):
     """Create a workflow to generate a report for the diffusion preprocessing
     pipeline.
 
@@ -165,7 +164,7 @@ def init_report_wf(calling_wf_name, output_root, name="report"):
             "calling_wf_name",
             "report_wf_name",
             "template_path",
-            "output_root",
+            "output_dir",
             "plots",
         ],
         output_names=["out_file"],
@@ -175,9 +174,9 @@ def init_report_wf(calling_wf_name, output_root, name="report"):
     create_html.inputs.calling_wf_name = calling_wf_name
     create_html.inputs.report_wf_name = name
     create_html.inputs.template_path = REPORT_TEMPLATE
-    create_html.inputs.output_root = output_root
+    create_html.inputs.output_dir = output_dir
 
-    workflow = Workflow(name=name)
+    workflow = Workflow(name=name, base_dir=output_dir)
     workflow.connect(
         [
             # get the zero index of the input dwi file
