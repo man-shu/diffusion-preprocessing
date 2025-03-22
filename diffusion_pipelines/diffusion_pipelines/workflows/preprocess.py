@@ -1,5 +1,5 @@
 import inspect
-from nipype import IdentityInterface, Node, Workflow
+from nipype import IdentityInterface, Node, Workflow, MapNode
 import nipype.interfaces.fsl as fsl
 import nipype.interfaces.ants as ants
 from niflow.nipype1.workflows.dmri.fsl.epi import create_eddy_correct_pipeline
@@ -34,36 +34,37 @@ def _set_inputs_outputs(config, preproc_wf):
     # outputs
     sink = sink_node(config=config)
     # create the full workflow
-    full_preproc_wf = Workflow(name=preproc_wf.name)
-    full_preproc_wf.connect(
+    preproc_wf.connect(
         [
             (
                 bidsdata,
-                preproc_wf,
+                preproc_wf.get_node("input_subject"),
                 [
-                    ("dwis", "input_subject.dwi"),
-                    ("bvals", "input_subject.bval"),
-                    ("bvecs", "input_subject.bvec"),
+                    ("dwi", "dwi"),
+                    ("bval", "bval"),
+                    ("bvec", "bvec"),
                 ],
             ),
-            # connect the sink workflow
             (
-                preproc_wf.outputs.output,
+                preproc_wf.get_node("output"),
                 sink,
                 [
-                    ("dwi_rigid_registered", "preprocess.@registered_dwi"),
+                    (
+                        "dwi_rigid_registered",
+                        "preprocess.@registered_dwi",
+                    ),
                     ("eddy_corrected", "preprocess.@eddy_corrected"),
                     ("mask", "preprocess.@mask"),
                 ],
             ),
             (
-                preproc_wf.outputs.report,
+                preproc_wf.get_node("report"),
                 sink,
                 [("report_outputnode.out_file", "preprocess.@report")],
             ),
         ]
     )
-    return full_preproc_wf
+    return preproc_wf
 
 
 def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
@@ -117,7 +118,6 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
         ),
         name="input_subject",
     )
-
     input_template = Node(
         IdentityInterface(
             fields=["T1", "T2", "mask"],
