@@ -31,32 +31,33 @@ def _set_inputs_outputs(config, wf):
         config["TEMPLATE"]["directory"], config["TEMPLATE"]["mask"]
     )
     wf.connect(
-        (
-            bidsdata,
-            wf,
-            [
-                ("dwis", "input_subject.dwi"),
-                ("bvals", "input_subject.bval"),
-                ("bvecs", "input_subject.bvec"),
-            ],
-        )
-    )
-    # connect the sink workflow
-    (
-        wf.outputs.output,
-        sink,
         [
-            ("dwi_rigid_registered", "preprocess.@registered_dwi"),
-            ("eddy_corrected", "preprocess.@eddy_corrected"),
-            ("mask", "preprocess.@mask"),
-        ],
-    ),
-    (
-        wf.outputs.report,
-        sink,
-        [("report_outputnode.out_file", "preprocess.@report")],
-    ),
-
+            (
+                bidsdata,
+                wf,
+                [
+                    ("dwis", "input_subject.dwi"),
+                    ("bvals", "input_subject.bval"),
+                    ("bvecs", "input_subject.bvec"),
+                ],
+            ),
+            # connect the sink workflow
+            (
+                wf.outputs.output,
+                sink,
+                [
+                    ("dwi_rigid_registered", "preprocess.@registered_dwi"),
+                    ("eddy_corrected", "preprocess.@eddy_corrected"),
+                    ("mask", "preprocess.@mask"),
+                ],
+            ),
+            (
+                wf.outputs.report,
+                sink,
+                [("report_outputnode.out_file", "preprocess.@report")],
+            ),
+        ]
+    )
     return wf
 
 
