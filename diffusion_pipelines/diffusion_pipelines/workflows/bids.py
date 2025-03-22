@@ -35,15 +35,15 @@ def bidsdata_node(config, name="bidsdata"):
     )
 
     sf.inputs.acquisition = config["DATASET"]["acquisition"]
+    layout = BIDSLayout(Path(config["DATASET"]["directory"]))
     # set subjects as iterables
     # if subject is not specified, all subjects will be processed
-    if (
-        "subject" not in config["DATASET"]
-        or config["DATASET"]["subject"] == "all"
-    ):
-        layout = BIDSLayout(Path(config["DATASET"]["directory"]))
+    if config["DATASET"]["subject"] == "all":
         sf.iterables = [("subject_id", layout.get_subjects())]
-    # otherwise pick the one specified in the config file
-    else:
-        sf.inputs.subject_id = config["DATASET"]["subject"]
+    # otherwise, only the specified subjects will be processed
+    elif isinstance(config["DATASET"]["subject"], list):
+        for subject in config["DATASET"]["subject"]:
+            if subject not in layout.get_subjects():
+                raise ValueError(f"Subject {subject} not found in dataset")
+        sf.iterables = [("subject_id", config["DATASET"]["subject"])]
     return sf
