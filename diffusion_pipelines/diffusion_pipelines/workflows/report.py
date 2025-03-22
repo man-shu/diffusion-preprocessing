@@ -62,7 +62,9 @@ def create_html_report(
         return _embed_svg(to_embed)
 
     html_text = _get_html_text(*plots)
-    out_file = os.path.join(output_root, "report.html")
+    out_file = os.path.join(
+        output_root, calling_wf_name, report_wf_name, "report.html"
+    )
     report_html = HTMLDocument(html_text).save_as_html(out_file)
     print(f"Report for {calling_wf_name} created at {out_file}")
     return out_file
