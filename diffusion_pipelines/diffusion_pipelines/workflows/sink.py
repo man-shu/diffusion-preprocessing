@@ -8,7 +8,7 @@ from pathlib import Path
 
 def sink_node(config, name="sink_wf"):
     sink = Node(DataSink(), name="sink")
-    sink.inputs.base_directory = Path(config["OUTPUT"]["directory"])
+    sink.inputs.base_directory = config["OUTPUT"]["directory"]
     # set subjects as iterables
     # if subject is not specified, all subjects will be processed
     if (
