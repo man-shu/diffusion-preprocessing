@@ -12,8 +12,8 @@ def bidsdata_node(config, name="bidsdata"):
     # set subjects as iterables
     # if subject is not specified, all subjects will be processed
     if (
-        config["DATASET"]["subject"] == "all"
-        or "subject" not in config["DATASET"]
+        "subject" not in config["DATASET"]
+        or config["DATASET"]["subject"] == "all"
     ):
         layout = BIDSLayout(Path(config["DATASET"]["directory"]))
         bidsdata.inputs.iterables = ("subject", layout.get_subjects())
