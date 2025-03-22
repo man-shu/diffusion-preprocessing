@@ -31,10 +31,10 @@ def _get_config(config_file):
 def _set_inputs_outputs(config, preproc_wf):
     # inputs from the config file
     preproc_wf.inputs.input_template.T1 = Path(
-        config["TEMPLATE"]["directory"], config["TEMPLATE"]["T1"]
+        config["TEMPLATE"]["directory"], config["TEMPLATE"]["t1"]
     )
     preproc_wf.inputs.input_template.T2 = Path(
-        config["TEMPLATE"]["directory"], config["TEMPLATE"]["T2"]
+        config["TEMPLATE"]["directory"], config["TEMPLATE"]["t2"]
     )
     preproc_wf.inputs.input_template.mask = Path(
         config["TEMPLATE"]["directory"], config["TEMPLATE"]["mask"]
