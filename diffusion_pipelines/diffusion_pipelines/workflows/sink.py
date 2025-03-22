@@ -6,7 +6,7 @@ from configparser import ConfigParser
 from pathlib import Path
 
 
-def sink_node(name="sink_wf"):
+def sink_node(config, name="sink_wf"):
     sink = Node(DataSink(), name="sink")
     sink.inputs.base_directory = Path(config["OUTPUT"]["directory"])
     # set subjects as iterables
