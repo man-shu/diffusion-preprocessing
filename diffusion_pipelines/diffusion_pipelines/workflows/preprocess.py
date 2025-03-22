@@ -15,6 +15,8 @@ from pathlib import Path
 def _get_config(config_file):
     config = ConfigParser()
     config.read(config_file)
+    # convert to dictionary
+    config = config._sections
     # format the subject
     if "subject" not in config["DATASET"]:
         config.set("DATASET", "subject", "all")
@@ -22,7 +24,7 @@ def _get_config(config_file):
         pass
     else:
         subjects = config["DATASET"]["subject"].split(", ")
-        config.set("DATASET", "subject", subjects)
+        config["DATASET"]["subject"] = subjects
     return config
 
 
