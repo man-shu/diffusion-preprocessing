@@ -44,6 +44,10 @@ def _set_inputs_outputs(config, preproc_wf):
     # outputs
     sink = sink_node(config=config)
     sink.inputs.container = bidsdata.inputs.subject_id
+    # also add subject_id to report
+    preproc_wf.get_node("report").inputs.inputnode.subject_id = (
+        bidsdata.inputs.subject_id
+    )
     # create the full workflow
     preproc_wf.connect(
         [

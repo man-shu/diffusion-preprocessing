@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <title>dMRI preprocessing report</title>
-    </head>
-    <body>
-        <h1 style='text-align:center'>Preprocessing steps:</h1>
-        <hr/>
-            <h2 style="background-color: rgb(153, 153, 153);color: white;">Brain Extraction</h3>
-                ${plot_bet}
-            <h2 style="background-color: rgb(153, 153, 153);color: white;">T2 template masking</h3>
-                ${plot_before_after_mask_t2}
-            <h2 style="background-color: rgb(153, 153, 153);color: white;">Eddy Correction and Coregistration</h3>
-                ${plot_before_after_eddy}
-            <h2 style="background-color: rgb(153, 153, 153);color: white;">T2 template and Registered diffusion image</h3>
-                ${plot_before_after_t2_dwi}
-            <h2 style="background-color: rgb(153, 153, 153);color: white;">Transformed mask and diffusion image</h3>
-                ${plot_transformed}
-    </body>
+
+<head>
+    <title>dMRI preprocessing report: ${subject_id}</title>
+</head>
+
+<body>
+    <h1 style='text-align:center'>Preprocessing steps:</h1>
+    <hr />
+    <h2 style="background-color: rgb(153, 153, 153);color: white;">Brain Extraction</h2>
+    ${plot_bet}
+    <h2 style="background-color: rgb(153, 153, 153);color: white;">T2 template masking</h2>
+    ${plot_before_after_mask_t2}
+    <h2 style="background-color: rgb(153, 153, 153);color: white;">Eddy Correction and Coregistration</h2>
+    ${plot_before_after_eddy}
+    <h2 style="background-color: rgb(153, 153, 153);color: white;">T2 template and Registered diffusion image</h2>
+    ${plot_before_after_t2_dwi}
+    <h2 style="background-color: rgb(153, 153, 153);color: white;">Transformed mask and diffusion image</h2>
+    ${plot_transformed}
+</body>
+
 </html>

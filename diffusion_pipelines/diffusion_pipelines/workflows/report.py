@@ -33,6 +33,7 @@ def create_html_report(
     report_wf_name,
     template_path,
     output_dir,
+    subject_id,
     plots,
 ):
     import os
@@ -49,8 +50,8 @@ def create_html_report(
 
         return string_text
 
-    def _get_html_text(*args):
-        to_embed = {}
+    def _get_html_text(subject_id, *args):
+        to_embed = {"subject_id": subject_id}
         for plot in args:
             if plot is not None:
                 with open(plot, "r", encoding="utf-8") as f:
@@ -61,11 +62,12 @@ def create_html_report(
                 to_embed[plot_name] = svg_text
         return _embed_svg(to_embed)
 
-    html_text = _get_html_text(*plots)
+    html_text = _get_html_text(subject_id, *plots)
     out_file = os.path.join(
         output_dir,
         calling_wf_name,
         report_wf_name,
+        subject_id,
         "report.html",
     )
     report_html = HTMLDocument(html_text).save_as_html(out_file)
@@ -165,6 +167,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
             "report_wf_name",
             "template_path",
             "output_dir",
+            "subject_id",
             "plots",
         ],
         output_names=["out_file"],
