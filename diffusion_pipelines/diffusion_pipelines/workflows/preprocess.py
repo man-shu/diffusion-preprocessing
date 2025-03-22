@@ -34,7 +34,7 @@ def _set_inputs_outputs(config, preproc_wf):
     # outputs
     sink = sink_node(config=config)
     # create the full workflow
-    full_preproc_wf = Workflow(name=preproc_wf.name)
+    full_preproc_wf = Workflow(name=preproc_wf._name)
     full_preproc_wf.connect(
         [
             (
