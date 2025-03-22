@@ -33,6 +33,7 @@ def _set_inputs_outputs(config, preproc_wf):
     bidsdata = bidsdata_node(config=config)
     # outputs
     sink = sink_node(config=config)
+    sink.inputs.container = bidsdata.inputs.subject_id
     # create the full workflow
     preproc_wf.connect(
         [

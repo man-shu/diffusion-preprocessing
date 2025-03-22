@@ -7,10 +7,9 @@ from pathlib import Path
 
 
 def bidsdata_node(config, name="bidsdata"):
-
     # String template with {}-based strings
     templates = {
-        "T1": "sub-{subject_id}/*/anat/" "sub-{subject_id}*_T1w.nii.gz",
+        "T1": "sub-{subject_id}/*/anat/sub-{subject_id}*_T1w.nii.gz",
         "dwi": (
             "sub-{subject_id}/*/dwi/sub-{subject_id}*_acq-{acquisition}"
             "*_dwi.nii.gz"
@@ -46,5 +45,5 @@ def bidsdata_node(config, name="bidsdata"):
         sf.iterables = [("subject_id", layout.get_subjects())]
     # otherwise pick the one specified in the config file
     else:
-        sf.inputs.subject_list = config["DATASET"]["subject"]
+        sf.inputs.subject_id = config["DATASET"]["subject"]
     return sf
