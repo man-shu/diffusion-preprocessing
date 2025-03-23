@@ -1,4 +1,4 @@
-from bids.layout import BIDSLayout
+from bids.layout import BIDSLayout, parse_file_entities
 from nipype import IdentityInterface, Node, MapNode, Workflow
 from nipype.interfaces.utility import Function
 from nipype.interfaces.io import BIDSDataGrabber, SelectFiles
@@ -6,7 +6,9 @@ from configparser import ConfigParser
 from pathlib import Path
 
 
-def bidsdata_node(config, name="bidsdata"):
+def init_bidsdata_wf(config, name="bidsdata_wf"):
+
+    ### SelectFiles node
     # String template with {}-based strings
     templates = {
         "T1": "sub-{subject_id}/*/anat/sub-{subject_id}*_T1w.nii.gz",
@@ -46,4 +48,20 @@ def bidsdata_node(config, name="bidsdata"):
             if subject not in layout.get_subjects():
                 raise ValueError(f"Subject {subject} not found in dataset")
         sf.iterables = [("subject_id", config["DATASET"]["subject"])]
-    return sf
+
+    ### Node to decode entities
+    def decode_entities(file_name):
+        bids_entities = parse_file_entities(file_name)
+        return bids_entities["subject"]
+
+    DecodeEntities = Function(
+        input_names=["file_name"],
+        output_names=["subject_id"],
+        function=decode_entities,
+    )
+    decode_entities = Node(DecodeEntities, name="decode_entities")
+
+    bidsdata_wf = Workflow(name=name)
+    bidsdata_wf.connect(sf, "dwi", decode_entities, "file_name")
+
+    return bidsdata_wf

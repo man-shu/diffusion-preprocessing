@@ -7,7 +7,7 @@ from nipype.interfaces import utility
 from nipype.interfaces.utility.wrappers import Function
 from .report import init_report_wf
 from configparser import ConfigParser
-from .bids import bidsdata_node
+from .bids import init_bidsdata_wf
 from .sink import sink_node
 from pathlib import Path
 
@@ -40,7 +40,7 @@ def _set_inputs_outputs(config, preproc_wf):
         config["TEMPLATE"]["directory"], config["TEMPLATE"]["mask"]
     )
     # bids dataset
-    bidsdata = bidsdata_node(config=config)
+    bidsdata_wf = init_bidsdata_wf(config=config)
     # outputs
     sink = sink_node(config=config)
     sink.inputs.container = bidsdata.inputs.subject_id
@@ -52,12 +52,13 @@ def _set_inputs_outputs(config, preproc_wf):
     preproc_wf.connect(
         [
             (
-                bidsdata,
+                bidsdata_wf,
                 preproc_wf.get_node("input_subject"),
                 [
                     ("dwi", "dwi"),
                     ("bval", "bval"),
                     ("bvec", "bvec"),
+                    ("subject_id", "subject_id"),
                 ],
             ),
             (
@@ -83,16 +84,6 @@ def _set_inputs_outputs(config, preproc_wf):
 
 
 def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
-
-    def decode_entities(input_string):
-        subject_id = input_string.split("sub-")[-1].split("_")[0]
-        return f"_subject_id_{subject_id}"
-
-    DecodeEntities = Function(
-        input_names=["input_string"],
-        output_names=["subject_id"],
-        function=decode_entities,
-    )
 
     def convert_affine_itk_2_ras(input_affine):
         import subprocess
@@ -139,7 +130,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
 
     input_subject = Node(
         IdentityInterface(
-            fields=["dwi", "bval", "bvec"],
+            fields=["dwi", "bval", "bvec", "subject_id"],
         ),
         name="input_subject",
     )
@@ -168,8 +159,6 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
         ),
         name="output",
     )
-
-    decode_entities = Node(DecodeEntities, name="decode_entities")
 
     fslroi = Node(interface=fsl.ExtractROI(), name="fslroi")
     fslroi.inputs.t_min = 0
@@ -230,8 +219,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             # create mask for the dwi
             (input_subject, fslroi, [("dwi", "in_file")]),
             # get subject id
-            (input_subject, decode_entities, [("dwi", "input_string")]),
-            (decode_entities, output, [("subject_id", "subject_id")]),
+            (input_subject, output, [("subject_id", "subject_id")]),
             (fslroi, bet, [("roi_file", "in_file")]),
             # apply mask to fsl_roi output
             (fslroi, strip_fsl_roi, [("roi_file", "in_file")]),
