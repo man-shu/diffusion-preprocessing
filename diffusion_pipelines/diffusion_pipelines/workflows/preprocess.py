@@ -19,7 +19,7 @@ def _get_config(config_file):
     config = config._sections
     # format the subject
     if "subject" not in config["DATASET"]:
-        config.set("DATASET", "subject", "all")
+        config["DATASET"]["subject"] = "all"
     elif config["DATASET"]["subject"] == "all":
         pass
     else:
