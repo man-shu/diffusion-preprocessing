@@ -45,7 +45,7 @@ def _set_inputs_outputs(config, preproc_wf):
     sink = sink_node(config=config)
     sink.inputs.container = bidsdata.inputs.subject_id
     # also add subject_id to report
-    preproc_wf.get_node("report").inputs.inputnode.subject_id = (
+    preproc_wf.get_node("report").inputs.report_inputnode.subject_id = (
         bidsdata.inputs.subject_id
     )
     # create the full workflow
@@ -83,6 +83,16 @@ def _set_inputs_outputs(config, preproc_wf):
 
 
 def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
+
+    def decode_entities(input_string):
+        subject_id = input_string.split("sub-")[-1].split("_")[0]
+        return f"_subject_id_{subject_id}"
+
+    DecodeEntities = Function(
+        input_names=["input_string"],
+        output_names=["subject_id"],
+        function=decode_entities,
+    )
 
     def convert_affine_itk_2_ras(input_affine):
         import subprocess
@@ -153,10 +163,13 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                 "bet_mask",
                 "template_t2_initial",
                 "template_t2_masked",
+                "subject_id",
             ]
         ),
         name="output",
     )
+
+    decode_entities = Node(DecodeEntities, name="decode_entities")
 
     fslroi = Node(interface=fsl.ExtractROI(), name="fslroi")
     fslroi.inputs.t_min = 0
@@ -216,6 +229,9 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
         [
             # create mask for the dwi
             (input_subject, fslroi, [("dwi", "in_file")]),
+            # get subject id
+            (input_subject, decode_entities, [("dwi", "input_string")]),
+            (decode_entities, output, [("subject_id", "subject_id")]),
             (fslroi, bet, [("roi_file", "in_file")]),
             # apply mask to fsl_roi output
             (fslroi, strip_fsl_roi, [("roi_file", "in_file")]),
@@ -318,6 +334,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                         "dwi_rigid_registered",
                         "report_inputnode.dwi_rigid_registered",
                     ),
+                    ("subject_id", "report_inputnode.subject_id"),
                 ],
             ),
         ]

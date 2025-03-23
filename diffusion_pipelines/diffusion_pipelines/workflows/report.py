@@ -108,6 +108,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 "dwi_rigid_registered",
                 "template_t2_initial",
                 "template_t2_masked",
+                "subject_id",
             ]
         ),
         name="report_inputnode",
@@ -178,7 +179,6 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
     create_html.inputs.report_wf_name = name
     create_html.inputs.template_path = REPORT_TEMPLATE
     create_html.inputs.output_dir = output_dir
-
     workflow = Workflow(name=name, base_dir=output_dir)
     workflow.connect(
         [
@@ -289,6 +289,14 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 merge_node,
                 [
                     ("out_report", "in5"),
+                ],
+            ),
+            # input the subject_id
+            (
+                inputnode,
+                create_html,
+                [
+                    ("subject_id", "subject_id"),
                 ],
             ),
             # create the html report
