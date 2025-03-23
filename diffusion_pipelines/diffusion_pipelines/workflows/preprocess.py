@@ -8,7 +8,7 @@ from nipype.interfaces.utility.wrappers import Function
 from .report import init_report_wf
 from configparser import ConfigParser
 from .bids import init_bidsdata_wf
-from .sink import sink_node
+from .sink import init_sink_wf
 from pathlib import Path
 
 
@@ -42,12 +42,7 @@ def _set_inputs_outputs(config, preproc_wf):
     # bids dataset
     bidsdata_wf = init_bidsdata_wf(config=config)
     # outputs
-    sink = sink_node(config=config)
-    sink.inputs.container = bidsdata.inputs.subject_id
-    # also add subject_id to report
-    preproc_wf.get_node("report").inputs.report_inputnode.subject_id = (
-        bidsdata.inputs.subject_id
-    )
+    sink_wf = init_sink_wf(config=config)
     # create the full workflow
     preproc_wf.connect(
         [
@@ -55,15 +50,25 @@ def _set_inputs_outputs(config, preproc_wf):
                 bidsdata_wf,
                 preproc_wf.get_node("input_subject"),
                 [
-                    ("dwi", "dwi"),
-                    ("bval", "bval"),
-                    ("bvec", "bvec"),
-                    ("subject_id", "subject_id"),
+                    ("selectfiles.dwi", "dwi"),
+                    ("selectfiles.bval", "bval"),
+                    ("selectfiles.bvec", "bvec"),
+                    ("decode_entities.bids_entities", "bids_entities"),
+                ],
+            ),
+            (
+                bidsdata_wf,
+                sink_wf,
+                [
+                    (
+                        "decode_entities.bids_entities",
+                        "sinkinputnode.bids_entities",
+                    )
                 ],
             ),
             (
                 preproc_wf.get_node("output"),
-                sink,
+                sink_wf.get_node("sink"),
                 [
                     (
                         "dwi_rigid_registered",
@@ -75,7 +80,7 @@ def _set_inputs_outputs(config, preproc_wf):
             ),
             (
                 preproc_wf.get_node("report"),
-                sink,
+                sink_wf.get_node("sink"),
                 [("report_outputnode.out_file", "preprocess.@report")],
             ),
         ]
@@ -130,7 +135,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
 
     input_subject = Node(
         IdentityInterface(
-            fields=["dwi", "bval", "bvec", "subject_id"],
+            fields=["dwi", "bval", "bvec", "bids_entities"],
         ),
         name="input_subject",
     )
@@ -154,7 +159,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                 "bet_mask",
                 "template_t2_initial",
                 "template_t2_masked",
-                "subject_id",
+                "bids_entities",
             ]
         ),
         name="output",
@@ -219,7 +224,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             # create mask for the dwi
             (input_subject, fslroi, [("dwi", "in_file")]),
             # get subject id
-            (input_subject, output, [("subject_id", "subject_id")]),
+            (input_subject, output, [("bids_entities", "bids_entities")]),
             (fslroi, bet, [("roi_file", "in_file")]),
             # apply mask to fsl_roi output
             (fslroi, strip_fsl_roi, [("roi_file", "in_file")]),
@@ -322,7 +327,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                         "dwi_rigid_registered",
                         "report_inputnode.dwi_rigid_registered",
                     ),
-                    ("subject_id", "report_inputnode.subject_id"),
+                    ("bids_entities", "report_inputnode.bids_entities"),
                 ],
             ),
         ]

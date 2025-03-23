@@ -33,7 +33,7 @@ def create_html_report(
     report_wf_name,
     template_path,
     output_dir,
-    subject_id,
+    bids_entities,
     plots,
 ):
     import os
@@ -62,6 +62,7 @@ def create_html_report(
                 to_embed[plot_name] = svg_text
         return _embed_svg(to_embed)
 
+    subject_id = f"_subject_id_{bids_entities["subject"]}"
     html_text = _get_html_text(subject_id, *plots)
     out_file = os.path.join(
         output_dir,
@@ -108,7 +109,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 "dwi_rigid_registered",
                 "template_t2_initial",
                 "template_t2_masked",
-                "subject_id",
+                "bids_entities",
             ]
         ),
         name="report_inputnode",
@@ -168,7 +169,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
             "report_wf_name",
             "template_path",
             "output_dir",
-            "subject_id",
+            "bids_entities",
             "plots",
         ],
         output_names=["out_file"],
@@ -291,12 +292,12 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                     ("out_report", "in5"),
                 ],
             ),
-            # input the subject_id
+            # input the bids_entities
             (
                 inputnode,
                 create_html,
                 [
-                    ("subject_id", "subject_id"),
+                    ("bids_entities", "bids_entities"),
                 ],
             ),
             # create the html report

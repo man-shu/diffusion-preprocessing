@@ -51,12 +51,13 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
 
     ### Node to decode entities
     def decode_entities(file_name):
-        bids_entities = parse_file_entities(file_name)
-        return bids_entities["subject"]
+        from bids.layout import parse_file_entities
+
+        return parse_file_entities(file_name)
 
     DecodeEntities = Function(
         input_names=["file_name"],
-        output_names=["subject_id"],
+        output_names=["bids_entities"],
         function=decode_entities,
     )
     decode_entities = Node(DecodeEntities, name="decode_entities")
