@@ -32,7 +32,8 @@ def create_html_report(
     calling_wf_name,
     report_wf_name,
     template_path,
-    output_root,
+    output_dir,
+    bids_entities,
     plots,
 ):
     import os
@@ -49,8 +50,8 @@ def create_html_report(
 
         return string_text
 
-    def _get_html_text(*args):
-        to_embed = {}
+    def _get_html_text(subject_id, *args):
+        to_embed = {"subject_id": subject_id}
         for plot in args:
             if plot is not None:
                 with open(plot, "r", encoding="utf-8") as f:
@@ -61,8 +62,15 @@ def create_html_report(
                 to_embed[plot_name] = svg_text
         return _embed_svg(to_embed)
 
-    html_text = _get_html_text(*plots)
-    out_file = os.path.join(output_root, "report.html")
+    subject_id = f"_subject_id_{bids_entities["subject"]}"
+    html_text = _get_html_text(subject_id, *plots)
+    out_file = os.path.join(
+        output_dir,
+        calling_wf_name,
+        report_wf_name,
+        subject_id,
+        "report.html",
+    )
     report_html = HTMLDocument(html_text).save_as_html(out_file)
     print(f"Report for {calling_wf_name} created at {out_file}")
     return out_file
@@ -73,7 +81,7 @@ def wait_func(*args, **kwargs):
     pass
 
 
-def init_report_wf(calling_wf_name, output_root, name="report"):
+def init_report_wf(calling_wf_name, output_dir, name="report"):
     """Create a workflow to generate a report for the diffusion preprocessing
     pipeline.
 
@@ -101,9 +109,14 @@ def init_report_wf(calling_wf_name, output_root, name="report"):
                 "dwi_rigid_registered",
                 "template_t2_initial",
                 "template_t2_masked",
+                "bids_entities",
             ]
         ),
         name="report_inputnode",
+    )
+    outputnode = Node(
+        IdentityInterface(fields=["out_file"]),
+        name="report_outputnode",
     )
     # define a function to get the zero index of the input dwi file
     DWIZero = Function(
@@ -155,7 +168,8 @@ def init_report_wf(calling_wf_name, output_root, name="report"):
             "calling_wf_name",
             "report_wf_name",
             "template_path",
-            "output_root",
+            "output_dir",
+            "bids_entities",
             "plots",
         ],
         output_names=["out_file"],
@@ -165,9 +179,8 @@ def init_report_wf(calling_wf_name, output_root, name="report"):
     create_html.inputs.calling_wf_name = calling_wf_name
     create_html.inputs.report_wf_name = name
     create_html.inputs.template_path = REPORT_TEMPLATE
-    create_html.inputs.output_root = output_root
-
-    workflow = Workflow(name=name)
+    create_html.inputs.output_dir = output_dir
+    workflow = Workflow(name=name, base_dir=output_dir)
     workflow.connect(
         [
             # get the zero index of the input dwi file
@@ -279,6 +292,14 @@ def init_report_wf(calling_wf_name, output_root, name="report"):
                     ("out_report", "in5"),
                 ],
             ),
+            # input the bids_entities
+            (
+                inputnode,
+                create_html,
+                [
+                    ("bids_entities", "bids_entities"),
+                ],
+            ),
             # create the html report
             (
                 merge_node,
@@ -287,6 +308,8 @@ def init_report_wf(calling_wf_name, output_root, name="report"):
                     ("out", "plots"),
                 ],
             ),
+            # output the html report
+            (create_html, outputnode, [("out_file", "out_file")]),
         ]
     )
     return workflow
