@@ -40,15 +40,14 @@ RUN mkdir -p /home/freesurfer && \
 COPY docker/files/freesurfer7.3.2-exclude.txt /home/freesurfer/freesurfer7.3.2-exclude.txt
 RUN curl -sSL https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.3.2/freesurfer-linux-ubuntu22_amd64-7.3.2.tar.gz \
     | tar zxv --no-same-owner -C /home/freesurfer --exclude-from=/home/freesurfer/freesurfer7.3.2-exclude.txt
-RUN rm /home/freesurfer/freesurfer7.3.2-exclude.txt && \
-    rm /home/freesurfer/freesurfer-linux-ubuntu22_amd64-7.3.2.tar.gz
+RUN rm /home/freesurfer/freesurfer7.3.2-exclude.txt
 
 # Simulate SetUpFreeSurfer.sh
 ENV OS="Linux" \
     FS_OVERRIDE=0 \
     FIX_VERTEX_AREA="" \
     FSF_OUTPUT_FORMAT="nii.gz" \
-    FREESURFER_HOME="/home/freesurfer"
+    FREESURFER_HOME="/home/freesurfer/freesurfer"
 ENV SUBJECTS_DIR="$FREESURFER_HOME/subjects" \
     FUNCTIONALS_DIR="$FREESURFER_HOME/sessions" \
     MNI_DIR="$FREESURFER_HOME/mni" \
