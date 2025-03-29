@@ -23,12 +23,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cmake \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install all deps in /home
-RUN cd /home
-
 # Install ANTS
-RUN mkdir -p ANTS && \
-    cd ANTS && \
+RUN mkdir -p /home/ANTS && \
+    cd /home/ANTS && \
     wget https://github.com/ANTsX/ANTs/releases/download/v2.4.4/ants-2.4.4-ubuntu-22.04-X64-gcc.zip && \
     unzip ants-2.4.4-ubuntu-22.04-X64-gcc.zip && \
     rm ants-2.4.4-ubuntu-22.04-X64-gcc.zip
@@ -38,32 +35,13 @@ ENV ANTSPATH="/home/ANTS/ants-2.4.4/bin" \
     PATH=$ANTSPATH:$PATH
 
 # Install FreeSurfer
-RUN cd /home && \
-    mkdir -p freesurfer && \
-    cd freesurfer && \
-    wget https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.4.1/freesurfer-linux-ubuntu22_amd64-7.4.1.tar.gz && \
-    tar -vzxpf freesurfer-linux-ubuntu22_amd64-7.4.1.tar.gz \
-    --exclude='freesurfer/diffusion' \
-    --exclude='freesurfer/docs' \
-    --exclude='freesurfer/fsfast' \
-    --exclude='freesurfer/lib/cuda' \
-    --exclude='freesurfer/lib/qt' \
-    --exclude='freesurfer/matlab' \
-    --exclude='freesurfer/mni/share/man' \
-    --exclude='freesurfer/subjects/fsaverage_sym' \
-    --exclude='freesurfer/subjects/fsaverage3' \
-    --exclude='freesurfer/subjects/fsaverage4' \
-    --exclude='freesurfer/subjects/cvs_avg35' \
-    --exclude='freesurfer/subjects/cvs_avg35_inMNI152' \
-    --exclude='freesurfer/subjects/bert' \
-    --exclude='freesurfer/subjects/lh.EC_average' \
-    --exclude='freesurfer/subjects/rh.EC_average' \
-    --exclude='freesurfer/subjects/sample-*.mgz' \
-    --exclude='freesurfer/subjects/V1_average' \
-    --exclude='freesurfer/trctrain'
-
-# Clean up FreeSurfer installation
-RUN rm freesurfer-linux-ubuntu22_amd64-7.4.1.tar.gz
+RUN mkdir -p /home/freesurfer && \
+    cd /home/freesurfer 
+COPY docker/files/freesurfer7.3.2-exclude.txt /home/freesurfer/freesurfer7.3.2-exclude.txt
+RUN wget https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.3.2/freesurfer-linux-ubuntu22_amd64-7.3.2.tar.gz && | \
+    tar zxv --no-same-owner -C /home/freesurfer --exclude-from=/home/freesurfer/freesurfer7.3.2-exclude.txt && \
+    rm /home/freesurfer/freesurfer7.3.2-exclude.txt && \
+    rm /home/freesurfer/freesurfer-linux-ubuntu22_amd64-7.3.2.tar.gz
 
 # Simulate SetUpFreeSurfer.sh
 ENV OS="Linux" \
@@ -83,11 +61,11 @@ ENV PERL5LIB="$MINC_LIB_DIR/perl5/5.8.5" \
     PATH="$FREESURFER_HOME/bin:$FREESURFER_HOME/tktools:$MINC_BIN_DIR:$PATH"
 
 # Install conda
-RUN cd /home && \
-    mkdir -p miniconda3 && \
-    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda3/miniconda.sh && \
-    bash miniconda3/miniconda.sh -b -u -p miniconda3 && \
-    rm miniconda3/miniconda.sh
+RUN mkdir -p /home/miniconda3 && \
+    cd /home/miniconda3 && \
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /home/miniconda3/miniconda.sh && \
+    bash /home/miniconda3/miniconda.sh -b -u -p /home/miniconda3 && \
+    rm /home/miniconda3/miniconda.sh
 
 # Set CPATH for packages relying on compiled libs (e.g. indexed_gzip)
 ENV PATH="/home/miniconda3/bin:$PATH" \
@@ -101,4 +79,4 @@ RUN cd /home && \
     wget https://git.fmrib.ox.ac.uk/fsl/conda/installer/-/raw/3.13.4/fsl/installer/fslinstaller.py && \
     python fslinstaller.py --no_self_update -n -d /home/fsl -V 6.0.7.11
 
-RUN rm fslinstaller.py
+RUN rm /home/fslinstaller.py
