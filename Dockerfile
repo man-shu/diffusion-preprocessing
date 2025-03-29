@@ -32,7 +32,7 @@ RUN mkdir -p /home/ANTS && \
 
 # Set up environment variables for ANTs
 ENV ANTSPATH="/home/ANTS/ants-2.4.4/bin" \
-    PATH=$ANTSPATH:$PATH
+    PATH="$ANTSPATH:$PATH"
 
 # Install FreeSurfer
 RUN mkdir -p /home/freesurfer && \
