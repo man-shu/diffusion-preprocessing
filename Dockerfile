@@ -29,14 +29,14 @@ RUN cd /home
 # Install ANTS
 RUN git clone https://github.com/cookpa/antsInstallExample.git ANTs && \
     cd ANTs && rm -rf .git && rm -rf README.md && \
-    sed -i "s|# cd ANTs|cd ANTs |g" install_ants.sh && \
-    sed -i "s|# git checkout v2.3.1|git checkout v2.4.0 |g" install_ants.sh && \
-    sed -i "s|# cd - |cd - |g" install_ants.sh && \
-    ./install_ants.sh
+    sed -i "s|# cd ANTs|cd ANTs |g" installANTs.sh && \
+    sed -i "s|# git checkout v2.3.1|git checkout v2.4.0 |g" installANTs.sh && \
+    sed -i "s|# cd - |cd - |g" installANTs.sh && \
+    ./installANTs.sh
 
 # Clean up ANTs installation
 RUN rm -rf ANTs && \
-    rm -rf install_ants.sh && \ 
+    rm -rf installANTs.sh && \ 
     rm -rf build && \
     cd ..
 
