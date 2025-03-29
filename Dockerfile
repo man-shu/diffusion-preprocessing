@@ -27,7 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN cd /home
 
 # Install ANTS
-RUN mkdir -r ANTS && \
+RUN mkdir -p ANTS && \
     wget https://github.com/ANTsX/ANTs/releases/download/v2.4.4/ants-2.4.4-ubuntu-22.04-X64-gcc.zip && \
     unzip ants-2.4.4-ubuntu-22.04-X64-gcc.zip . && \
     rm ants-2.4.4-ubuntu-22.04-X64-gcc.zip
