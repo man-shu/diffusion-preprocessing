@@ -38,7 +38,8 @@ ENV ANTSPATH="/home/ANTS/ants-2.4.4/bin" \
     PATH=$ANTSPATH:$PATH
 
 # Install FreeSurfer
-RUN mkdir -p freesurfer && \
+RUN cd /home && \
+    mkdir -p freesurfer && \
     cd freesurfer && \
     wget https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.4.1/freesurfer-linux-ubuntu22_amd64-7.4.1.tar.gz && \
     tar -vzxpf freesurfer-linux-ubuntu22_amd64-7.4.1.tar.gz \
@@ -62,8 +63,7 @@ RUN mkdir -p freesurfer && \
     --exclude='freesurfer/trctrain'
 
 # Clean up FreeSurfer installation
-RUN rm freesurfer-linux-ubuntu22_amd64-7.4.1.tar.gz && \
-    cd ..
+RUN rm freesurfer-linux-ubuntu22_amd64-7.4.1.tar.gz
 
 # Simulate SetUpFreeSurfer.sh
 ENV OS="Linux" \
@@ -83,20 +83,22 @@ ENV PERL5LIB="$MINC_LIB_DIR/perl5/5.8.5" \
     PATH="$FREESURFER_HOME/bin:$FREESURFER_HOME/tktools:$MINC_BIN_DIR:$PATH"
 
 # Install conda
-RUN mkdir -p miniconda3 && \
+RUN cd /home && \
+    mkdir -p miniconda3 && \
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda3/miniconda.sh && \
     bash miniconda3/miniconda.sh -b -u -p miniconda3 && \
     rm miniconda3/miniconda.sh
 
 # Set CPATH for packages relying on compiled libs (e.g. indexed_gzip)
-ENV PATH="/home/miniconda/bin:$PATH" \
-    CPATH="/home/miniconda/include/:$CPATH" \
+ENV PATH="/home/miniconda3/bin:$PATH" \
+    CPATH="/home/miniconda3/include/:$CPATH" \
     LANG="C.UTF-8" \
     LC_ALL="C.UTF-8" \
     PYTHONNOUSERSITE=1
 
 # Install FSL
-RUN wget https://git.fmrib.ox.ac.uk/fsl/conda/installer/-/raw/3.13.4/fsl/installer/fslinstaller.py && \
+RUN cd /home && \
+    wget https://git.fmrib.ox.ac.uk/fsl/conda/installer/-/raw/3.13.4/fsl/installer/fslinstaller.py && \
     python fslinstaller.py --no_self_update -n -d /home/fsl -V 6.0.7.11
 
 RUN rm fslinstaller.py
