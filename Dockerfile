@@ -30,7 +30,7 @@ RUN cd /home
 RUN git clone https://github.com/cookpa/antsInstallExample.git ANTs && \
     cd ANTs && rm -rf .git && rm -rf README.md && \
     sed -i "s|# cd ANTs|cd ANTs |g" installANTs.sh && \
-    sed -i "s|# git checkout v2.3.1|git checkout v2.4.0 |g" installANTs.sh && \
+    sed -i "s|# git checkout v2.3.1|git checkout v2.4.4 |g" installANTs.sh && \
     sed -i "s|# cd - |cd - |g" installANTs.sh && \
     ./installANTs.sh
 
