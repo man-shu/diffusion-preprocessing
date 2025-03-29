@@ -38,7 +38,7 @@ ENV ANTSPATH="/home/ANTS/ants-2.4.4/bin" \
 RUN mkdir -p /home/freesurfer && \
     cd /home/freesurfer 
 COPY docker/files/freesurfer7.3.2-exclude.txt /home/freesurfer/freesurfer7.3.2-exclude.txt
-RUN wget https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.3.2/freesurfer-linux-ubuntu22_amd64-7.3.2.tar.gz && | \
+RUN wget https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.3.2/freesurfer-linux-ubuntu22_amd64-7.3.2.tar.gz | \
     tar zxv --no-same-owner -C /home/freesurfer --exclude-from=/home/freesurfer/freesurfer7.3.2-exclude.txt && \
     rm /home/freesurfer/freesurfer7.3.2-exclude.txt && \
     rm /home/freesurfer/freesurfer-linux-ubuntu22_amd64-7.3.2.tar.gz
