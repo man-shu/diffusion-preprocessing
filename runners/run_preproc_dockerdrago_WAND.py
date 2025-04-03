@@ -29,4 +29,4 @@ preproc.write_graph(
 )
 
 # Run the diffusion preprocessing pipeline
-preproc.run(plugin="MultiProc", plugin_args={"n_procs": 100})
+preproc.run(plugin="MultiProc", plugin_args={"n_procs": 10})
