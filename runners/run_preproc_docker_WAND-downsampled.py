@@ -15,7 +15,10 @@ root = "/home/input"
 
 output_dir = os.path.join(root, "result", f"preproc_output_{timestamp}")
 config_path = os.path.join(
-    root, "diffusion-preprocessing", "configs", "config_WAND-downsampled.cfg"
+    root,
+    "diffusion-preprocessing",
+    "configs",
+    "config_docker_WAND-downsampled.cfg",
 )
 
 # Create the diffusion preprocess wf
