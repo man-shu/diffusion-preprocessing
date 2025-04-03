@@ -99,12 +99,6 @@ RUN mkdir -p /home/niflow && \
 # Install graphviz
 RUN apt-get update && apt-get install -y graphviz
 
-# Install diffusion-pipelines
-RUN git clone https://github.com/man-shu/diffusion-preprocessing.git /home/diffusion-preprocessing && \
-    cd /home/diffusion-preprocessing/diffusion_pipelines && \
-    git checkout dockerize && \
-    pip install -e .
-
 # Add ANTs to PATH, previous one doesn't work
 ENV PATH="/home/ANTS/ants-2.4.4/bin:$PATH"
 
@@ -115,3 +109,9 @@ RUN mkdir -p /home/Convert3D && \
     tar -xzf c3d-1.0.0-Linux-x86_64.tar.gz && \
     rm c3d-1.0.0-Linux-x86_64.tar.gz
 ENV PATH="/home/Convert3D/c3d-1.0.0-Linux-x86_64/bin:$PATH"
+
+# Install diffusion-pipelines
+RUN git clone https://github.com/man-shu/diffusion-preprocessing.git /home/diffusion-preprocessing && \
+    cd /home/diffusion-preprocessing/diffusion_pipelines && \
+    git checkout dockerize && \
+    pip install -e .
