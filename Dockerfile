@@ -88,3 +88,10 @@ ENV LANG="C.UTF-8" \
     FSLMACHINELIST="" \
     FSLREMOTECALL="" \
     FSLGECUDAQ="cuda.q"
+
+# Install niflow
+RUN mkdir -p /home/niflow && \
+    cd /home/niflow && \
+    git clone https://github.com/niflows/nipype1-workflows.git && \
+    cd nipype1-workflows/package && \
+    pip install .
