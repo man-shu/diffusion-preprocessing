@@ -104,3 +104,14 @@ RUN git clone https://github.com/man-shu/diffusion-preprocessing.git /home/diffu
     cd /home/diffusion-preprocessing/diffusion_pipelines && \
     git checkout dockerize && \
     pip install -e .
+
+# Add ANTs to PATH, previous one doesn't work
+ENV PATH="/home/ANTS/ants-2.4.4/bin:$PATH"
+
+# Download and install Convert3D
+RUN mkdir -p /home/Convert3D && \
+    cd /home/Convert3D && \
+    wget https://sourceforge.net/projects/c3d/files/c3d/1.0.0/c3d-1.0.0-Linux-x86_64.tar.gz && \
+    tar -xzf c3d-1.0.0-Linux-x86_64.tar.gz && \
+    rm c3d-1.0.0-Linux-x86_64.tar.gz
+ENV PATH="/home/Convert3D/c3d-1.0.0-Linux-x86_64/bin:$PATH"
