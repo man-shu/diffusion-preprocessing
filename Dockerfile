@@ -73,9 +73,20 @@ ENV PATH="/home/miniconda3/bin:$PATH" \
     LC_ALL="C.UTF-8" \
     PYTHONNOUSERSITE=1
 
-# Install FSL
-RUN cd /home && \
-    wget https://git.fmrib.ox.ac.uk/fsl/conda/installer/-/raw/3.13.4/fsl/installer/fslinstaller.py && \
-    python fslinstaller.py --no_self_update -n -d /home/fsl -V 6.0.7.11
+# Install selected FSL conda packages
+RUN mkdir -p /home/fsl && \
+    cd /home/fsl
+COPY docker/files/fsl_deps.txt /home/fsl/fsl_deps.txt
+RUN conda install -p /home/fsl --yes --file /home/fsl/fsl_deps.txt
 
-RUN rm /home/fslinstaller.py
+# Set up environment variables for FSL
+ENV LANG="C.UTF-8" \
+    LC_ALL="C.UTF-8" \
+    PYTHONNOUSERSITE=1 \
+    FSLDIR="/home/fsl" \
+    FSLOUTPUTTYPE="NIFTI_GZ" \
+    FSLMULTIFILEQUIT="TRUE" \
+    FSLLOCKDIR="" \
+    FSLMACHINELIST="" \
+    FSLREMOTECALL="" \
+    FSLGECUDAQ="cuda.q"

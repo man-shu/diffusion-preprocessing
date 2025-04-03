@@ -1,0 +1,6 @@
+fsl-ptx2-cuda
+fsl-ptx2
+fsl-avwutils
+fsl-bet2
+fsl-eddy
+fsl-fdt 
