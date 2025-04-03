@@ -75,7 +75,7 @@ ENV PATH="/home/miniconda3/bin:$PATH" \
 
 # Install selected FSL conda packages
 COPY docker/files/fsl_deps.txt /home/fsl/fsl_deps.txt
-RUN conda install --yes --file /home/fsl/fsl_deps.txt
+RUN conda install --yes --file /home/fsl/fsl_deps.txt -c https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/public/ -c conda-forge
 
 # Set up environment variables for FSL
 ENV LANG="C.UTF-8" \
