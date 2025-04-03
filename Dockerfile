@@ -95,3 +95,9 @@ RUN mkdir -p /home/niflow && \
     git clone https://github.com/niflows/nipype1-workflows.git && \
     cd nipype1-workflows/package && \
     pip install .
+
+# Install diffusion-pipelines
+RUN git clone https://github.com/man-shu/diffusion-preprocessing.git /home/diffusion-preprocessing && \
+    cd /home/diffusion-preprocessing/diffusion_pipelines && \
+    git checkout dockerize && \
+    pip install -e .
