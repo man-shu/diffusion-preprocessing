@@ -96,6 +96,9 @@ RUN mkdir -p /home/niflow && \
     cd nipype1-workflows/package && \
     pip install .
 
+# Install graphviz
+RUN apt-get update && apt-get install -y graphviz
+
 # Install diffusion-pipelines
 RUN git clone https://github.com/man-shu/diffusion-preprocessing.git /home/diffusion-preprocessing && \
     cd /home/diffusion-preprocessing/diffusion_pipelines && \
