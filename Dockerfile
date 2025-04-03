@@ -81,7 +81,7 @@ RUN conda install --yes --file /home/fsl/fsl_deps.txt -c https://fsl.fmrib.ox.ac
 ENV LANG="C.UTF-8" \
     LC_ALL="C.UTF-8" \
     PYTHONNOUSERSITE=1 \
-    FSLDIR="/home/fsl" \
+    FSLDIR="/home/miniconda3" \
     FSLOUTPUTTYPE="NIFTI_GZ" \
     FSLMULTIFILEQUIT="TRUE" \
     FSLLOCKDIR="" \
