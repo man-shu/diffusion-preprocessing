@@ -1,6 +1,13 @@
 # Use Ubuntu 22.04 as the base image
 FROM ubuntu:22.04
 
+# Get the user and group IDs from build arguments
+ARG USER_ID
+ARG GROUP_ID
+
+# Set user
+USER $USER_ID:$GROUP_ID
+
 # Set environment variables to prevent interactive prompts during installation
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -21,6 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     libgomp1 \
     cmake \
+    graphviz \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install ANTS
@@ -31,8 +39,8 @@ RUN mkdir -p /home/ANTS && \
     rm ants-2.4.4-ubuntu-22.04-X64-gcc.zip
 
 # Set up environment variables for ANTs
-ENV ANTSPATH="/home/ANTS/ants-2.4.4/bin" \
-    PATH="$ANTSPATH:$PATH"
+ENV ANTSPATH="/home/ANTS/ants-2.4.4/bin"
+ENV PATH="$ANTSPATH:$PATH"
 
 # Install FreeSurfer
 RUN mkdir -p /home/freesurfer && \
@@ -95,12 +103,6 @@ RUN mkdir -p /home/niflow && \
     git clone https://github.com/niflows/nipype1-workflows.git && \
     cd nipype1-workflows/package && \
     pip install .
-
-# Install graphviz
-RUN apt-get update && apt-get install -y graphviz
-
-# Add ANTs to PATH, previous one doesn't work
-ENV PATH="/home/ANTS/ants-2.4.4/bin:$PATH"
 
 # Download and install Convert3D
 RUN mkdir -p /home/Convert3D && \
