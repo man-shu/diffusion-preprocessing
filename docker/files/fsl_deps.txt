@@ -1,4 +1,4 @@
-fsl-ptx2-cuda
+fsl-ptx2-cuda-10.2
 fsl-ptx2
 fsl-avwutils
 fsl-bet2
