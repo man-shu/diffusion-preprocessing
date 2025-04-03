@@ -5,9 +5,6 @@ FROM ubuntu:22.04
 ARG USER_ID
 ARG GROUP_ID
 
-# Set user
-USER $USER_ID:$GROUP_ID
-
 # Set environment variables to prevent interactive prompts during installation
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -30,6 +27,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cmake \
     graphviz \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Set user
+USER $USER_ID:$GROUP_ID
 
 # Install ANTS
 RUN mkdir -p /home/ANTS && \
