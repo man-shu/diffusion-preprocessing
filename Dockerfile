@@ -4,6 +4,7 @@ FROM ubuntu:22.04
 # Get the user and group IDs from build arguments
 ARG USER_ID
 ARG GROUP_ID
+ARG USER_NAME=dmriprep-tracto
 
 # Set environment variables to prevent interactive prompts during installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -28,34 +29,38 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     graphviz \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Set user
-USER $USER_ID:$GROUP_ID
+# Create user with specified UID/GID
+RUN groupadd -g $GROUP_ID $USER_NAME && \
+    useradd -u $USER_ID -g $GROUP_ID -m $USER_NAME
+
+# Set HOME explicitly
+ENV HOME="/home/$USER_NAME"
 
 # Install ANTS
-RUN mkdir -p /home/ANTS && \
-    cd /home/ANTS && \
+RUN mkdir -p $HOME/ANTS && \
+    cd $HOME/ANTS && \
     wget https://github.com/ANTsX/ANTs/releases/download/v2.4.4/ants-2.4.4-ubuntu-22.04-X64-gcc.zip && \
     unzip ants-2.4.4-ubuntu-22.04-X64-gcc.zip && \
     rm ants-2.4.4-ubuntu-22.04-X64-gcc.zip
 
 # Set up environment variables for ANTs
-ENV ANTSPATH="/home/ANTS/ants-2.4.4/bin"
+ENV ANTSPATH="$HOME/ANTS/ants-2.4.4/bin"
 ENV PATH="$ANTSPATH:$PATH"
 
 # Install FreeSurfer
-RUN mkdir -p /home/freesurfer && \
-    cd /home/freesurfer 
-COPY docker/files/freesurfer7.3.2-exclude.txt /home/freesurfer/freesurfer7.3.2-exclude.txt
+RUN mkdir -p $HOME/freesurfer && \
+    cd $HOME/freesurfer 
+COPY docker/files/freesurfer7.3.2-exclude.txt $HOME/freesurfer/freesurfer7.3.2-exclude.txt
 RUN curl -sSL https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.3.2/freesurfer-linux-ubuntu22_amd64-7.3.2.tar.gz \
-    | tar zxv --no-same-owner -C /home/freesurfer --exclude-from=/home/freesurfer/freesurfer7.3.2-exclude.txt
-RUN rm /home/freesurfer/freesurfer7.3.2-exclude.txt
+    | tar zxv --no-same-owner -C $HOME/freesurfer --exclude-from=$HOME/freesurfer/freesurfer7.3.2-exclude.txt
+RUN rm $HOME/freesurfer/freesurfer7.3.2-exclude.txt
 
 # Simulate SetUpFreeSurfer.sh
 ENV OS="Linux" \
     FS_OVERRIDE=0 \
     FIX_VERTEX_AREA="" \
     FSF_OUTPUT_FORMAT="nii.gz" \
-    FREESURFER_HOME="/home/freesurfer/freesurfer"
+    FREESURFER_HOME="$HOME/freesurfer/freesurfer"
 ENV SUBJECTS_DIR="$FREESURFER_HOME/subjects" \
     FUNCTIONALS_DIR="$FREESURFER_HOME/sessions" \
     MNI_DIR="$FREESURFER_HOME/mni" \
@@ -68,28 +73,28 @@ ENV PERL5LIB="$MINC_LIB_DIR/perl5/5.8.5" \
     PATH="$FREESURFER_HOME/bin:$FREESURFER_HOME/tktools:$MINC_BIN_DIR:$PATH"
 
 # Install conda
-RUN mkdir -p /home/miniconda3 && \
-    cd /home/miniconda3 && \
-    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /home/miniconda3/miniconda.sh && \
-    bash /home/miniconda3/miniconda.sh -b -u -p /home/miniconda3 && \
-    rm /home/miniconda3/miniconda.sh
+RUN mkdir -p $HOME/miniconda3 && \
+    cd $HOME/miniconda3 && \
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O $HOME/miniconda3/miniconda.sh && \
+    bash $HOME/miniconda3/miniconda.sh -b -u -p $HOME/miniconda3 && \
+    rm $HOME/miniconda3/miniconda.sh
 
 # Set CPATH for packages relying on compiled libs (e.g. indexed_gzip)
-ENV PATH="/home/miniconda3/bin:$PATH" \
-    CPATH="/home/miniconda3/include/:$CPATH" \
+ENV PATH="$HOME/miniconda3/bin:$PATH" \
+    CPATH="$HOME/miniconda3/include/:$CPATH" \
     LANG="C.UTF-8" \
     LC_ALL="C.UTF-8" \
     PYTHONNOUSERSITE=1
 
 # Install selected FSL conda packages
-COPY docker/files/fsl_deps.txt /home/fsl/fsl_deps.txt
-RUN conda install --yes --file /home/fsl/fsl_deps.txt -c https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/public/ -c conda-forge
+COPY docker/files/fsl_deps.txt $HOME/fsl/fsl_deps.txt
+RUN conda install --yes --file $HOME/fsl/fsl_deps.txt -c https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/public/ -c conda-forge
 
 # Set up environment variables for FSL
 ENV LANG="C.UTF-8" \
     LC_ALL="C.UTF-8" \
     PYTHONNOUSERSITE=1 \
-    FSLDIR="/home/miniconda3" \
+    FSLDIR="$HOME/miniconda3" \
     FSLOUTPUTTYPE="NIFTI_GZ" \
     FSLMULTIFILEQUIT="TRUE" \
     FSLLOCKDIR="" \
@@ -98,22 +103,28 @@ ENV LANG="C.UTF-8" \
     FSLGECUDAQ="cuda.q"
 
 # Install niflow
-RUN mkdir -p /home/niflow && \
-    cd /home/niflow && \
+RUN mkdir -p $HOME/niflow && \
+    cd $HOME/niflow && \
     git clone https://github.com/niflows/nipype1-workflows.git && \
     cd nipype1-workflows/package && \
     pip install .
 
 # Download and install Convert3D
-RUN mkdir -p /home/Convert3D && \
-    cd /home/Convert3D && \
+RUN mkdir -p $HOME/Convert3D && \
+    cd $HOME/Convert3D && \
     wget https://sourceforge.net/projects/c3d/files/c3d/1.0.0/c3d-1.0.0-Linux-x86_64.tar.gz && \
     tar -xzf c3d-1.0.0-Linux-x86_64.tar.gz && \
     rm c3d-1.0.0-Linux-x86_64.tar.gz
-ENV PATH="/home/Convert3D/c3d-1.0.0-Linux-x86_64/bin:$PATH"
+ENV PATH="$HOME/Convert3D/c3d-1.0.0-Linux-x86_64/bin:$PATH"
 
 # Install diffusion-pipelines
-RUN git clone https://github.com/man-shu/diffusion-preprocessing.git /home/diffusion-preprocessing && \
-    cd /home/diffusion-preprocessing/diffusion_pipelines && \
+RUN git clone https://github.com/man-shu/diffusion-preprocessing.git $HOME/diffusion-preprocessing && \
+    cd $HOME/diffusion-preprocessing/diffusion_pipelines && \
     git checkout dockerize && \
     pip install -e .
+
+# After all installations are complete, set permissions
+RUN chown -R $USER_ID:$GROUP_ID $HOME
+
+# Set a working directory owned by the user
+WORKDIR $HOME
