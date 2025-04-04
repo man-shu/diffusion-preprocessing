@@ -30,7 +30,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create user with specified UID/GID
-RUN groupadd -g $GROUP_ID $USER_NAME && \
+RUN groupadd -f -g $GROUP_ID $USER_NAME && \
     useradd -u $USER_ID -g $GROUP_ID -m $USER_NAME
 
 # Set HOME explicitly
