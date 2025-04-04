@@ -46,10 +46,6 @@ RUN mkdir -p $HOME/ANTS \
     $HOME/diffusion-preprocessing && \
     chown -R $USER_ID:$GROUP_ID $HOME
 
-# Copy files that will be needed before switching to user
-COPY --chown=$USER_ID:$GROUP_ID docker/files/freesurfer7.3.2-exclude.txt /home/$USER_NAME/freesurfer/freesurfer7.3.2-exclude.txt
-COPY --chown=$USER_ID:$GROUP_ID docker/files/fsl_deps.txt /home/$USER_NAME/fsl/fsl_deps.txt
-
 # Switch to the created user
 USER $USER_NAME
 
@@ -68,7 +64,8 @@ ENV ANTSPATH="$HOME/ANTS/ants-2.4.4/bin"
 ENV PATH="$ANTSPATH:$PATH"
 
 # Install FreeSurfer
-RUN cd $HOME/freesurfer 
+COPY --chown=$USER_ID:$GROUP_ID docker/files/freesurfer7.3.2-exclude.txt $HOME/freesurfer/freesurfer7.3.2-exclude.txt
+RUN cd $HOME/freesurfer
 RUN curl -sSL https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.3.2/freesurfer-linux-ubuntu22_amd64-7.3.2.tar.gz \
     | tar zxv --no-same-owner -C $HOME/freesurfer --exclude-from=$HOME/freesurfer/freesurfer7.3.2-exclude.txt
 RUN rm $HOME/freesurfer/freesurfer7.3.2-exclude.txt
@@ -104,6 +101,7 @@ ENV PATH="$HOME/miniconda3/bin:$PATH" \
     PYTHONNOUSERSITE=1
 
 # Install selected FSL conda packages
+COPY --chown=$USER_ID:$GROUP_ID docker/files/fsl_deps.txt $HOME/fsl/fsl_deps.txt
 RUN conda install --yes --file $HOME/fsl/fsl_deps.txt -c https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/public/ -c conda-forge
 
 # Set up environment variables for FSL
