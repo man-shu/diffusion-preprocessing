@@ -36,9 +36,29 @@ RUN groupadd -g $GROUP_ID $USER_NAME && \
 # Set HOME explicitly
 ENV HOME="/home/$USER_NAME"
 
+# Create directories and set permissions
+RUN mkdir -p $HOME/ANTS \
+    $HOME/freesurfer \
+    $HOME/miniconda3 \
+    $HOME/fsl \
+    $HOME/niflow \
+    $HOME/Convert3D \
+    $HOME/diffusion-preprocessing && \
+    chown -R $USER_ID:$GROUP_ID $HOME
+
+# Copy files that will be needed before switching to user
+COPY --chown=$USER_ID:$GROUP_ID docker/files/freesurfer7.3.2-exclude.txt /home/$USER_NAME/freesurfer/freesurfer7.3.2-exclude.txt
+COPY --chown=$USER_ID:$GROUP_ID docker/files/fsl_deps.txt /home/$USER_NAME/fsl/fsl_deps.txt
+
+# Switch to the created user
+USER $USER_NAME
+
+# Set HOME explicitly
+ENV HOME="/home/$USER_NAME"
+WORKDIR $HOME
+
 # Install ANTS
-RUN mkdir -p $HOME/ANTS && \
-    cd $HOME/ANTS && \
+RUN cd $HOME/ANTS && \
     wget https://github.com/ANTsX/ANTs/releases/download/v2.4.4/ants-2.4.4-ubuntu-22.04-X64-gcc.zip && \
     unzip ants-2.4.4-ubuntu-22.04-X64-gcc.zip && \
     rm ants-2.4.4-ubuntu-22.04-X64-gcc.zip
@@ -48,9 +68,7 @@ ENV ANTSPATH="$HOME/ANTS/ants-2.4.4/bin"
 ENV PATH="$ANTSPATH:$PATH"
 
 # Install FreeSurfer
-RUN mkdir -p $HOME/freesurfer && \
-    cd $HOME/freesurfer 
-COPY docker/files/freesurfer7.3.2-exclude.txt $HOME/freesurfer/freesurfer7.3.2-exclude.txt
+RUN cd $HOME/freesurfer 
 RUN curl -sSL https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.3.2/freesurfer-linux-ubuntu22_amd64-7.3.2.tar.gz \
     | tar zxv --no-same-owner -C $HOME/freesurfer --exclude-from=$HOME/freesurfer/freesurfer7.3.2-exclude.txt
 RUN rm $HOME/freesurfer/freesurfer7.3.2-exclude.txt
@@ -73,8 +91,7 @@ ENV PERL5LIB="$MINC_LIB_DIR/perl5/5.8.5" \
     PATH="$FREESURFER_HOME/bin:$FREESURFER_HOME/tktools:$MINC_BIN_DIR:$PATH"
 
 # Install conda
-RUN mkdir -p $HOME/miniconda3 && \
-    cd $HOME/miniconda3 && \
+RUN cd $HOME/miniconda3 && \
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O $HOME/miniconda3/miniconda.sh && \
     bash $HOME/miniconda3/miniconda.sh -b -u -p $HOME/miniconda3 && \
     rm $HOME/miniconda3/miniconda.sh
@@ -87,7 +104,6 @@ ENV PATH="$HOME/miniconda3/bin:$PATH" \
     PYTHONNOUSERSITE=1
 
 # Install selected FSL conda packages
-COPY docker/files/fsl_deps.txt $HOME/fsl/fsl_deps.txt
 RUN conda install --yes --file $HOME/fsl/fsl_deps.txt -c https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/public/ -c conda-forge
 
 # Set up environment variables for FSL
@@ -103,15 +119,13 @@ ENV LANG="C.UTF-8" \
     FSLGECUDAQ="cuda.q"
 
 # Install niflow
-RUN mkdir -p $HOME/niflow && \
-    cd $HOME/niflow && \
+RUN cd $HOME/niflow && \
     git clone https://github.com/niflows/nipype1-workflows.git && \
     cd nipype1-workflows/package && \
     pip install .
 
 # Download and install Convert3D
-RUN mkdir -p $HOME/Convert3D && \
-    cd $HOME/Convert3D && \
+RUN cd $HOME/Convert3D && \
     wget https://sourceforge.net/projects/c3d/files/c3d/1.0.0/c3d-1.0.0-Linux-x86_64.tar.gz && \
     tar -xzf c3d-1.0.0-Linux-x86_64.tar.gz && \
     rm c3d-1.0.0-Linux-x86_64.tar.gz
@@ -122,9 +136,3 @@ RUN git clone https://github.com/man-shu/diffusion-preprocessing.git $HOME/diffu
     cd $HOME/diffusion-preprocessing/diffusion_pipelines && \
     git checkout dockerize && \
     pip install -e .
-
-# After all installations are complete, set permissions
-RUN chown -R $USER_ID:$GROUP_ID $HOME
-
-# Set a working directory owned by the user
-WORKDIR $HOME
