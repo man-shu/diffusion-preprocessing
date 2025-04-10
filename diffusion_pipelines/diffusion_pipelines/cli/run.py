@@ -144,6 +144,7 @@ def main():
     import sys
     import os
     import time
+    import tempfile
     from diffusion_pipelines.workflows import (
         init_preprocess_wf,
         init_recon_wf,
@@ -152,14 +153,27 @@ def main():
 
     if len(sys.argv) != 2:
         print(sys.argv)
-        print("Usage: dmriprep-tracto <path_to_config_file>")
+        print(
+            "Usage: dmriprep-tracto <path_to_config_file> or '-' to read from stdin"
+        )
         sys.exit(1)
+
+    config_arg = sys.argv[1]
+
+    # If the argument is '-' or if the given file path doesn't exist,
+    # assume the config is coming via stdin
+    if config_arg == "-" or not os.path.exists(config_arg):
+        config_data = sys.stdin.read()
+        with tempfile.NamedTemporaryFile(
+            delete=False, mode="w", suffix=".cfg"
+        ) as tmp_file:
+            tmp_file.write(config_data)
+            config_arg = tmp_file.name
 
     # Create a timestamp in YYYYMMDD_HHMMSS format
     timestamp = time.strftime("%Y%m%d-%H%M%S")
 
-    config_file = sys.argv[1]
     # parse the config file
-    config = _parse_config(config_file)
+    config = _parse_config(config_arg)
 
     _run_pipeline(_select_pipeline(config))
