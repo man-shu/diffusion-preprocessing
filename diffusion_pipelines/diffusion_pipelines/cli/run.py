@@ -57,6 +57,8 @@ def _parse_pipeline(config):
             config["PIPELINE"]["reconstruction"] = False
             config["PIPELINE"]["preprocessing"] = False
 
+    return config
+
 
 def _parse_config(config_file):
     config = ConfigParser()
