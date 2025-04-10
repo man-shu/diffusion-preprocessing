@@ -171,6 +171,9 @@ def main():
             tmp_file.write(config_data)
             config_arg = tmp_file.name
             print(f"Temporary config file created at {config_arg}")
+            # print the contents of the temporary file
+            with open(config_arg, "r") as f:
+                print(f.read())
 
     # Create a timestamp in YYYYMMDD_HHMMSS format
     timestamp = time.strftime("%Y%m%d-%H%M%S")
