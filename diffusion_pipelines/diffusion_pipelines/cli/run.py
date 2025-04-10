@@ -63,14 +63,10 @@ def _parse_pipeline(config):
 def _parse_config(config_file):
     config = ConfigParser()
     config.read(config_file)
-    print(vars(config))
     # convert to dictionary
     config = config._sections
-    print(config)
     config = _parse_subjects(config)
-    print(config)
     config = _parse_pipeline(config)
-    print(config)
     return config
 
 
@@ -82,7 +78,6 @@ def _select_pipeline(config):
 
     # check if the config file is valid
     if not config:
-        print(config)
         raise ValueError("Config file is empty or invalid.")
 
     # check if the output directory exists
@@ -171,7 +166,6 @@ def main():
     # assume the config is coming via stdin
     if config_arg == "-" or not os.path.exists(config_arg):
         config_data = sys.stdin.read()
-        print(config_data)
         with tempfile.NamedTemporaryFile(
             delete=False, mode="w", suffix=".cfg"
         ) as tmp_file:
@@ -179,9 +173,6 @@ def main():
             tmp_file.flush()  # ensure content is written to disk
             config_arg = tmp_file.name
             print(f"Temporary config file created at {config_arg}")
-            # print the contents of the temporary file
-            with open(config_arg, "r") as f:
-                print(f.read())
 
     # Create a timestamp in YYYYMMDD_HHMMSS format
     timestamp = time.strftime("%Y%m%d-%H%M%S")
