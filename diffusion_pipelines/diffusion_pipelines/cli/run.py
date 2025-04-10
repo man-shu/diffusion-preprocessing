@@ -1,3 +1,13 @@
+import sys
+import os
+import time
+import tempfile
+from diffusion_pipelines.workflows import (
+    init_preprocess_wf,
+    init_recon_wf,
+    init_tracto_wf,
+)
+
 from configparser import ConfigParser
 
 VALID_PIPELINES = ["preprocessing", "reconstruction", "tractography"]
@@ -143,16 +153,6 @@ def main():
     """
 
     # get the config file path from the command line argument
-    import sys
-    import os
-    import time
-    import tempfile
-    from diffusion_pipelines.workflows import (
-        init_preprocess_wf,
-        init_recon_wf,
-        init_tracto_wf,
-    )
-
     if len(sys.argv) != 2:
         print(sys.argv)
         print(
