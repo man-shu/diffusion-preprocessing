@@ -120,7 +120,7 @@ def _select_pipeline(config):
         return to_run
 
 
-def _run_pipeline(config):
+def _run_pipeline(config, to_run):
     """
     Run the pipeline based on the config file.
     """
@@ -180,4 +180,4 @@ def main():
     # parse the config file
     config = _parse_config(config_arg)
 
-    _run_pipeline(_select_pipeline(config))
+    _run_pipeline(config, _select_pipeline(config))
