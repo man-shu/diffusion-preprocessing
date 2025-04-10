@@ -61,6 +61,7 @@ def _parse_pipeline(config):
 def _parse_config(config_file):
     config = ConfigParser()
     config.read(config_file)
+    print(config)
     # convert to dictionary
     config = config._sections
     config = _parse_subjects(config)
