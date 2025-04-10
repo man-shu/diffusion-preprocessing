@@ -132,8 +132,7 @@ ENV PATH="$HOME/Convert3D/c3d-1.0.0-Linux-x86_64/bin:$PATH"
 # Install diffusion-pipelines
 RUN git clone https://github.com/man-shu/diffusion-preprocessing.git $HOME/diffusion-preprocessing && \
     cd $HOME/diffusion-preprocessing/diffusion_pipelines && \
-    git checkout cli && \
-    pip install -e .
+    git checkout cli && pip install -e .
 
 # Set entrypoint to dmriprep-tracto
 ENTRYPOINT ["/home/dmriprep-tracto/miniconda3/bin/dmriprep-tracto"]
