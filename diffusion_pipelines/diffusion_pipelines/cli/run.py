@@ -76,6 +76,7 @@ def _select_pipeline(config):
 
     # check if the config file is valid
     if not config:
+        print(config)
         raise ValueError("Config file is empty or invalid.")
 
     # check if the output directory exists
