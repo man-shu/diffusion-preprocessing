@@ -169,6 +169,7 @@ def main():
             delete=False, mode="w", suffix=".cfg"
         ) as tmp_file:
             tmp_file.write(config_data)
+            tmp_file.flush()  # ensure content is written to disk
             config_arg = tmp_file.name
             print(f"Temporary config file created at {config_arg}")
             # print the contents of the temporary file
