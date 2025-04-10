@@ -125,6 +125,9 @@ def _run_pipeline(config, to_run):
     Run the pipeline based on the config file.
     """
 
+    # Create a timestamp in YYYYMMDD_HHMMSS format
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+
     # pipeline to initialization function mapping
     pipeline_function = {
         "preprocessing": init_preprocess_wf,
@@ -141,12 +144,16 @@ def _run_pipeline(config, to_run):
     for pipeline in to_run:
         # create the pipeline
         wf = pipeline_function[pipeline](
-            output_dir=os.path.join(cache_dir, f"{pipeline}_output"),
+            output_dir=os.path.join(
+                cache_dir, f"{pipeline}_output_{timestamp}"
+            ),
             config=config,
         )
         wf.write_graph(
             graph2use="flat",
-            dotfilename=os.path.join(cache_dir, "graph.dot"),
+            dotfilename=os.path.join(
+                cache_dir, f"{pipeline}_output_{timestamp}", "graph.dot"
+            ),
             format="svg",
         )
         if n_jobs > 1:
@@ -181,9 +188,6 @@ def main():
             tmp_file.flush()  # ensure content is written to disk
             config_arg = tmp_file.name
             print(f"Temporary config file created at {config_arg}")
-
-    # Create a timestamp in YYYYMMDD_HHMMSS format
-    timestamp = time.strftime("%Y%m%d-%H%M%S")
 
     # parse the config file
     config = _parse_config(config_arg)
