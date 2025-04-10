@@ -133,6 +133,11 @@ def _run_pipeline(config, to_run):
     }
 
     cache_dir = config["OUTPUT"]["cache"]
+    # check number of jobs
+    if "MULTIPROCESSING" not in config:
+        n_jobs = 1
+    else:
+        n_jobs = int(config["MULTIPROCESSING"]["n_jobs"])
     for pipeline in to_run:
         # create the pipeline
         wf = pipeline_function[pipeline](
@@ -144,7 +149,10 @@ def _run_pipeline(config, to_run):
             dotfilename=os.path.join(cache_dir, "graph.dot"),
             format="svg",
         )
-        wf.run()
+        if n_jobs > 1:
+            wf.run(plugin="MultiProc", plugin_args={"n_procs": n_jobs})
+        else:
+            wf.run()
 
 
 def main():
