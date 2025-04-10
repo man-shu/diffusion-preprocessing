@@ -134,3 +134,6 @@ RUN git clone https://github.com/man-shu/diffusion-preprocessing.git $HOME/diffu
     cd $HOME/diffusion-preprocessing/diffusion_pipelines && \
     git checkout cli && \
     pip install -e .
+
+# Set entrypoint to dmriprep-tracto
+ENTRYPOINT ["/home/dmriprep-tracto/miniconda3/bin/dmriprep-tracto"]
