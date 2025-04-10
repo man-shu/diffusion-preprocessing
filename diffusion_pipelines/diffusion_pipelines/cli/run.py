@@ -63,8 +63,8 @@ def _parse_config(config_file):
     config.read(config_file)
     # convert to dictionary
     config = config._sections
-    config = parse_subjects(config)
-    config = parse_pipeline(config)
+    config = _parse_subjects(config)
+    config = _parse_pipeline(config)
     return config
 
 
