@@ -150,8 +150,8 @@ def main():
         init_tracto_wf,
     )
 
-    if len(sys.argv) != 1:
-        print("Usage: dmriprep-tracto <config_file>")
+    if len(sys.argv) != 2:
+        print("Usage: dmriprep-tracto <path_to_config_file>")
         sys.exit(1)
 
     # Create a timestamp in YYYYMMDD_HHMMSS format
