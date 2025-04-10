@@ -64,8 +64,11 @@ def _parse_config(config_file):
     print(vars(config))
     # convert to dictionary
     config = config._sections
+    print(config)
     config = _parse_subjects(config)
+    print(config)
     config = _parse_pipeline(config)
+    print(config)
     return config
 
 
