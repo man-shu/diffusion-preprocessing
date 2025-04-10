@@ -135,4 +135,4 @@ RUN cd $HOME/diffusion_pipelines && \
     pip install -e .
 
 # Set entrypoint to dmriprep-tracto
-ENTRYPOINT ["sh",  "/home/dmriprep-tracto/miniconda3/bin/dmriprep-tracto"]
+ENTRYPOINT ["/home/dmriprep-tracto/miniconda3/bin/dmriprep-tracto"]
