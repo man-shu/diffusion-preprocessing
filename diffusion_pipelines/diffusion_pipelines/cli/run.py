@@ -164,6 +164,7 @@ def main():
     # assume the config is coming via stdin
     if config_arg == "-" or not os.path.exists(config_arg):
         config_data = sys.stdin.read()
+        print(config_data)
         with tempfile.NamedTemporaryFile(
             delete=False, mode="w", suffix=".cfg"
         ) as tmp_file:
