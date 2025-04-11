@@ -9,7 +9,7 @@ cd diffusion-preprocessing
 
 - Build the docker image
 
-  - If you're using a machine with x86_64 architecture:
+  - If you're using a machine with x86_64 architecture (check with `uname -m`):
 
     ```bash
     docker image build \
