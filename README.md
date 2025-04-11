@@ -12,7 +12,8 @@ cd diffusion-preprocessing
   - If you're using a machine with x86_64 architecture:
 
     ```bash
-    docker image build -t dmriprep-tracto \
+    docker image build \
+    --tag dmriprep-tracto \
     --build-arg USER_ID="$(id -u)" \
     --build-arg GROUP_ID="$(id -g)" .
     ```
@@ -21,7 +22,8 @@ cd diffusion-preprocessing
 
     ```bash
     docker image build \
-    --platform linux/x86_64 -t dmriprep-tracto \
+    --platform linux/x86_64 \
+    --tag dmriprep-tracto \
     --build-arg USER_ID="$(id -u)" \
     --build-arg GROUP_ID="$(id -g)" .
     ```
@@ -34,9 +36,7 @@ cd diffusion-preprocessing
     [DATASET]
     directory = /home/input/data/WAND-bids
     acquisition = AxCaliberConcat
-
     # Select a subset of subjects by separating them with commas
-
     # Select all of them by setting the value to all or deleting the line
     subject = 00395, 01187
 
@@ -54,13 +54,10 @@ cd diffusion-preprocessing
     derivatives = /home/input/data/WAND-bids/derivatives/
 
     # The pipelines to run
-
     [PIPELINE]
-
     # You can choose to run either of the preprocessing and reconstruction pipeline or both
     preprocessing = True
     reconstruction = False
-
     # If tractography is set to True, the pipeline will run the both preprocessing and reconstruction steps anyway
     tractography = False
 
@@ -72,7 +69,7 @@ cd diffusion-preprocessing
 - Run the container
 
     ```bash
-    docker container run --rm -i \
+    docker container run --rm --interactive \
     --mount type=bind,source=/data/parietal/store3/work/haggarwa/diffusion,target=/home/input \
     dmriprep-tracto:latest -< /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/configs/config_dockerdrago_WAND.cfg 
     ```
