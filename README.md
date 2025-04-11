@@ -12,13 +12,18 @@ cd diffusion-preprocessing
   - If you're using a machine with x86_64 architecture:
 
     ```bash
-    docker image build -t dmriprep-tracto --build-arg USER_ID="$(id -u)" --build-arg GROUP_ID="$(id -g)" .
+    docker image build -t dmriprep-tracto \
+    --build-arg USER_ID="$(id -u)" \
+    --build-arg GROUP_ID="$(id -g)" .
     ```
 
   - If you're using a machine with ARM architecture (for example, Apple M1):
 
     ```bash
-    docker image build --platform linux/x86_64 -t dmriprep-tracto --build-arg USER_ID="$(id -u)" --build-arg GROUP_ID="$(id -g)" .
+    docker image build \
+    --platform linux/x86_64 -t dmriprep-tracto \
+    --build-arg USER_ID="$(id -u)" \
+    --build-arg GROUP_ID="$(id -g)" .
     ```
 
 - Create a config file, for example:
@@ -67,5 +72,7 @@ cd diffusion-preprocessing
 - Run the container
 
     ```bash
-    docker container run --rm -i --mount type=bind,source=/data/parietal/store3/work/haggarwa/diffusion,target=/home/input dmriprep-tracto:latest -< /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/configs/config_dockerdrago_WAND.cfg 
+    docker container run --rm -i \
+    --mount type=bind,source=/data/parietal/store3/work/haggarwa/diffusion,target=/home/input \
+    dmriprep-tracto:latest -< /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/configs/config_dockerdrago_WAND.cfg 
     ```
