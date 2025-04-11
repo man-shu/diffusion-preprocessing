@@ -34,24 +34,24 @@ cd diffusion-preprocessing
 
     ```python
     [DATASET]
-    directory = /home/input/data/WAND-downsampled
+    directory = /home/input/WAND-downsampled
     acquisition = AxCaliber1
     # Select a subset of subjects by separating them with commas
     # Select all of them by setting the value to all or deleting the line
     subject = 00395, 01187
 
     [TEMPLATE]
-    directory = /home/input/data/mni_icbm152_nlin_sym_09a-downsampled
+    directory = /home/input/mni_icbm152_nlin_sym_09a-downsampled
     T1 = mni_icbm152_t1_tal_nlin_sym_09a.nii
     T2 = mni_icbm152_t2_tal_nlin_sym_09a.nii
     mask = mni_icbm152_t1_tal_nlin_sym_09a_mask.nii
 
     [ROIS]
-    directory = /home/input/data/rois-downsampled
+    directory = /home/input/rois-downsampled
 
     [OUTPUT]
-    cache = /home/input/dmriprep-tracto_cache/
-    derivatives = /home/input/data/WAND-downsampled/derivatives/
+    cache = /home/input/cache
+    derivatives = /home/input/WAND-downsampled/derivatives
 
     # The pipelines to run
     [PIPELINE]
@@ -72,19 +72,19 @@ cd diffusion-preprocessing
      all the paths in the config file are relative to this path.
     - So here we will mount a directory from our host machine
      to `/home/input/` when running the container.
-    - That directory on our host machine contains everything:
+    - This directory on our host machine contains everything:
       - our dataset (indicated via `[DATASET]`)
       - the template (via `[TEMPLATE]`)
       - the ROIs (via `[ROIS]`)
       - and the output directory (via `[OUTPUT]`).
     - The intermediate outputs will be saved in the `cache` directory
     (under `[OUTPUT]`) and the final outputs will be saved in the `derivatives`
-     directory (also under `[OUTPUT]`).
+    directory (also under `[OUTPUT]`).
 
 - Run the container
 
     ```bash
     docker container run --rm --interactive \
-    --mount type=bind,source=/data/parietal/store3/work/haggarwa/diffusion,target=/home/input \
-    dmriprep-tracto:latest -< /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/configs/config_dockerdrago_WAND.cfg 
+    --mount type=bind,source=data,target=/home/input \
+    dmriprep-tracto:latest -< config.cfg 
     ```
