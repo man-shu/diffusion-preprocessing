@@ -85,6 +85,6 @@ cd diffusion-preprocessing
 
     ```bash
     docker container run --rm --interactive \
-    --mount type=bind,source=data,target=/home/input \
+    --mount type=bind,source=./data,target=/home/input \
     diffusion_pipelines:latest -< config.cfg 
     ```
