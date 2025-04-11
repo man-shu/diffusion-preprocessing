@@ -95,7 +95,6 @@ RUN cd $HOME/miniconda3 && \
 
 # Set CPATH for packages relying on compiled libs (e.g. indexed_gzip)
 ENV PATH="$HOME/miniconda3/bin:$PATH" \
-    CPATH="$HOME/miniconda3/include/:$CPATH" \
     LANG="C.UTF-8" \
     LC_ALL="C.UTF-8" \
     PYTHONNOUSERSITE=1
