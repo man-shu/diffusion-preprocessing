@@ -42,8 +42,7 @@ RUN mkdir -p $HOME/ANTS \
     $HOME/miniconda3 \
     $HOME/fsl \
     $HOME/niflow \
-    $HOME/Convert3D \
-    $HOME/diffusion-preprocessing && \
+    $HOME/Convert3D && \
     chown -R $USER_ID:$GROUP_ID $HOME
 
 # Switch to the created user
