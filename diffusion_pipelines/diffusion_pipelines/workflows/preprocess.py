@@ -6,26 +6,9 @@ from niflow.nipype1.workflows.dmri.fsl.epi import create_eddy_correct_pipeline
 from nipype.interfaces import utility
 from nipype.interfaces.utility.wrappers import Function
 from .report import init_report_wf
-from configparser import ConfigParser
 from .bids import init_bidsdata_wf
 from .sink import init_sink_wf
 from pathlib import Path
-
-
-def _get_config(config_file):
-    config = ConfigParser()
-    config.read(config_file)
-    # convert to dictionary
-    config = config._sections
-    # format the subject
-    if "subject" not in config["DATASET"]:
-        config["DATASET"]["subject"] = "all"
-    elif config["DATASET"]["subject"] == "all":
-        pass
-    else:
-        subjects = config["DATASET"]["subject"].split(", ")
-        config["DATASET"]["subject"] = subjects
-    return config
 
 
 def _set_inputs_outputs(config, preproc_wf):
@@ -336,8 +319,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     return workflow
 
 
-def init_preprocess_wf(output_dir=".", config_file=None):
+def init_preprocess_wf(output_dir=".", config=None):
     wf = _preprocess_wf(output_dir=output_dir)
-    config = _get_config(config_file)
     wf = _set_inputs_outputs(config, wf)
     return wf

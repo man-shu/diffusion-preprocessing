@@ -4,7 +4,7 @@ FROM ubuntu:22.04
 # Get the user and group IDs from build arguments
 ARG USER_ID
 ARG GROUP_ID
-ARG USER_NAME=dmriprep-tracto
+ARG USER_NAME=diffusion_pipelines
 
 # Set environment variables to prevent interactive prompts during installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -42,8 +42,7 @@ RUN mkdir -p $HOME/ANTS \
     $HOME/miniconda3 \
     $HOME/fsl \
     $HOME/niflow \
-    $HOME/Convert3D \
-    $HOME/diffusion-preprocessing && \
+    $HOME/Convert3D && \
     chown -R $USER_ID:$GROUP_ID $HOME
 
 # Switch to the created user
@@ -95,7 +94,6 @@ RUN cd $HOME/miniconda3 && \
 
 # Set CPATH for packages relying on compiled libs (e.g. indexed_gzip)
 ENV PATH="$HOME/miniconda3/bin:$PATH" \
-    CPATH="$HOME/miniconda3/include/:$CPATH" \
     LANG="C.UTF-8" \
     LC_ALL="C.UTF-8" \
     PYTHONNOUSERSITE=1
@@ -130,7 +128,9 @@ RUN cd $HOME/Convert3D && \
 ENV PATH="$HOME/Convert3D/c3d-1.0.0-Linux-x86_64/bin:$PATH"
 
 # Install diffusion-pipelines
-RUN git clone https://github.com/man-shu/diffusion-preprocessing.git $HOME/diffusion-preprocessing && \
-    cd $HOME/diffusion-preprocessing/diffusion_pipelines && \
-    git checkout dockerize && \
+COPY --chown=$USER_ID:$GROUP_ID diffusion_pipelines $HOME/diffusion_pipelines
+RUN cd $HOME/diffusion_pipelines && \
     pip install -e .
+
+# Set entrypoint to diffusion_pipelines
+ENTRYPOINT ["/home/diffusion_pipelines/miniconda3/bin/diffusion_pipelines"]

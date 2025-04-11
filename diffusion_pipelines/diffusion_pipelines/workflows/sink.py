@@ -53,7 +53,7 @@ def init_sink_wf(config, name="sink_wf"):
 
     ### DataSink node
     sink = Node(DataSink(), name="sink")
-    sink.inputs.base_directory = config["OUTPUT"]["directory"]
+    sink.inputs.base_directory = config["OUTPUT"]["derivatives"]
 
     # Create the workflow
     sink_wf = Workflow(name=name)
