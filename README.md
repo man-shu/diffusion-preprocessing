@@ -66,6 +66,15 @@ cd diffusion-preprocessing
     n_jobs = 30
     ```
 
+    - Note that `/home/input/` is the path inside the docker container and all the paths in the config file are relative to this path.
+    - So here we will mount a directory from our host machine to `/home/input/` when running the container.
+    - That directory on our host machine contains everything:
+      - our dataset (indicated via `[DATASET]`)
+      - the template (via `[TEMPLATE]`)
+      - the ROIs (via `[ROIS]`)
+      - and the output directory (via `[OUTPUT]`).
+    - The intermediate outputs will be saved in the `cache` directory (under `[OUTPUT]`) and the final outputs will be saved in the `derivatives` directory (also under `[OUTPUT]`).
+
 - Run the container
 
     ```bash
