@@ -12,7 +12,7 @@ if __name__ == "__main__":
         entry_points={
             "console_scripts": [
                 "shrink_surface=diffusion_pipelines.utils.shrink_surface:command_line_main",
-                "dmriprep-tracto=diffusion_pipelines.cli.run:main",
+                "diffusion_pipelines=diffusion_pipelines.cli.run:main",
             ]
         },
         install_requires=[

@@ -13,7 +13,7 @@ cd diffusion-preprocessing
 
     ```bash
     docker image build \
-    --tag dmriprep-tracto \
+    --tag diffusion_pipelines \
     --build-arg USER_ID="$(id -u)" \
     --build-arg GROUP_ID="$(id -g)" .
     ```
@@ -23,7 +23,7 @@ cd diffusion-preprocessing
     ```bash
     docker image build \
     --platform linux/x86_64 \
-    --tag dmriprep-tracto \
+    --tag diffusion_pipelines \
     --build-arg USER_ID="$(id -u)" \
     --build-arg GROUP_ID="$(id -g)" .
     ```
@@ -86,5 +86,5 @@ cd diffusion-preprocessing
     ```bash
     docker container run --rm --interactive \
     --mount type=bind,source=data,target=/home/input \
-    dmriprep-tracto:latest -< config.cfg 
+    diffusion_pipelines:latest -< config.cfg 
     ```

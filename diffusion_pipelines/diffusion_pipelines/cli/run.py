@@ -171,7 +171,7 @@ def main():
     if len(sys.argv) != 2:
         print(sys.argv)
         print(
-            "Usage: dmriprep-tracto <path_to_config_file> or '-' to read from stdin"
+            "Usage: diffusion_pipelines <path_to_config_file> or '-' to read from stdin"
         )
         sys.exit(1)
 

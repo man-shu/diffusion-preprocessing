@@ -4,7 +4,7 @@ FROM ubuntu:22.04
 # Get the user and group IDs from build arguments
 ARG USER_ID
 ARG GROUP_ID
-ARG USER_NAME=dmriprep-tracto
+ARG USER_NAME=diffusion_pipelines
 
 # Set environment variables to prevent interactive prompts during installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -133,5 +133,5 @@ COPY --chown=$USER_ID:$GROUP_ID diffusion_pipelines $HOME/diffusion_pipelines
 RUN cd $HOME/diffusion_pipelines && \
     pip install -e .
 
-# Set entrypoint to dmriprep-tracto
-ENTRYPOINT ["/home/dmriprep-tracto/miniconda3/bin/dmriprep-tracto"]
+# Set entrypoint to diffusion_pipelines
+ENTRYPOINT ["/home/diffusion_pipelines/miniconda3/bin/diffusion_pipelines"]
