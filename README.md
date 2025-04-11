@@ -55,10 +55,12 @@ cd diffusion-preprocessing
 
     # The pipelines to run
     [PIPELINE]
-    # You can choose to run either of the preprocessing and reconstruction pipeline or both
+    # You can choose to run either of the preprocessing and 
+    # reconstruction pipeline or both
     preprocessing = True
     reconstruction = False
-    # If tractography is set to True, the pipeline will run the both preprocessing and reconstruction steps anyway
+    # If tractography is set to True, the pipeline will run the both 
+    # preprocessing and reconstruction steps anyway
     tractography = False
 
     # Set number of threads to use for the pipeline
@@ -66,14 +68,18 @@ cd diffusion-preprocessing
     n_jobs = 30
     ```
 
-    - Note that `/home/input/` is the path inside the docker container and all the paths in the config file are relative to this path.
-    - So here we will mount a directory from our host machine to `/home/input/` when running the container.
+    - Note that `/home/input/` is the path inside the docker container and
+     all the paths in the config file are relative to this path.
+    - So here we will mount a directory from our host machine
+     to `/home/input/` when running the container.
     - That directory on our host machine contains everything:
       - our dataset (indicated via `[DATASET]`)
       - the template (via `[TEMPLATE]`)
       - the ROIs (via `[ROIS]`)
       - and the output directory (via `[OUTPUT]`).
-    - The intermediate outputs will be saved in the `cache` directory (under `[OUTPUT]`) and the final outputs will be saved in the `derivatives` directory (also under `[OUTPUT]`).
+    - The intermediate outputs will be saved in the `cache` directory
+    (under `[OUTPUT]`) and the final outputs will be saved in the `derivatives`
+     directory (also under `[OUTPUT]`).
 
 - Run the container
 
