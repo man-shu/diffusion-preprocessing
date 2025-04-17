@@ -10,6 +10,7 @@ import nipype.interfaces.fsl as fsl
 import nipype.interfaces.ants as ants
 from nipype.interfaces.freesurfer import ReconAll, MRIsConvert, MRIConvert
 from .bids import init_bidsdata_wf
+from .sink import init_sink_wf
 from pathlib import Path
 
 
@@ -21,6 +22,8 @@ def _set_inputs_outputs(config, recon_wf):
     recon_wf.inputs.input_subject.subjects_dir = config["OUTPUT"]["cache"]
     # bids dataset
     bidsdata_wf = init_bidsdata_wf(config=config)
+    # outputs
+    sink_wf = init_sink_wf(config=config)
     # create the full workflow
     recon_wf.connect(
         [
