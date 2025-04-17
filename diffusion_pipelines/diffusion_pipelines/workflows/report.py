@@ -122,7 +122,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
     )
     # define a function to get the zero index of the input dwi file
     MeanBZero = Function(
-        input_names=["dwi_file"],
+        input_names=["dwi_file", "bval"],
         output_names=["out"],
         function=_get_mean_bzero,
     )
@@ -190,14 +190,31 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
     workflow.connect(
         [
             # get the zero index of the input dwi file
-            (inputnode, get_intial_mean_bzero, [("dwi_initial", "dwi_file")]),
+            (
+                inputnode,
+                get_intial_mean_bzero,
+                [
+                    ("dwi_initial", "dwi_file"),
+                    ("bval", "bval"),
+                ],
+            ),
             # get the zero index of the eddy corrected dwi file
-            (inputnode, get_eddy_mean_bzero, [("eddy_corrected", "dwi_file")]),
+            (
+                inputnode,
+                get_eddy_mean_bzero,
+                [
+                    ("eddy_corrected", "dwi_file"),
+                    ("bval", "bval"),
+                ],
+            ),
             # get the zero index of the dwi file registered to the t2 template
             (
                 inputnode,
                 get_registered_mean_bzero,
-                [("dwi_rigid_registered", "dwi_file")],
+                [
+                    ("dwi_rigid_registered", "dwi_file"),
+                    ("bval", "bval"),
+                ],
             ),
             # plot the extracted brain mask as outline on the initial dwi image
             (
