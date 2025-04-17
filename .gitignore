@@ -5,3 +5,4 @@ diffusion_pipelines/build
 *.DS_Store*
 data/cache
 data/*/derivatives
+data/*fullres
