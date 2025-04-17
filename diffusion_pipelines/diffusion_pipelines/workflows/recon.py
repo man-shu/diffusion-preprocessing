@@ -10,6 +10,7 @@ import nipype.interfaces.fsl as fsl
 import nipype.interfaces.ants as ants
 from nipype.interfaces.freesurfer import ReconAll, MRIsConvert, MRIConvert
 from .bids import init_bidsdata_wf
+from pathlib import Path
 
 
 def _set_inputs_outputs(config, recon_wf):
@@ -17,7 +18,7 @@ def _set_inputs_outputs(config, recon_wf):
     recon_wf.inputs.input_template.T1 = Path(
         config["TEMPLATE"]["directory"], config["TEMPLATE"]["t1"]
     )
-    recon_wf.inputs.input_subject.subject_dir = config["OUTPUT"]["cache"]
+    recon_wf.inputs.input_subject.subjects_dir = config["OUTPUT"]["cache"]
     # bids dataset
     bidsdata_wf = init_bidsdata_wf(config=config)
     # create the full workflow
