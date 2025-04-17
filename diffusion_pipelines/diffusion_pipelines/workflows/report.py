@@ -129,9 +129,9 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
     # this node is used to get the zero index of the input dwi file
     get_intial_mean_bzero = Node(MeanBZero, name="get_intial_mean_bzero")
     # this node is used to get the zero index of the eddy corrected dwi file
-    get_eddy_mean_bzero = get_intial_zero.clone("get_eddy_mean_bzero")
+    get_eddy_mean_bzero = get_intial_mean_bzero.clone("get_eddy_mean_bzero")
     # this node is used to get the zero index of the t2 template registered dwi file
-    get_registered_mean_bzero = get_intial_zero.clone(
+    get_registered_mean_bzero = get_intial_mean_bzero.clone(
         "get_registered_mean_bzero"
     )
 
