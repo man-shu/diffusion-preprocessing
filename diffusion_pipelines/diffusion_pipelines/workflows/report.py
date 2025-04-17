@@ -10,20 +10,21 @@ TEMPLATE_ROOT = os.path.join(os.path.dirname(__file__), "report_template")
 REPORT_TEMPLATE = os.path.join(TEMPLATE_ROOT, "report_template.html")
 
 
-def _get_dwi_zero(dwi_file):
-    """Get the zero index of the input dwi file.
-
-    Not exactly zero index, but the 26th volume of the input dwi file.
-    This is because the actual zero index is the fixed image to which the
-    remaining images are moved to. So to see the changes in the eddy correction
-    + coregistration, we need to see the an image that is moved.
-    """
+def _get_mean_bzero(dwi_file, bval):
+    """Mean of the b=0 volumes of the input dwi file."""
     import os
-    from nilearn.image import index_img
+    from nilearn.image import index_img, mean_img
 
-    zero_index_img = index_img(dwi_file, 26)
-    out_file = os.path.join(os.getcwd(), "zero_index.nii.gz")
-    zero_index_img.to_filename(out_file)
+    import numpy as np
+
+    bvals = np.loadtxt(bval)
+    # get the index of the b=0 volumes
+    bzero_index = np.where(bvals == 0)[0]
+    # get the mean image of the b=0 volumes
+    mean_bzero_img = mean_img(index_img(dwi_file, bzero_index))
+    # save the mean image
+    out_file = os.path.join(os.getcwd(), "mean_bzero.nii.gz")
+    mean_bzero_img.to_filename(out_file)
 
     return out_file
 
@@ -103,6 +104,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
         IdentityInterface(
             fields=[
                 "dwi_initial",
+                "bval",
                 "eddy_corrected",
                 "mask",
                 "bet_mask",
@@ -119,15 +121,19 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
         name="report_outputnode",
     )
     # define a function to get the zero index of the input dwi file
-    DWIZero = Function(
-        input_names=["dwi_file"], output_names=["out"], function=_get_dwi_zero
+    MeanBZero = Function(
+        input_names=["dwi_file"],
+        output_names=["out"],
+        function=_get_mean_bzero,
     )
     # this node is used to get the zero index of the input dwi file
-    get_intial_zero = Node(DWIZero, name="get_intial_zero")
+    get_intial_mean_bzero = Node(MeanBZero, name="get_intial_mean_bzero")
     # this node is used to get the zero index of the eddy corrected dwi file
-    get_eddy_zero = get_intial_zero.clone("get_eddy_zero")
+    get_eddy_mean_bzero = get_intial_zero.clone("get_eddy_mean_bzero")
     # this node is used to get the zero index of the t2 template registered dwi file
-    get_registered_zero = get_intial_zero.clone("get_registered_zero")
+    get_registered_mean_bzero = get_intial_zero.clone(
+        "get_registered_mean_bzero"
+    )
 
     # this node plots the before and after images of the eddy correction
     plot_before_after_eddy = Node(
@@ -184,13 +190,13 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
     workflow.connect(
         [
             # get the zero index of the input dwi file
-            (inputnode, get_intial_zero, [("dwi_initial", "dwi_file")]),
+            (inputnode, get_intial_mean_bzero, [("dwi_initial", "dwi_file")]),
             # get the zero index of the eddy corrected dwi file
-            (inputnode, get_eddy_zero, [("eddy_corrected", "dwi_file")]),
+            (inputnode, get_eddy_mean_bzero, [("eddy_corrected", "dwi_file")]),
             # get the zero index of the dwi file registered to the t2 template
             (
                 inputnode,
-                get_registered_zero,
+                get_registered_mean_bzero,
                 [("dwi_rigid_registered", "dwi_file")],
             ),
             # plot the extracted brain mask as outline on the initial dwi image
@@ -204,7 +210,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
             ),
             # plot the initial dwi as before
             (
-                get_intial_zero,
+                get_intial_mean_bzero,
                 plot_before_after_eddy,
                 [
                     ("out", "before"),
@@ -212,7 +218,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
             ),
             # plot the eddy corrected dwi as after
             (
-                get_eddy_zero,
+                get_eddy_mean_bzero,
                 plot_before_after_eddy,
                 [
                     ("out", "after"),
@@ -244,7 +250,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 ],
             ),
             (
-                get_registered_zero,
+                get_registered_mean_bzero,
                 plot_before_after_t2_dwi,
                 [("out", "after")],
             ),
