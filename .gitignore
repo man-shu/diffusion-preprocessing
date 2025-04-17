@@ -6,3 +6,4 @@ diffusion_pipelines/build
 data/cache
 data/*/derivatives
 data/*fullres
+config-fullres.cfg
