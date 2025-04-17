@@ -297,6 +297,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                 report,
                 [
                     ("dwi_initial", "report_inputnode.dwi_initial"),
+                    ("dwi_masked", "report_inputnode.dwi_masked"),
                     ("bval", "report_inputnode.bval"),
                     (
                         "template_t2_initial",
