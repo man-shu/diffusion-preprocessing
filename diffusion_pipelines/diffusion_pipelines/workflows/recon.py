@@ -9,6 +9,59 @@ from nipype.interfaces import utility
 import nipype.interfaces.fsl as fsl
 import nipype.interfaces.ants as ants
 from nipype.interfaces.freesurfer import ReconAll, MRIsConvert, MRIConvert
+from .bids import init_bidsdata_wf
+
+
+def _set_inputs_outputs(config, recon_wf):
+    # inputs from the config file
+    recon_wf.inputs.input_template.T1 = Path(
+        config["TEMPLATE"]["directory"], config["TEMPLATE"]["t1"]
+    )
+    recon_wf.inputs.input_subject.subject_dir = config["OUTPUT"]["cache"]
+    # bids dataset
+    bidsdata_wf = init_bidsdata_wf(config=config)
+    # create the full workflow
+    recon_wf.connect(
+        [
+            (
+                bidsdata_wf,
+                recon_wf.get_node("input_subject"),
+                [
+                    ("selectfiles.T1", "T1"),
+                    ("decode_entities.bids_entities.subject", "subject_id"),
+                ],
+            ),
+            (
+                bidsdata_wf,
+                sink_wf,
+                [
+                    (
+                        "decode_entities.bids_entities",
+                        "sinkinputnode.bids_entities",
+                    )
+                ],
+            ),
+            (
+                recon_wf.get_node("output"),
+                sink_wf.get_node("sink"),
+                [
+                    (
+                        "shrunk_surface",
+                        "recon.@shrunk_surface",
+                    ),
+                    (
+                        "mri_convert_reference_image",
+                        "recon.@mri_convert_reference_image",
+                    ),
+                    (
+                        "reg_nl_forward_transforms",
+                        "recon.@reg_nl_forward_transforms",
+                    ),
+                ],
+            ),
+        ]
+    )
+    return recon_wf
 
 
 def freesurfer_get_ras_conversion_matrix(subjects_dir, subject_id):
@@ -163,18 +216,18 @@ def bvec_flip(bvecs_in, flip):
     return output_file
 
 
-def init_recon_wf(name="recon", output_dir="."):
+def _recon_wf(name="recon", output_dir="."):
 
     input_subject = Node(
         IdentityInterface(
-            fields=["T1", "dwi", "bval", "bvec", "subject_id", "subjects_dir"],
+            fields=["T1", "subject_id", "subjects_dir"],
         ),
         name="input_subject",
     )
 
     input_template = Node(
         IdentityInterface(
-            fields=["T1", "T2", "mask"],
+            fields=["T1"],
         ),
         name="input_template",
     )
@@ -193,7 +246,6 @@ def init_recon_wf(name="recon", output_dir="."):
 
     recon_all = Node(interface=ReconAll(), name="recon_all")
     recon_all.inputs.directive = "all"
-    # recon_all.inputs.subjects_dir = subjects_dir
     recon_all.inputs.openmp = 20
     recon_all.inputs.mprage = True
     recon_all.inputs.parallel = True
@@ -439,3 +491,9 @@ def init_recon_wf(name="recon", output_dir="."):
     )
 
     return workflow
+
+
+def init_recon_wf(output_dir=".", config=None):
+    wf = _recon_wf(output_dir=output_dir)
+    wf = _set_inputs_outputs(config, wf)
+    return wf
