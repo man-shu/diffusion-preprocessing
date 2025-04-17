@@ -13,9 +13,6 @@ from pathlib import Path
 
 def _set_inputs_outputs(config, preproc_wf):
     # inputs from the config file
-    preproc_wf.inputs.input_template.T1 = Path(
-        config["TEMPLATE"]["directory"], config["TEMPLATE"]["t1"]
-    )
     preproc_wf.inputs.input_template.T2 = Path(
         config["TEMPLATE"]["directory"], config["TEMPLATE"]["t2"]
     )
@@ -124,7 +121,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     )
     input_template = Node(
         IdentityInterface(
-            fields=["T1", "T2", "mask"],
+            fields=["T2", "mask"],
         ),
         name="input_template",
     )
