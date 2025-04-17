@@ -139,6 +139,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                 "rigid_dwi_2_template",
                 "eddy_corrected",
                 "dwi_initial",
+                "dwi_masked",
                 "bet_mask",
                 "template_t2_initial",
                 "template_t2_masked",
@@ -267,6 +268,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                 [("out_file", "reference_image")],
             ),
             # collect all the outputs in the output node
+            (strip_dwi, output, [("out_file", "dwi_masked")]),
             (conv_affine, output, [("affine_ras", "rigid_dwi_2_template")]),
             (input_template, output, [("T2", "template_t2_initial")]),
             (strip_t2_template, output, [("out_file", "template_t2_masked")]),

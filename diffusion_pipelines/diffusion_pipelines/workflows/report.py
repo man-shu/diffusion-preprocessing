@@ -104,6 +104,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
         IdentityInterface(
             fields=[
                 "dwi_initial",
+                "dwi_masked",
                 "bval",
                 "eddy_corrected",
                 "mask",
@@ -194,7 +195,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 inputnode,
                 get_intial_mean_bzero,
                 [
-                    ("dwi_initial", "dwi_file"),
+                    ("dwi_masked", "dwi_file"),
                     ("bval", "bval"),
                 ],
             ),
