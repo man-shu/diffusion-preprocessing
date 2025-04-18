@@ -187,7 +187,7 @@ def _run_pipeline(config, to_run):
             ),
             format="svg",
         )
-        if n_jobs > 1:
+        if config["NIPYPE"]["n_jobs"] > 1:
             wf.run(
                 plugin="MultiProc",
                 plugin_args={"n_procs": config["NIPYPE"]["n_jobs"]},
@@ -213,7 +213,7 @@ def main():
 
     # If the argument is '-' or if the given file path doesn't exist,
     # assume the config is coming via stdin
-    if config_arg == "-" or not os.path.exists(config_arg):
+    if config_arg == "-":
         config_data = sys.stdin.read()
         with tempfile.NamedTemporaryFile(
             delete=False, mode="w", suffix=".cfg"
@@ -222,6 +222,9 @@ def main():
             tmp_file.flush()  # ensure content is written to disk
             config_arg = tmp_file.name
             print(f"Temporary config file created at {config_arg}")
+    elif not os.path.exists(config_arg):
+        print(f"Config file {config_arg} does not exist.")
+        sys.exit(1)
 
     # parse the config file
     config = _parse_config(config_arg)
