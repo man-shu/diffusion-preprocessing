@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
     cmake \
     graphviz \
+    tcsh \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create user with specified UID/GID
