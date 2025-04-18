@@ -190,7 +190,7 @@ def _run_pipeline(config, to_run):
         if n_jobs > 1:
             wf.run(
                 plugin="MultiProc",
-                plugin_args={"n_procs": config["OUTPUT"]["n_jobs"]},
+                plugin_args={"n_procs": config["NIPYPE"]["n_jobs"]},
             )
         else:
             wf.run()
