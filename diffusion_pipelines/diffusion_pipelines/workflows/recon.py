@@ -23,12 +23,15 @@ def _set_inputs_outputs(config, recon_wf):
     # bids dataset
     bidsdata_wf = init_bidsdata_wf(config=config)
 
+    def extract_subject_id(bids_entities):
+        return f"sub-{bids_entities['subject']}"
+
     # set node for extracting the subject id
     extract_subject_id = Node(
         Function(
             input_names=["bids_entities"],
             output_names=["subject_id"],
-            function=lambda x: x["subject"],
+            function=extract_subject_id,
         ),
         name="extract_subject_id",
     )
@@ -41,9 +44,7 @@ def _set_inputs_outputs(config, recon_wf):
             (
                 bidsdata_wf,
                 recon_wf.get_node("input_subject"),
-                [
-                    ("selectfiles.T1", "T1"),
-                ],
+                [("selectfiles.T1", "T1")],
             ),
             (
                 bidsdata_wf,
