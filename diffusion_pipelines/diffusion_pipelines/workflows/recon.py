@@ -22,6 +22,17 @@ def _set_inputs_outputs(config, recon_wf):
     recon_wf.inputs.input_subject.subjects_dir = config["OUTPUT"]["cache"]
     # bids dataset
     bidsdata_wf = init_bidsdata_wf(config=config)
+
+    # set node for extracting the subject id
+    extract_subject_id = Node(
+        Function(
+            input_names=["bids_entities"],
+            output_names=["subject_id"],
+            function=lambda x: x["subject"],
+        ),
+        name="extract_subject_id",
+    )
+
     # outputs
     sink_wf = init_sink_wf(config=config)
     # create the full workflow
@@ -35,7 +46,12 @@ def _set_inputs_outputs(config, recon_wf):
                 ],
             ),
             (
-                bidsdata_wf.get_node("selectfiles"),
+                bidsdata_wf,
+                extract_subject_id,
+                [("decode_entities.bids_entities", "bids_entities")],
+            ),
+            (
+                extract_subject_id,
                 recon_wf.get_node("input_subject"),
                 [("subject_id", "subject_id")],
             ),
