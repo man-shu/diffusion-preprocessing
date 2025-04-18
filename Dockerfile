@@ -128,6 +128,9 @@ RUN cd $HOME/Convert3D && \
     rm c3d-1.0.0-Linux-x86_64.tar.gz
 ENV PATH="$HOME/Convert3D/c3d-1.0.0-Linux-x86_64/bin:$PATH"
 
+# Install workbench
+RUN conda install --yes conda-forge::connectome-workbench-cli=2.0
+
 # Install diffusion-pipelines
 COPY --chown=$USER_ID:$GROUP_ID diffusion_pipelines $HOME/diffusion_pipelines
 RUN cd $HOME/diffusion_pipelines && \
