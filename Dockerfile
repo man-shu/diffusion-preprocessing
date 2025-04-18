@@ -132,8 +132,5 @@ COPY --chown=$USER_ID:$GROUP_ID diffusion_pipelines $HOME/diffusion_pipelines
 RUN cd $HOME/diffusion_pipelines && \
     pip install -e .
 
-# copy FreeSurfer license
-COPY --chown=$USER_ID:$GROUP_ID docker/files/license.txt $FREESURFER_HOME/license.txt
-
 # Set entrypoint to diffusion_pipelines
 ENTRYPOINT ["/home/diffusion_pipelines/miniconda3/bin/diffusion_pipelines"]
