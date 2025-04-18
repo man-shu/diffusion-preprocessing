@@ -53,6 +53,7 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
     def decode_entities(file_name):
         from bids.layout import parse_file_entities
 
+        print(f"Decoding entities from {file_name}")
         return parse_file_entities(file_name)
 
     DecodeEntities = Function(

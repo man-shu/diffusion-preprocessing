@@ -9,6 +9,7 @@ from diffusion_pipelines.workflows import (
 )
 
 from configparser import ConfigParser
+from nipype import config as nipype_config
 
 VALID_PIPELINES = ["preprocessing", "reconstruction", "tractography"]
 
@@ -70,12 +71,45 @@ def _parse_pipeline(config):
     return config
 
 
+def _parse_nipype_params(config):
+    """
+    Parse the nipype parameters in the config file.
+    If the nipype parameters are not specified, set them to default values.
+    """
+    # check n_jobs
+    if "NIPYPE" not in config:
+        config["NIPYPE"] = {}
+        config["NIPYPE"]["n_jobs"] = 1
+    else:
+        if "n_jobs" not in config["NIPYPE"]:
+            config["NIPYPE"]["n_jobs"] = 1
+        else:
+            config["NIPYPE"]["n_jobs"] = int(config["NIPYPE"]["n_jobs"])
+
+    # check if debug mode is enabled
+    if "DEBUG" not in config:
+        config["DEBUG"] = False
+    else:
+        if config["DEBUG"] == "True":
+            config["DEBUG"] = True
+        elif config["DEBUG"] == "False":
+            config["DEBUG"] = False
+        else:
+            raise ValueError(
+                "Invalid value for DEBUG in [NIPYPE] section. "
+                "Expected True or False."
+            )
+
+    return config
+
+
 def _parse_config(config_file):
     config = ConfigParser()
     config.read(config_file)
     # convert to dictionary
     config = config._sections
     config = _parse_subjects(config)
+    config = _parse_nipype_params(config)
     config = _parse_pipeline(config)
     return config
 
@@ -134,30 +168,31 @@ def _run_pipeline(config, to_run):
         "reconstruction": init_recon_wf,
         "tractography": init_tracto_wf,
     }
-
-    cache_dir = config["OUTPUT"]["cache"]
+    if config["NIPYPE"]["debug"]:
+        nipype_config.enable_debug_mode()
     # check number of jobs
-    if "MULTIPROCESSING" not in config:
-        n_jobs = 1
-    else:
-        n_jobs = int(config["MULTIPROCESSING"]["n_jobs"])
     for pipeline in to_run:
         # create the pipeline
         wf = pipeline_function[pipeline](
             output_dir=os.path.join(
-                cache_dir, f"{pipeline}_output_{timestamp}"
+                config["OUTPUT"]["cache"], f"{pipeline}_output_{timestamp}"
             ),
             config=config,
         )
         wf.write_graph(
             graph2use="flat",
             dotfilename=os.path.join(
-                cache_dir, f"{pipeline}_output_{timestamp}", "graph.dot"
+                config["OUTPUT"]["cache"],
+                f"{pipeline}_output_{timestamp}",
+                "graph.dot",
             ),
             format="svg",
         )
         if n_jobs > 1:
-            wf.run(plugin="MultiProc", plugin_args={"n_procs": n_jobs})
+            wf.run(
+                plugin="MultiProc",
+                plugin_args={"n_procs": config["OUTPUT"]["n_jobs"]},
+            )
         else:
             wf.run()
 
