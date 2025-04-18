@@ -80,26 +80,25 @@ def _parse_nipype_params(config):
     if "NIPYPE" not in config:
         config["NIPYPE"] = {}
         config["NIPYPE"]["n_jobs"] = 1
+        config["NIPYPE"]["debug"] = False
     else:
         if "n_jobs" not in config["NIPYPE"]:
             config["NIPYPE"]["n_jobs"] = 1
         else:
             config["NIPYPE"]["n_jobs"] = int(config["NIPYPE"]["n_jobs"])
 
-    # check if debug mode is enabled
-    if "DEBUG" not in config:
-        config["DEBUG"] = False
-    else:
-        if config["DEBUG"] == "True":
-            config["DEBUG"] = True
-        elif config["DEBUG"] == "False":
-            config["DEBUG"] = False
+        # check debug
+        if "debug" not in config["NIPYPE"]:
+            config["NIPYPE"]["debug"] = False
+        elif config["NIPYPE"]["debug"] == "True":
+            config["NIPYPE"]["debug"] = True
+        elif config["NIPYPE"]["debug"] == "False":
+            config["NIPYPE"]["debug"] = False
         else:
             raise ValueError(
-                "Invalid value for DEBUG in [NIPYPE] section. "
+                "Invalid value for debug in [NIPYPE] section. "
                 "Expected True or False."
             )
-
     return config
 
 
