@@ -14,6 +14,7 @@ from .sink import init_sink_wf
 from pathlib import Path
 from smriprep.workflows.base import init_smriprep_wf
 from bids.layout import BIDSLayout
+from niworkflows.utils.spaces import SpatialReferences
 
 
 def _set_inputs_outputs(config, recon_wf):
@@ -524,8 +525,26 @@ def init_recon_wf(output_dir=".", config=None):
     wf = init_smriprep_wf(
         output_dir=config["OUTPUT"]["derivatives"],
         work_dir=config["OUTPUT"]["cache"],
-        analysis_level="participant",
-        suject_list=config["DATASET"]["subject"],
+        subject_list=config["DATASET"]["subject"],
         layout=BIDSLayout(Path(config["DATASET"]["directory"])),
+        # other parameters
+        sloppy=False,
+        debug=False,
+        derivatives=config["OUTPUT"]["derivatives"],
+        freesurfer=True,
+        fs_subjects_dir=Path(config["OUTPUT"]["derivatives"], "freesurfer"),
+        hires=False,
+        fs_no_resume=False,
+        longitudinal=False,
+        low_mem=False,
+        msm_sulc=False,
+        omp_nthreads=config["NIPYPE"]["n_jobs"],
+        run_uuid="123",
+        skull_strip_mode="auto",
+        skull_strip_fixed_seed=True,
+        skull_strip_template="OASIS30ANTs",
+        spaces=SpatialReferences(),
+        bids_filters=None,
+        cifti_output=False,
     )
     return wf
