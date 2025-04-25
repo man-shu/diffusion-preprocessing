@@ -12,6 +12,8 @@ from nipype.interfaces.freesurfer import ReconAll, MRIsConvert, MRIConvert
 from .bids import init_bidsdata_wf
 from .sink import init_sink_wf
 from pathlib import Path
+from smriprep.workflows.base import init_smriprep_wf
+from bids.layout import BIDSLayout
 
 
 def _set_inputs_outputs(config, recon_wf):
@@ -519,6 +521,11 @@ def _recon_wf(name="recon", output_dir="."):
 
 
 def init_recon_wf(output_dir=".", config=None):
-    wf = _recon_wf(output_dir=output_dir)
-    wf = _set_inputs_outputs(config, wf)
+    wf = init_smriprep_wf(
+        output_dir=config["OUTPUT"]["derivatives"],
+        work_dir=config["OUTPUT"]["cache"],
+        analysis_level="participant",
+        suject_list=config["DATASET"]["subject"],
+        layout=BIDSLayout(Path(config["DATASET"]["directory"])),
+    )
     return wf
