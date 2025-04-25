@@ -523,7 +523,9 @@ def _recon_wf(name="recon", output_dir="."):
 
 
 def init_recon_wf(output_dir=".", config=None):
-    spaces = SpatialReferences()
+    spaces = SpatialReferences(
+        ["MNI152NLin2009aSym", "fsaverage3", "fsaverage5", "fsaverage7"]
+    )
     spaces.checkpoint()
     wf = init_smriprep_wf(
         output_dir=config["OUTPUT"]["derivatives"],
@@ -536,7 +538,7 @@ def init_recon_wf(output_dir=".", config=None):
         # other parameters
         sloppy=False,
         debug=False,
-        derivatives=[],
+        derivatives=[Path(config["OUTPUT"]["derivatives"])],
         freesurfer=True,
         fs_subjects_dir=Path(config["OUTPUT"]["derivatives"], "freesurfer"),
         hires=False,
