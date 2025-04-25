@@ -9,6 +9,7 @@ from diffusion_pipelines.workflows import (
 )
 
 from configparser import ConfigParser
+from nipype import config as nipype_config
 
 VALID_PIPELINES = ["preprocessing", "reconstruction", "tractography"]
 
@@ -70,12 +71,44 @@ def _parse_pipeline(config):
     return config
 
 
+def _parse_nipype_params(config):
+    """
+    Parse the nipype parameters in the config file.
+    If the nipype parameters are not specified, set them to default values.
+    """
+    # check n_jobs
+    if "NIPYPE" not in config:
+        config["NIPYPE"] = {}
+        config["NIPYPE"]["n_jobs"] = 1
+        config["NIPYPE"]["debug"] = False
+    else:
+        if "n_jobs" not in config["NIPYPE"]:
+            config["NIPYPE"]["n_jobs"] = 1
+        else:
+            config["NIPYPE"]["n_jobs"] = int(config["NIPYPE"]["n_jobs"])
+
+        # check debug
+        if "debug" not in config["NIPYPE"]:
+            config["NIPYPE"]["debug"] = False
+        elif config["NIPYPE"]["debug"] == "True":
+            config["NIPYPE"]["debug"] = True
+        elif config["NIPYPE"]["debug"] == "False":
+            config["NIPYPE"]["debug"] = False
+        else:
+            raise ValueError(
+                "Invalid value for debug in [NIPYPE] section. "
+                "Expected True or False."
+            )
+    return config
+
+
 def _parse_config(config_file):
     config = ConfigParser()
     config.read(config_file)
     # convert to dictionary
     config = config._sections
     config = _parse_subjects(config)
+    config = _parse_nipype_params(config)
     config = _parse_pipeline(config)
     return config
 
@@ -134,30 +167,31 @@ def _run_pipeline(config, to_run):
         "reconstruction": init_recon_wf,
         "tractography": init_tracto_wf,
     }
-
-    cache_dir = config["OUTPUT"]["cache"]
+    if config["NIPYPE"]["debug"]:
+        nipype_config.enable_debug_mode()
     # check number of jobs
-    if "MULTIPROCESSING" not in config:
-        n_jobs = 1
-    else:
-        n_jobs = int(config["MULTIPROCESSING"]["n_jobs"])
     for pipeline in to_run:
         # create the pipeline
         wf = pipeline_function[pipeline](
             output_dir=os.path.join(
-                cache_dir, f"{pipeline}_output_{timestamp}"
+                config["OUTPUT"]["cache"], f"{pipeline}_output_{timestamp}"
             ),
             config=config,
         )
         wf.write_graph(
             graph2use="flat",
             dotfilename=os.path.join(
-                cache_dir, f"{pipeline}_output_{timestamp}", "graph.dot"
+                config["OUTPUT"]["cache"],
+                f"{pipeline}_output_{timestamp}",
+                "graph.dot",
             ),
             format="svg",
         )
-        if n_jobs > 1:
-            wf.run(plugin="MultiProc", plugin_args={"n_procs": n_jobs})
+        if config["NIPYPE"]["n_jobs"] > 1:
+            wf.run(
+                plugin="MultiProc",
+                plugin_args={"n_procs": config["NIPYPE"]["n_jobs"]},
+            )
         else:
             wf.run()
 
@@ -179,7 +213,7 @@ def main():
 
     # If the argument is '-' or if the given file path doesn't exist,
     # assume the config is coming via stdin
-    if config_arg == "-" or not os.path.exists(config_arg):
+    if config_arg == "-":
         config_data = sys.stdin.read()
         with tempfile.NamedTemporaryFile(
             delete=False, mode="w", suffix=".cfg"
@@ -188,6 +222,9 @@ def main():
             tmp_file.flush()  # ensure content is written to disk
             config_arg = tmp_file.name
             print(f"Temporary config file created at {config_arg}")
+    elif not os.path.exists(config_arg):
+        print(f"Config file {config_arg} does not exist.")
+        sys.exit(1)
 
     # parse the config file
     config = _parse_config(config_arg)

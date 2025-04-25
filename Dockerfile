@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
     cmake \
     graphviz \
+    tcsh \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create user with specified UID/GID
@@ -127,10 +128,16 @@ RUN cd $HOME/Convert3D && \
     rm c3d-1.0.0-Linux-x86_64.tar.gz
 ENV PATH="$HOME/Convert3D/c3d-1.0.0-Linux-x86_64/bin:$PATH"
 
+# Install workbench
+RUN conda install --yes conda-forge::connectome-workbench-cli=2.0
+
 # Install diffusion-pipelines
 COPY --chown=$USER_ID:$GROUP_ID diffusion_pipelines $HOME/diffusion_pipelines
 RUN cd $HOME/diffusion_pipelines && \
     pip install -e .
+
+# copy FreeSurfer license
+COPY --chown=$USER_ID:$GROUP_ID docker/files/license.txt $FREESURFER_HOME/license.txt
 
 # Set entrypoint to diffusion_pipelines
 ENTRYPOINT ["/home/diffusion_pipelines/miniconda3/bin/diffusion_pipelines"]
