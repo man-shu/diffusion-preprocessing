@@ -14,7 +14,8 @@ from .sink import init_sink_wf
 from pathlib import Path
 from smriprep.workflows.base import init_smriprep_wf
 from bids.layout import BIDSLayout
-from niworkflows.utils.spaces import SpatialReferences
+from bids.layout.index import BIDSLayoutIndexer
+from niworkflows.utils.spaces import Reference, SpatialReferences
 
 
 def _set_inputs_outputs(config, recon_wf):
@@ -522,15 +523,20 @@ def _recon_wf(name="recon", output_dir="."):
 
 
 def init_recon_wf(output_dir=".", config=None):
+    spaces = SpatialReferences()
+    spaces.checkpoint()
     wf = init_smriprep_wf(
         output_dir=config["OUTPUT"]["derivatives"],
         work_dir=config["OUTPUT"]["cache"],
         subject_list=config["DATASET"]["subject"],
-        layout=BIDSLayout(Path(config["DATASET"]["directory"])),
+        layout=BIDSLayout(
+            root=Path(config["DATASET"]["directory"]),
+            validate=True,
+        ),
         # other parameters
         sloppy=False,
         debug=False,
-        derivatives=config["OUTPUT"]["derivatives"],
+        derivatives=[],
         freesurfer=True,
         fs_subjects_dir=Path(config["OUTPUT"]["derivatives"], "freesurfer"),
         hires=False,
@@ -542,8 +548,8 @@ def init_recon_wf(output_dir=".", config=None):
         run_uuid="123",
         skull_strip_mode="auto",
         skull_strip_fixed_seed=True,
-        skull_strip_template="OASIS30ANTs",
-        spaces=SpatialReferences(),
+        skull_strip_template=Reference.from_string("OASIS30ANTs")[0],
+        spaces=spaces,
         bids_filters=None,
         cifti_output=False,
     )
