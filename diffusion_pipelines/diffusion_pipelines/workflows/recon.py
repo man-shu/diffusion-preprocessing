@@ -536,7 +536,7 @@ def init_recon_wf(output_dir=".", config=None):
         # other parameters
         sloppy=False,
         debug=False,
-        derivatives=[Path(config["OUTPUT"]["derivatives"])],
+        derivatives=[],
         freesurfer=True,
         fs_subjects_dir=Path(config["OUTPUT"]["derivatives"], "freesurfer"),
         hires=False,
