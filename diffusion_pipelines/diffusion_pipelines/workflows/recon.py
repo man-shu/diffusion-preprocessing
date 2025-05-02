@@ -523,7 +523,7 @@ def _recon_wf(name="recon", output_dir="."):
 
 
 def init_recon_wf(output_dir=".", config=None):
-    spaces = SpatialReferences(["MNI152NLin2009aSym", "fsaverage5"])
+    spaces = SpatialReferences(spaces=["MNI152NLin2009aSym", "fsaverage5"])
     spaces.checkpoint()
     wf = init_smriprep_wf(
         output_dir=config["OUTPUT"]["derivatives"],
