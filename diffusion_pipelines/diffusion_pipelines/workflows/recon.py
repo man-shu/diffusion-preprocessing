@@ -551,6 +551,6 @@ def init_recon_wf(output_dir=".", config=None):
         skull_strip_template=Reference.from_string("OASIS30ANTs")[0],
         spaces=spaces,
         bids_filters=None,
-        cifti_output=False,
+        cifti_output="91k",
     )
     return wf
