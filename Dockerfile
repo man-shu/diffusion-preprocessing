@@ -41,13 +41,13 @@ RUN mkdir -p $INSTALL_DIR/ANTS \
 # Create non-root user with specified name
 RUN useradd -m -s /bin/bash -d /home/${USER_NAME} ${USER_NAME}
 
-# Switch to non-root user
-USER ${USER_NAME}
-
 # Update HOME environment variable to use the proper user home
 ENV HOME="/home/${USER_NAME}"
 
 RUN chown -R ${USER_NAME}:${USER_NAME} $INSTALL_DIR
+
+# Switch to non-root user
+USER ${USER_NAME}
 
 # Install ANTS
 RUN cd $INSTALL_DIR/ANTS && \
