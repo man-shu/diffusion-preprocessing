@@ -7,18 +7,24 @@ git clone git@github.com:man-shu/diffusion-preprocessing.git
 cd diffusion-preprocessing
 ```
 
-- Build the docker image
+- Pull the docker image
+
+```bash
+docker pull haggarwa/diffusion_pipelines:latest
+```
+
+- **Optionally**, you can also build the docker image
 
   - If you're using a machine with x86_64 architecture (check with `uname -m`):
 
     ```bash
-    docker image build --tag diffusion_pipelines .
+    docker image build --tag haggarwa/diffusion_pipelines .
     ```
 
   - If you're using a machine with ARM architecture (for example, Apple M1):
 
     ```bash
-    docker image build --platform linux/x86_64 --tag diffusion_pipelines .
+    docker image build --platform linux/x86_64 --tag haggarwa/diffusion_pipelines .
     ```
 
 - Create a config file, for example:
@@ -80,7 +86,7 @@ cd diffusion-preprocessing
     docker container run --rm --interactive \
     --user "$(id -u):$(id -g)" \
     --mount type=bind,source=./data,target=/home/input \
-    diffusion_pipelines:latest -< config.cfg 
+    haggarwa/diffusion_pipelines:latest -< config.cfg 
     ```
 
   - If you're using a machine with ARM architecture (for example, Apple M1):
@@ -90,5 +96,5 @@ cd diffusion-preprocessing
     --platform linux/x86_64 \
     --user "$(id -u):$(id -g)" \
     --mount type=bind,source=./data,target=/home/input \
-    diffusion_pipelines:latest -< config.cfg 
+    haggarwa/diffusion_pipelines:latest -< config.cfg 
     ```
