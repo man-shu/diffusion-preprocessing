@@ -12,20 +12,13 @@ cd diffusion-preprocessing
   - If you're using a machine with x86_64 architecture (check with `uname -m`):
 
     ```bash
-    docker image build \
-    --tag diffusion_pipelines \
-    --build-arg USER_ID="$(id -u)" \
-    --build-arg GROUP_ID="$(id -g)" .
+    docker image build --tag diffusion_pipelines .
     ```
 
   - If you're using a machine with ARM architecture (for example, Apple M1):
 
     ```bash
-    docker image build \
-    --platform linux/x86_64 \
-    --tag diffusion_pipelines \
-    --build-arg USER_ID="$(id -u)" \
-    --build-arg GROUP_ID="$(id -g)" .
+    docker image build --platform linux/x86_64 --tag diffusion_pipelines .
     ```
 
 - Create a config file, for example:
@@ -85,6 +78,16 @@ cd diffusion-preprocessing
 
     ```bash
     docker container run --rm --interactive \
+    --user "$(id -u):$(id -g)" \
+    --mount type=bind,source=./data,target=/home/input \
+    diffusion_pipelines:latest -< config.cfg 
+    ```
+
+  - If you're using a machine with ARM architecture (for example, Apple M1):
+
+    ```bash
+    docker container run --rm --interactive \
+    --platform linux/x86_64 \
     --user "$(id -u):$(id -g)" \
     --mount type=bind,source=./data,target=/home/input \
     diffusion_pipelines:latest -< config.cfg 
