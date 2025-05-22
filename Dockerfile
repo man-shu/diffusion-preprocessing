@@ -30,6 +30,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Set HOME explicitly
 ENV INSTALL_DIR="/opt"
 
+# Create directories and set permissions
+RUN mkdir -p $INSTALL_DIR/ANTS \
+    $INSTALL_DIR/freesurfer \
+    $INSTALL_DIR/miniconda3 \
+    $INSTALL_DIR/fsl \
+    $INSTALL_DIR/niflow \
+    $INSTALL_DIR/Convert3D
+
 # Create non-root user with specified name
 RUN useradd -m -s /bin/bash -d /home/${USER_NAME} ${USER_NAME}
 
@@ -39,14 +47,7 @@ USER ${USER_NAME}
 # Update HOME environment variable to use the proper user home
 ENV HOME="/home/${USER_NAME}"
 
-# Create directories and set permissions
-RUN mkdir -p $INSTALL_DIR/ANTS \
-    $INSTALL_DIR/freesurfer \
-    $INSTALL_DIR/miniconda3 \
-    $INSTALL_DIR/fsl \
-    $INSTALL_DIR/niflow \
-    $INSTALL_DIR/Convert3D && \
-    chown -R ${USER_NAME}:${USER_NAME} $INSTALL_DIR
+RUN chown -R ${USER_NAME}:${USER_NAME} $INSTALL_DIR
 
 # Install ANTS
 RUN cd $INSTALL_DIR/ANTS && \
