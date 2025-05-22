@@ -118,7 +118,6 @@ RUN conda install --yes conda-forge::connectome-workbench-cli=2.0
 
 # Install diffusion-pipelines
 COPY diffusion_pipelines $INSTALL_DIR/diffusion_pipelines
-RUN chown -R ${USER_NAME}:${USER_NAME} $INSTALL_DIR/diffusion_pipelines
 RUN cd $INSTALL_DIR/diffusion_pipelines && \
     pip install -e . --use-pep517
 
