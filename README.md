@@ -106,11 +106,11 @@ docker pull haggarwa/diffusion_pipelines:latest
 - Build the singularity image
 
 ```bash
-singularity build diffusion_pipelines.sif Singularity.def
+singularity build diffusion_pipelines.sif docker://haggarwa/diffusion_pipelines:latest
 ```
 
 - Run the singularity image
 
 ```bash
-singularity run --bind ./data:/home/input diffusion_pipelines.sif -< config.cfg
+singularity run --env-file singularity_env.txt --bind ./data:/home/input diffusion_pipelines.sif /opt/miniconda3/bin/diffusion_pipelines -< config.cfg
 ```
