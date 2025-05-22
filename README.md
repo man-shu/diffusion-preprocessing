@@ -7,26 +7,6 @@ git clone git@github.com:man-shu/diffusion-preprocessing.git
 cd diffusion-preprocessing
 ```
 
-- Pull the docker image
-
-```bash
-docker pull haggarwa/diffusion_pipelines:latest
-```
-
-- **Optionally**, you can also build the docker image
-
-  - If you're using a machine with x86_64 architecture (check with `uname -m`):
-
-    ```bash
-    docker image build --tag haggarwa/diffusion_pipelines .
-    ```
-
-  - If you're using a machine with ARM architecture (for example, Apple M1):
-
-    ```bash
-    docker image build --platform linux/x86_64 --tag haggarwa/diffusion_pipelines .
-    ```
-
 - Create a config file, for example:
 
   - `config.cfg`
@@ -80,6 +60,28 @@ docker pull haggarwa/diffusion_pipelines:latest
     (under `[OUTPUT]`) and the final outputs will be saved in the `derivatives`
     directory (also under `[OUTPUT]`).
 
+## Using Docker
+
+- Pull the docker image
+
+```bash
+docker pull haggarwa/diffusion_pipelines:latest
+```
+
+- **Optionally**, you can also build the docker image
+
+  - If you're using a machine with x86_64 architecture (check with `uname -m`):
+
+    ```bash
+    docker image build --tag haggarwa/diffusion_pipelines .
+    ```
+
+  - If you're using a machine with ARM architecture (for example, Apple M1):
+
+    ```bash
+    docker image build --platform linux/x86_64 --tag haggarwa/diffusion_pipelines .
+    ```
+
 - Run the container
 
     ```bash
@@ -98,3 +100,17 @@ docker pull haggarwa/diffusion_pipelines:latest
     --mount type=bind,source=./data,target=/home/input \
     haggarwa/diffusion_pipelines:latest -< config.cfg 
     ```
+
+## Using Singularity
+
+- Build the singularity image
+
+```bash
+singularity build diffusion_pipelines.sif Singularity.def
+```
+
+- Run the singularity image
+
+```bash
+singularity run --bind ./data:/home/input diffusion_pipelines.sif -< config.cfg
+```
