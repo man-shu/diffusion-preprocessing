@@ -12,6 +12,10 @@ from nipype.interfaces.freesurfer import ReconAll, MRIsConvert, MRIConvert
 from .bids import init_bidsdata_wf
 from .sink import init_sink_wf
 from pathlib import Path
+from smriprep.workflows.base import init_smriprep_wf
+from bids.layout import BIDSLayout
+from bids.layout.index import BIDSLayoutIndexer
+from niworkflows.utils.spaces import Reference, SpatialReferences
 
 
 def _set_inputs_outputs(config, recon_wf):
@@ -519,6 +523,34 @@ def _recon_wf(name="recon", output_dir="."):
 
 
 def init_recon_wf(output_dir=".", config=None):
-    wf = _recon_wf(output_dir=output_dir)
-    wf = _set_inputs_outputs(config, wf)
+    spaces = SpatialReferences(spaces=["MNI152NLin2009aSym", "fsaverage5"])
+    spaces.checkpoint()
+    wf = init_smriprep_wf(
+        output_dir=config["OUTPUT"]["derivatives"],
+        work_dir=config["OUTPUT"]["cache"],
+        subject_list=config["DATASET"]["subject"],
+        layout=BIDSLayout(
+            root=Path(config["DATASET"]["directory"]),
+            validate=True,
+        ),
+        # other parameters
+        sloppy=False,
+        debug=False,
+        derivatives=[],
+        freesurfer=True,
+        fs_subjects_dir=Path(config["OUTPUT"]["derivatives"], "freesurfer"),
+        hires=False,
+        fs_no_resume=False,
+        longitudinal=False,
+        low_mem=False,
+        msm_sulc=False,
+        omp_nthreads=config["NIPYPE"]["n_jobs"],
+        run_uuid="123",
+        skull_strip_mode="auto",
+        skull_strip_fixed_seed=True,
+        skull_strip_template=Reference.from_string("OASIS30ANTs")[0],
+        spaces=spaces,
+        bids_filters=None,
+        cifti_output=True,
+    )
     return wf
