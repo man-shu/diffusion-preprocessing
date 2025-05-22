@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV INSTALL_DIR="/opt"
 
 # Set HOME explicitly
-ENV HOME="/home/$USER_NAME"
+ENV HOME="/opt/home"
 
 # Create directories and set permissions
 RUN mkdir -p $INSTALL_DIR/ANTS \
