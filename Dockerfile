@@ -30,8 +30,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Set HOME explicitly
 ENV INSTALL_DIR="/opt"
 
-# Set HOME explicitly
-ENV HOME="/opt/home"
+# Create non-root user with specified name
+RUN useradd -m -s /bin/bash -d /home/${USER_NAME} ${USER_NAME}
+
+# Switch to non-root user
+USER ${USER_NAME}
+
+# Update HOME environment variable to use the proper user home
+ENV HOME="/home/${USER_NAME}"
 
 # Create directories and set permissions
 RUN mkdir -p $INSTALL_DIR/ANTS \
@@ -39,7 +45,8 @@ RUN mkdir -p $INSTALL_DIR/ANTS \
     $INSTALL_DIR/miniconda3 \
     $INSTALL_DIR/fsl \
     $INSTALL_DIR/niflow \
-    $INSTALL_DIR/Convert3D
+    $INSTALL_DIR/Convert3D && \
+    chown -R ${USER_NAME}:${USER_NAME} $INSTALL_DIR
 
 # Install ANTS
 RUN cd $INSTALL_DIR/ANTS && \
@@ -63,7 +70,7 @@ ENV OS="Linux" \
     FS_OVERRIDE=0 \
     FIX_VERTEX_AREA="" \
     FSF_OUTPUT_FORMAT="nii.gz" \
-    FREESURFER_HOME="$HOME/freesurfer/freesurfer"
+    FREESURFER_HOME="$INSTALL_DIR/freesurfer/freesurfer"
 ENV SUBJECTS_DIR="$FREESURFER_HOME/subjects" \
     FUNCTIONALS_DIR="$FREESURFER_HOME/sessions" \
     MNI_DIR="$FREESURFER_HOME/mni" \
@@ -88,8 +95,8 @@ ENV PATH="$INSTALL_DIR/miniconda3/bin:$PATH" \
     PYTHONNOUSERSITE=1
 
 # Install selected FSL conda packages
-COPY docker/files/fsl_deps.txt $HOME/fsl/fsl_deps.txt
-RUN conda install --yes --file $HOME/fsl/fsl_deps.txt -c https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/public/ -c conda-forge
+COPY docker/files/fsl_deps.txt $INSTALL_DIR/fsl/fsl_deps.txt
+RUN conda install --yes --file $INSTALL_DIR/fsl/fsl_deps.txt -c https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/public/ -c conda-forge
 
 # Set up environment variables for FSL
 ENV LANG="C.UTF-8" \
