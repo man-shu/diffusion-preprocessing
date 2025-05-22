@@ -38,17 +38,6 @@ RUN mkdir -p $INSTALL_DIR/ANTS \
     $INSTALL_DIR/niflow \
     $INSTALL_DIR/Convert3D
 
-# Create non-root user with specified name
-RUN useradd -m -s /bin/bash -d /home/${USER_NAME} ${USER_NAME}
-
-# Update HOME environment variable to use the proper user home
-ENV HOME="/home/${USER_NAME}"
-
-RUN chown -R ${USER_NAME}:${USER_NAME} $INSTALL_DIR
-
-# Switch to non-root user
-USER ${USER_NAME}
-
 # Install ANTS
 RUN cd $INSTALL_DIR/ANTS && \
     wget https://github.com/ANTsX/ANTs/releases/download/v2.4.4/ants-2.4.4-ubuntu-22.04-X64-gcc.zip && \
@@ -135,6 +124,21 @@ RUN cd $INSTALL_DIR/diffusion_pipelines && \
 
 # copy FreeSurfer license
 COPY docker/files/license.txt $FREESURFER_HOME/license.txt
+
+RUN useradd -m -s /bin/bash -d /home/${USER_NAME} ${USER_NAME}
+
+# Update HOME environment variable to use the proper user home
+ENV HOME="/home/${USER_NAME}"
+
+# Set proper permissions for installed software
+RUN chown -R ${USER_NAME}:${USER_NAME} ${INSTALL_DIR}/diffusion_pipelines && \
+    chmod -R 755 ${INSTALL_DIR}/ANTS ${INSTALL_DIR}/freesurfer ${INSTALL_DIR}/miniconda3 \
+    ${INSTALL_DIR}/fsl ${INSTALL_DIR}/niflow ${INSTALL_DIR}/Convert3D && \
+    chmod -R 755 ${HOME} 
+
+# Switch to non-root user
+USER ${USER_NAME}
+
 
 # Set entrypoint to diffusion_pipelines
 ENTRYPOINT ["/opt/miniconda3/bin/diffusion_pipelines"]
