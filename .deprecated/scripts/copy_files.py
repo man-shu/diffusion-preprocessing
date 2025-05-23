@@ -1,8 +1,6 @@
-from nilearn.image import concat_imgs
 from glob import glob
 from pathlib import Path
 import os
-import numpy as np
 from joblib import Parallel, delayed
 
 protocols = ["T1w"]
