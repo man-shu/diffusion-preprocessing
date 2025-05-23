@@ -109,7 +109,7 @@
   singularity build diffusion_pipelines.sif docker://haggarwa/diffusion_pipelines:latest
   ```
 
-Note this build will work even if you are a non-root user. Only building singularity images from def files requires root privileges.
+**Note** that this build will work even if you are a non-root user. Only building singularity images from `.def` files requires root privileges.
 
 - Run the singularity image
 
