@@ -7,5 +7,4 @@ data/cache
 data/*/derivatives
 data/*fullres
 config-fullres.cfg
-config-concat.cfg
 docker/files/license.txt
