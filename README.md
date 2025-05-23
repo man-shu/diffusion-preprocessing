@@ -114,11 +114,14 @@
 - Run the singularity image
 
   ```bash
-  singularity exec --env-file singularity_env.txt --bind ./data:/home/input diffusion_pipelines.sif /opt/miniconda3/bin/diffusion_pipelines -< config.cfg
+  singularity exec --env-file singularity_env.txt \
+  --bind ./data:/home/input diffusion_pipelines.sif \
+  /opt/miniconda3/bin/diffusion_pipelines -< config.cfg
   ```
 
 - Alternatively, you can run the singularity image in an interactive shell
 
   ```bash
-  singularity shell --env-file singularity_env.txt --bind ./data:/home/input diffusion_pipelines.sif
+  singularity shell --env-file singularity_env.txt \
+  --bind ./data:/home/input diffusion_pipelines.sif
   ```
