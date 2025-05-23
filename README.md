@@ -2,10 +2,10 @@
 
 - Clone this repository and navigate to the directory
 
-```bash
-git clone git@github.com:man-shu/diffusion-preprocessing.git
-cd diffusion-preprocessing
-```
+  ```bash
+  git clone git@github.com:man-shu/diffusion-preprocessing.git
+  cd diffusion-preprocessing
+  ```
 
 - Create a config file, for example:
 
@@ -64,9 +64,9 @@ cd diffusion-preprocessing
 
 - Pull the docker image
 
-```bash
-docker pull haggarwa/diffusion_pipelines:latest
-```
+  ```bash
+  docker pull haggarwa/diffusion_pipelines:latest
+  ```
 
 - **Optionally**, you can also build the docker image
 
@@ -84,12 +84,12 @@ docker pull haggarwa/diffusion_pipelines:latest
 
 - Run the container
 
-    ```bash
-    docker container run --rm --interactive \
-    --user "$(id -u):$(id -g)" \
-    --mount type=bind,source=./data,target=/home/input \
-    haggarwa/diffusion_pipelines:latest -< config.cfg 
-    ```
+  ```bash
+  docker container run --rm --interactive \
+  --user "$(id -u):$(id -g)" \
+  --mount type=bind,source=./data,target=/home/input \
+  haggarwa/diffusion_pipelines:latest -< config.cfg 
+  ```
 
   - If you're using a machine with ARM architecture (for example, Apple M1):
 
@@ -105,12 +105,20 @@ docker pull haggarwa/diffusion_pipelines:latest
 
 - Build the singularity image
 
-```bash
-singularity build diffusion_pipelines.sif docker://haggarwa/diffusion_pipelines:latest
-```
+  ```bash
+  singularity build diffusion_pipelines.sif docker://haggarwa/diffusion_pipelines:latest
+  ```
+
+Note this build will work even if you are a non-root user. Only building singularity images from def files requires root privileges.
 
 - Run the singularity image
 
-```bash
-singularity run --env-file singularity_env.txt --bind ./data:/home/input diffusion_pipelines.sif /opt/miniconda3/bin/diffusion_pipelines -< config.cfg
-```
+  ```bash
+  singularity exec --env-file singularity_env.txt --bind ./data:/home/input diffusion_pipelines.sif /opt/miniconda3/bin/diffusion_pipelines -< config.cfg
+  ```
+
+- Alternatively, you can run the singularity image in an interactive shell
+
+  ```bash
+  singularity shell --env-file singularity_env.txt --bind ./data:/home/input diffusion_pipelines.sif
+  ```
