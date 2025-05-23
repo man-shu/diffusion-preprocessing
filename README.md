@@ -2,31 +2,10 @@
 
 - Clone this repository and navigate to the directory
 
-```bash
-git clone git@github.com:man-shu/diffusion-preprocessing.git
-cd diffusion-preprocessing
-```
-
-- Build the docker image
-
-  - If you're using a machine with x86_64 architecture (check with `uname -m`):
-
-    ```bash
-    docker image build \
-    --tag diffusion_pipelines \
-    --build-arg USER_ID="$(id -u)" \
-    --build-arg GROUP_ID="$(id -g)" .
-    ```
-
-  - If you're using a machine with ARM architecture (for example, Apple M1):
-
-    ```bash
-    docker image build \
-    --platform linux/x86_64 \
-    --tag diffusion_pipelines \
-    --build-arg USER_ID="$(id -u)" \
-    --build-arg GROUP_ID="$(id -g)" .
-    ```
+  ```bash
+  git clone git@github.com:man-shu/diffusion-preprocessing.git
+  cd diffusion-preprocessing
+  ```
 
 - Create a config file, for example:
 
@@ -81,10 +60,68 @@ cd diffusion-preprocessing
     (under `[OUTPUT]`) and the final outputs will be saved in the `derivatives`
     directory (also under `[OUTPUT]`).
 
+## Using Docker
+
+- Pull the docker image
+
+  ```bash
+  docker pull haggarwa/diffusion_pipelines:latest
+  ```
+
+- **Optionally**, you can also build the docker image
+
+  - If you're using a machine with x86_64 architecture (check with `uname -m`):
+
+    ```bash
+    docker image build --tag haggarwa/diffusion_pipelines .
+    ```
+
+  - If you're using a machine with ARM architecture (for example, Apple M1):
+
+    ```bash
+    docker image build --platform linux/x86_64 --tag haggarwa/diffusion_pipelines .
+    ```
+
 - Run the container
+
+  ```bash
+  docker container run --rm --interactive \
+  --user "$(id -u):$(id -g)" \
+  --mount type=bind,source=./data,target=/home/input \
+  haggarwa/diffusion_pipelines:latest -< config.cfg 
+  ```
+
+  - If you're using a machine with ARM architecture (for example, Apple M1):
 
     ```bash
     docker container run --rm --interactive \
+    --platform linux/x86_64 \
+    --user "$(id -u):$(id -g)" \
     --mount type=bind,source=./data,target=/home/input \
-    diffusion_pipelines:latest -< config.cfg 
+    haggarwa/diffusion_pipelines:latest -< config.cfg 
     ```
+
+## Using Singularity
+
+- Build the singularity image
+
+  ```bash
+  singularity build diffusion_pipelines.sif docker://haggarwa/diffusion_pipelines:latest
+  ```
+
+**Note** that this build will work even if you are a non-root user. Only building singularity images from `.def` files requires root privileges.
+
+- Run the singularity image
+
+  ```bash
+  singularity exec --env-file singularity_env.txt \
+  --bind ./data:/home/input diffusion_pipelines.sif \
+  /opt/miniconda3/bin/diffusion_pipelines -< config.cfg
+  ```
+
+- Alternatively, you can run the singularity image in an interactive shell
+
+  ```bash
+  singularity shell --env-file singularity_env.txt \
+  --bind ./data:/home/input diffusion_pipelines.sif
+  ```
