@@ -6,32 +6,8 @@ import numpy as np
 from joblib import Parallel, delayed
 from nibabel import load as nib_load
 
-protocols = ["AxCaliberConcat"]
-root_directory = Path(
-    "/data/parietal/store3/work/haggarwa/diffusion/data/WAND-concat"
-)
-sub_dirs = list(root_directory.glob("sub-*"))
-sub_dirs.sort()
-dry = True
 
-
-def safe_check_file_lengths(out_dir, sub_dir):
-    """Wrapper function that catches exceptions and identifies the failing subject"""
-    try:
-        check_file_lengths(out_dir, sub_dir)
-        return {"subject": sub_dir.name, "status": "success"}
-    except Exception as e:
-        import traceback
-
-        return {
-            "subject": sub_dir.name,
-            "status": "failed",
-            "error": str(e),
-            "traceback": traceback.format_exc(),
-        }
-
-
-def check_file_lengths(sub_dir):
+def check_file_lengths(sub_dir, protocols):
     for protocol in protocols:
         for extension in ["nii.gz", "bval", "bvec"]:
             if extension == "nii.gz":
@@ -81,19 +57,14 @@ def check_file_lengths(sub_dir):
                     print(f"bvec shape: {bvec.shape}")
 
 
-# Run the parallel processing and collect results
-results = Parallel(n_jobs=20)(
-    delayed(safe_check_file_lengths)(sub_dir) for sub_dir in sub_dirs
-)
+if __name__ == "__main__":
 
-# Check results for any failures
-failures = [res for res in results if res.get("status") == "failed"]
-if failures:
-    print("\n===== FAILED SUBJECTS =====")
-    for failure in failures:
-        print(f"\nSubject {failure['subject']} failed with error:")
-        print(f"  {failure['error']}")
-        print("\nTraceback:")
-        print(failure["traceback"])
-else:
-    print("\nAll subjects processed successfully!")
+    protocols = ["AxCaliberConcat"]
+    root_directory = Path(
+        "/data/parietal/store3/work/haggarwa/diffusion/data/WAND-concat"
+    )
+    sub_dirs = list(root_directory.glob("sub-*"))
+    sub_dirs.sort()
+
+    for sub_dir in sub_dirs:
+        check_file_lengths(sub_dir, protocols)
