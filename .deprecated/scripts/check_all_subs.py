@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
     protocols = ["AxCaliberConcat"]
     root_directory = Path(
-        "/data/parietal/store3/work/haggarwa/diffusion/data/WAND-concat"
+        "/data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data/WAND-concat"
     )
     sub_dirs = list(root_directory.glob("sub-*"))
     print(f"Found {len(sub_dirs)} subjects in {root_directory}")
