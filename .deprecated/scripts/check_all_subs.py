@@ -5,6 +5,7 @@ import os
 import numpy as np
 from joblib import Parallel, delayed
 from nibabel import load as nib_load
+from drop_unavailable import get_unavailable_subjects
 
 
 def check_file_lengths(sub_dir, protocols):
@@ -66,7 +67,11 @@ if __name__ == "__main__":
     sub_dirs = list(root_directory.glob("sub-*"))
     print(f"Found {len(sub_dirs)} subjects in {root_directory}")
     sub_dirs.sort()
-
+    unavailable_subjects = get_unavailable_subjects()
     for sub_dir in sub_dirs:
-        print(f"Checking {sub_dir.name}")
+        if sub_dir.name in unavailable_subjects:
+            print(f"Skipping unavailable subject: {sub_dir.name}")
+            continue
+        else:
+            print(f"Checking {sub_dir.name}")
         check_file_lengths(sub_dir, protocols)
