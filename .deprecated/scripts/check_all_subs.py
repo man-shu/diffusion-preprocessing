@@ -67,4 +67,5 @@ if __name__ == "__main__":
     sub_dirs.sort()
 
     for sub_dir in sub_dirs:
+        print(f"Checking {sub_dir.name}")
         check_file_lengths(sub_dir, protocols)
