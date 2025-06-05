@@ -49,7 +49,10 @@ if __name__ == "__main__":
     root_directory = Path(
         "/data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data/WAND-concat"
     )
-    dry = True  # Set to False to actually delete files and update TSV
-    unavailable_subjects = get_unavailable_subjects(root_directory)
+    unavail_root_directory = Path(
+        "/data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/.deprecated/scripts"
+    )
+    dry = False  # Set to False to actually delete files and update TSV
+    unavailable_subjects = get_unavailable_subjects(unavail_root_directory)
     delete_unavailable_subjects(root_directory, unavailable_subjects, dry=dry)
     update_participants_tsv(root_directory, unavailable_subjects, dry=dry)
