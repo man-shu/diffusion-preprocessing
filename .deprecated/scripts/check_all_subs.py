@@ -33,8 +33,8 @@ def check_file_lengths(sub_dir, protocols):
                 if sub_dir.name == "sub-11220":
                     continue
                 print(dwi_files)
-                print(dwi_img.shape)
                 dwi_img = nib_load(dwi_files[0])
+                print(dwi_img.shape)
             elif extension == "bval":
                 # find all bval files
                 bval_files = list(
