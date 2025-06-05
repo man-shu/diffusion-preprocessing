@@ -4,9 +4,13 @@ from pathlib import Path
 from glob import glob
 
 
-def get_unavailable_subjects():
-    unavailable_file = Path("unavailable.txt")
+def get_unavailable_subjects(root_directory=None):
+    if root_directory is None:
+        unavailable_file = Path("unavailable.txt")
+    else:
+        unavailable_file = root_directory / "unavailable.txt"
     if not unavailable_file.exists():
+        print(f"{unavailable_file} does not exist.")
         return []
 
     with open(unavailable_file, "r") as f:
@@ -43,9 +47,9 @@ def update_participants_tsv(root_directory, unavailable_subjects, dry=True):
 
 if __name__ == "__main__":
     root_directory = Path(
-            "/data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data/WAND-concat"
+        "/data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data/WAND-concat"
     )
     dry = True  # Set to False to actually delete files and update TSV
-    unavailable_subjects = get_unavailable_subjects()
+    unavailable_subjects = get_unavailable_subjects(root_directory)
     delete_unavailable_subjects(root_directory, unavailable_subjects, dry=dry)
     update_participants_tsv(root_directory, unavailable_subjects, dry=dry)

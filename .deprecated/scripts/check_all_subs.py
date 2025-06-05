@@ -67,7 +67,7 @@ if __name__ == "__main__":
     sub_dirs = list(root_directory.glob("sub-*"))
     print(f"Found {len(sub_dirs)} subjects in {root_directory}")
     sub_dirs.sort()
-    unavailable_subjects = get_unavailable_subjects()
+    unavailable_subjects = get_unavailable_subjects(root_directory)
     for sub_dir in sub_dirs:
         if sub_dir.name in unavailable_subjects:
             print(f"Skipping unavailable subject: {sub_dir.name}")
