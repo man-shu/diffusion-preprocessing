@@ -16,22 +16,6 @@ def check_file_lengths(sub_dir, protocols):
                     sub_dir.glob(f"ses-02/dwi/*{protocol}*dwi.{extension}")
                 )
                 dwi_files.sort()
-                if sub_dir.name == "sub-01945":
-                    dwi_files = list(
-                        sub_dir.glob(
-                            f"ses-02/dwi/*{protocol}*run-01_dwi.{extension}"
-                        )
-                    )
-                    dwi_files.sort()
-                    dwi_files2 = list(
-                        sub_dir.glob(
-                            f"ses-02/dwi/*{protocol}*mag_dwi.{extension}"
-                        )
-                    )
-                    dwi_files2.sort()
-                    dwi_files = dwi_files + dwi_files2[:2]
-                if sub_dir.name == "sub-11220":
-                    continue
                 print(dwi_files)
                 dwi_img = nib_load(dwi_files[0])
                 print(dwi_img.shape)
