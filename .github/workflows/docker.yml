@@ -97,7 +97,7 @@ jobs:
 
       - name: Build Singularity image
         run: |
-          singularity build diffusion_pipelines.sif ${{ env.DOCKER_METADATA_OUTPUT_TAGS }}
+          singularity build diffusion_pipelines.sif docker://${{ env.DOCKER_METADATA_OUTPUT_TAGS }}
 
       - name: Login and Deploy Container
         run: |
