@@ -8,9 +8,6 @@ from nibabel import load as nib_load
 
 protocols = ["AxCaliberConcat"]
 root_directory = Path(
-    "/data/parietal/store3/work/haggarwa/diffusion/data/WAND"
-)
-out_dir = Path(
     "/data/parietal/store3/work/haggarwa/diffusion/data/WAND-concat"
 )
 sub_dirs = list(root_directory.glob("sub-*"))
@@ -34,11 +31,9 @@ def safe_check_file_lengths(out_dir, sub_dir):
         }
 
 
-def check_file_lengths(out_dir, sub_dir):
+def check_file_lengths(sub_dir):
     for protocol in protocols:
         for extension in ["nii.gz", "bval", "bvec"]:
-            output_path_dir = out_dir / sub_dir.name / "ses-02" / "dwi"
-            os.makedirs(output_path_dir, exist_ok=True)
             if extension == "nii.gz":
                 dwi_files = list(
                     sub_dir.glob(f"ses-02/dwi/*{protocol}*dwi.{extension}")
@@ -88,7 +83,7 @@ def check_file_lengths(out_dir, sub_dir):
 
 # Run the parallel processing and collect results
 results = Parallel(n_jobs=20)(
-    delayed(safe_check_file_lengths)(out_dir, sub_dir) for sub_dir in sub_dirs
+    delayed(safe_check_file_lengths)(sub_dir) for sub_dir in sub_dirs
 )
 
 # Check results for any failures
