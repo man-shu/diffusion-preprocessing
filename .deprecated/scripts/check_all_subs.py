@@ -64,6 +64,7 @@ if __name__ == "__main__":
         "/data/parietal/store3/work/haggarwa/diffusion/data/WAND-concat"
     )
     sub_dirs = list(root_directory.glob("sub-*"))
+    print(f"Found {len(sub_dirs)} subjects in {root_directory}")
     sub_dirs.sort()
 
     for sub_dir in sub_dirs:
