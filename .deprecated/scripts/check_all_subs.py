@@ -16,30 +16,39 @@ def check_file_lengths(sub_dir, protocols):
                     sub_dir.glob(f"ses-02/dwi/*{protocol}*dwi.{extension}")
                 )
                 dwi_files.sort()
-                print(dwi_files)
+                # print(dwi_files)
                 dwi_img = nib_load(dwi_files[0])
-                print(dwi_img.shape)
+                dwi_shape = dwi_img.shape
+                # print(dwi_shape)
             elif extension == "bval":
                 # find all bval files
                 bval_files = list(
                     sub_dir.glob(f"ses-02/dwi/*{protocol}*dwi.{extension}")
                 )
                 bval_files.sort()
-                print(bval_files)
+                # print(bval_files)
                 # concatenate all bval files
                 for bval_file in bval_files:
                     bval = np.loadtxt(bval_file)
-                    print(f"bval shape: {bval.shape}")
+                    bval_shape = bval.shape
+                    # print(f"bval shape: {bval_shape}")
             elif extension == "bvec":
                 # find all bvec files
                 bvec_files = list(
                     sub_dir.glob(f"ses-02/dwi/*{protocol}*dwi.bvec")
                 )
                 bvec_files.sort()
-                print(bvec_files)
+                # print(bvec_files)
                 for bvec_file in bvec_files:
                     bvec = np.loadtxt(bvec_file)
-                    print(f"bvec shape: {bvec.shape}")
+                    bvec_shape = bvec.shape
+                    # print(f"bvec shape: {bvec_shape}")
+
+    if dwi_shape[3] != bval_shape[0] or dwi_shape[3] != bvec_shape[1]:
+        print(
+            f"Mismatch in file lengths for {sub_dir.name}:"
+            f"dwi: {dwi_shape[3]}, bval: {bval_shape[0]}, bvec: {bvec_shape[1]}"
+        )
 
 
 if __name__ == "__main__":
