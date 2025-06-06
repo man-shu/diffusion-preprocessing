@@ -3,11 +3,8 @@ name: Docker build
 on:
   workflow_dispatch:
   push:
-    branches: ["master", "main", "maint/*", "gha-docker-build"]
+    branches: ["main"]
     tags: "*"
-  pull_request:
-    branches: ["master", "main", "maint/*"]
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -61,47 +58,3 @@ jobs:
           cache-to: type=inline
         env:
           TARGET_BRANCH: ${{ github.base_ref || github.ref_name }}
-
-      - name: Set up Go 1.13 for Singularity
-        uses: actions/setup-go@v1
-        with:
-          go-version: 1.13
-        id: go
-
-      - name: Install Dependencies for Singularity
-        run: |
-          sudo apt-get update && sudo apt-get install -y \
-            build-essential \
-            libssl-dev \
-            uuid-dev \
-            libgpgme11-dev \
-            squashfs-tools \
-            libseccomp-dev \
-            pkg-config
-
-      - name: Install Singularity
-        env:
-          SINGULARITY_VERSION: 3.8.1
-          GOPATH: /tmp/go
-        run: |
-          mkdir -p $GOPATH
-          sudo mkdir -p /usr/local/var/singularity/mnt && \
-          mkdir -p $GOPATH/src/github.com/sylabs && \
-          cd $GOPATH/src/github.com/sylabs && \
-          wget -qO- https://github.com/sylabs/singularity/releases/download/v${SINGULARITY_VERSION}/singularity-ce-${SINGULARITY_VERSION}.tar.gz | \
-          tar xzv && \
-          cd singularity-ce-${SINGULARITY_VERSION} && \
-          ./mconfig -p /usr/local && \
-          make -C builddir && \
-          sudo make -C builddir install          
-
-      - name: Build Singularity image
-        run: |
-          singularity build diffusion_pipelines.sif docker://${{ env.DOCKER_METADATA_OUTPUT_TAGS }}
-
-      - name: Login and Deploy Container
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | singularity remote login -u ${{ github.actor }} --password-stdin ${{ env.REGISTRY }}          
-          FIRST_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n 1)
-          TAG_SUFFIX=$(echo "$FIRST_TAG" | sed "s|${{ env.REGISTRY }}/${{ github.repository }}:||")
-          singularity push diffusion_pipelines.sif oras://${{ env.REGISTRY }}/${{ github.repository }}:${TAG_SUFFIX}
