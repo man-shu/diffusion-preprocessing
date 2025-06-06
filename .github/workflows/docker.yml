@@ -17,7 +17,7 @@ env:
   FORCE_COLOR: true
 
 jobs:
-  build-container:
+  build-docker:
     runs-on: ubuntu-latest
     permissions:
       contents: read
