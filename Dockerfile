@@ -124,6 +124,9 @@ RUN cd $INSTALL_DIR/diffusion_pipelines && \
 # copy FreeSurfer license
 COPY docker/files/license.txt $FREESURFER_HOME/license.txt
 
+# Also set TEMPLATEFLOW_HOME
+ENV TEMPLATEFLOW_HOME="/home/input/"
+
 RUN useradd -m -s /bin/bash -G users ${USER_NAME}
 
 # Update HOME environment variable to use the proper user home
