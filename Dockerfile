@@ -125,9 +125,8 @@ RUN cd $INSTALL_DIR/diffusion_pipelines && \
 COPY docker/files/license.txt $FREESURFER_HOME/license.txt
 
 # Fetch templateflow stuff
-RUN wget -O $INSTALL_DIR//fetch_templates.py https://raw.githubusercontent.com/nipreps/fmriprep/master/scripts/fetch_templates.py && \
-    python $INSTALL_DIR/fetch_templates.py -h
-
+RUN wget -O $INSTALL_DIR/fetch_templates.py https://raw.githubusercontent.com/nipreps/fmriprep/master/scripts/fetch_templates.py && \
+    python $INSTALL_DIR/fetch_templates.py
 
 RUN useradd -m -s /bin/bash -G users ${USER_NAME}
 
