@@ -8,4 +8,4 @@
 
 module load singularity
 
-srun singularity exec --env-file /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/singularity_env.txt --bind /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data:/home/input /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/diffusion_pipelines.sif /opt/miniconda3/bin/diffusion_pipelines -< /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/config-concat.cfg
+srun singularity exec --env-file /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/singularity_env.txt --bind /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data:/home/input /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/diffusion-preprocessing_main_singularity.sif /opt/miniconda3/bin/diffusion_pipelines -< /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/config-concat.cfg
