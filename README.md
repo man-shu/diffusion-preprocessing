@@ -65,7 +65,7 @@
 - Pull the docker image
 
   ```bash
-  docker pull haggarwa/diffusion_pipelines:latest
+  docker pull ghcr.io/man-shu/diffusion-preprocessing:main
   ```
 
 - **Optionally**, you can also build the docker image
@@ -73,13 +73,13 @@
   - If you're using a machine with x86_64 architecture (check with `uname -m`):
 
     ```bash
-    docker image build --tag haggarwa/diffusion_pipelines .
+    docker image build --tag ghcr.io/man-shu/diffusion-preprocessing:main .
     ```
 
   - If you're using a machine with ARM architecture (for example, Apple M1):
 
     ```bash
-    docker image build --platform linux/x86_64 --tag haggarwa/diffusion_pipelines .
+    docker image build --platform linux/x86_64 --tag ghcr.io/man-shu/diffusion-preprocessing:main .
     ```
 
 - Run the container
@@ -88,7 +88,7 @@
   docker container run --rm --interactive \
   --user "$(id -u):$(id -g)" \
   --mount type=bind,source=./data,target=/home/input \
-  haggarwa/diffusion_pipelines:latest -< config.cfg 
+  ghcr.io/man-shu/diffusion-preprocessing:main -< config.cfg 
   ```
 
   - If you're using a machine with ARM architecture (for example, Apple M1):
@@ -98,24 +98,30 @@
     --platform linux/x86_64 \
     --user "$(id -u):$(id -g)" \
     --mount type=bind,source=./data,target=/home/input \
-    haggarwa/diffusion_pipelines:latest -< config.cfg 
+    ghcr.io/man-shu/diffusion-preprocessing:main -< config.cfg
     ```
 
 ## Using Singularity
 
-- Build the singularity image
+- Pull the singularity image
 
   ```bash
-  singularity build diffusion_pipelines.sif docker://haggarwa/diffusion_pipelines:latest
+  singularity pull oras://ghcr.io/man-shu/diffusion-preprocessing:main_singularity
   ```
 
-**Note** that this build will work even if you are a non-root user. Only building singularity images from `.def` files requires root privileges.
+- **Optionally**, you could also build the singularity image
+
+  ```bash
+  singularity build diffusion-preprocessing_main_singularity.sif ghcr.io/man-shu/diffusion-preprocessing:main
+  ```
+
+**Note** that this build will work even if you are a non-root user. Only building singularity images from `.def` files requires root privileges. So we don't even provide a `.def` file here.
 
 - Run the singularity image
 
   ```bash
   singularity exec --env-file singularity_env.txt \
-  --bind ./data:/home/input diffusion_pipelines.sif \
+  --bind ./data:/home/input diffusion-preprocessing_main_singularity.sif \
   /opt/miniconda3/bin/diffusion_pipelines -< config.cfg
   ```
 
@@ -123,5 +129,5 @@
 
   ```bash
   singularity shell --env-file singularity_env.txt \
-  --bind ./data:/home/input diffusion_pipelines.sif
+  --bind ./data:/home/input diffusion-preprocessing_main_singularity.sif
   ```
