@@ -94,9 +94,31 @@ jobs:
           docker-images: true
           swap-storage: true
 
-      - name: Build Singularity image
+      - name: Build Singularity image with cache
         run: |
-          singularity build diffusion_pipelines.sif docker://${{ env.DOCKER_METADATA_OUTPUT_TAGS }}
+          # Get Docker image from metadata
+          DOCKER_IMAGE=$(echo "${{ steps.meta.outputs.tags }}" | head -n 1)
+          
+          # Create temp directory for cache
+          mkdir -p ./cache_temp
+          
+          # Extract cache from Docker image
+          docker pull ${DOCKER_IMAGE}
+          CONTAINER_ID=$(docker create ${DOCKER_IMAGE})
+          docker cp ${CONTAINER_ID}:/.cache ./cache_temp/ || echo "Cache extraction failed"
+          docker rm ${CONTAINER_ID}
+          
+          # Create simple definition file
+          cat > definition.def << EOF
+          Bootstrap: docker
+          From: ${DOCKER_IMAGE}
+          
+          %files
+              ./cache_temp/.cache /.cache
+          EOF
+          
+          # Build with the definition file
+          singularity build diffusion_pipelines.sif definition.def
 
       - name: Login and Deploy Container
         run: |
