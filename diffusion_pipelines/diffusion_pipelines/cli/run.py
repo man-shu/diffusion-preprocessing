@@ -153,6 +153,14 @@ def _select_pipeline(config):
         if value:
             to_run.append(key)
 
+    # make sure the pipelines are in the correct order
+    # if preprocessing is in to_run, run reconstruction first
+    # and then preprocessing
+    # if tractography is in to_run, it will run reconstruction and
+    # preprocessing as well, so we don't need to do anything
+    if "preprocessing" in to_run:
+        to_run = ["reconstruction", "preprocessing"]
+
     # check if the pipeline is valid
     if not to_run:
         raise ValueError(
@@ -160,8 +168,8 @@ def _select_pipeline(config):
             "Specify at least one pipeline to run."
             "Example:\n"
             "[PIPELINE]\n"
-            "preprocess = True\n"
-            "reconstruction = False\n"
+            "reconstruction = True\n"
+            "preprocessing = False\n"
             "tractography = False"
         )
     else:
