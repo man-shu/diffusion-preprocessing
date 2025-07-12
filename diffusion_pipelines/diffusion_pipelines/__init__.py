@@ -1,7 +1,7 @@
-from .workflows import preprocess, recon, report, tracto, bids, sink
+from .workflows import preproc, recon, report, tracto, bids, sink
 
 __all__ = [
-    "preprocess",
+    "preproc",
     "recon",
     "report",
     "tracto",
