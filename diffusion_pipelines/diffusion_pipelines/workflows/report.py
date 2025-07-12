@@ -110,8 +110,8 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 "mask",
                 "bet_mask",
                 "dwi_rigid_registered",
-                "template_t2_initial",
-                "template_t2_masked",
+                "t1_initial",
+                "t1_masked",
                 "bids_entities",
             ]
         ),
@@ -121,17 +121,17 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
         IdentityInterface(fields=["out_file"]),
         name="report_outputnode",
     )
-    # define a function to get the zero index of the input dwi file
+    # define a function to get the mean of b=0 of the input dwi file
     MeanBZero = Function(
         input_names=["dwi_file", "bval"],
         output_names=["out"],
         function=_get_mean_bzero,
     )
-    # this node is used to get the zero index of the input dwi file
+    # this node is used to get the mean of b=0 of the input dwi file
     get_intial_mean_bzero = Node(MeanBZero, name="get_intial_mean_bzero")
-    # this node is used to get the zero index of the eddy corrected dwi file
+    # this node is used to get the mean of b=0 of the eddy corrected dwi file
     get_eddy_mean_bzero = get_intial_mean_bzero.clone("get_eddy_mean_bzero")
-    # this node is used to get the zero index of the t2 template registered dwi file
+    # this node is used to get the mean of b=0 of the t2 template registered dwi file
     get_registered_mean_bzero = get_intial_mean_bzero.clone(
         "get_registered_mean_bzero"
     )
@@ -143,21 +143,21 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
     # set labels for the before and after images
     plot_before_after_eddy.inputs.before_label = "Distorted"
     plot_before_after_eddy.inputs.after_label = "Eddy Corrected"
-    # this node plots before and after images of masking T2 template
-    plot_before_after_mask_t2 = Node(
-        SimpleBeforeAfter(), name="plot_before_after_mask_t2"
+    # this node plots before and after images of masking T1 template
+    plot_before_after_mask_t1 = Node(
+        SimpleBeforeAfter(), name="plot_before_after_mask_t1"
     )
     # set labels for the before and after images
-    plot_before_after_mask_t2.inputs.before_label = "T2 Template"
-    plot_before_after_mask_t2.inputs.after_label = "Masked T2 Template"
-    # this node plots the masked T2 template as before and the dwi registeresd
+    plot_before_after_mask_t1.inputs.before_label = "T1 Template"
+    plot_before_after_mask_t1.inputs.after_label = "Masked T1 Template"
+    # this node plots the masked subject T1 as before and the dwi registered
     # to it as after
-    plot_before_after_t2_dwi = Node(
-        SimpleBeforeAfter(), name="plot_before_after_t2_dwi"
+    plot_before_after_t1_dwi = Node(
+        SimpleBeforeAfter(), name="plot_before_after_t1_dwi"
     )
     # set labels for the before and after images
-    plot_before_after_t2_dwi.inputs.before_label = "Masked T2 Template"
-    plot_before_after_t2_dwi.inputs.after_label = "Registered DWI"
+    plot_before_after_t1_dwi.inputs.before_label = "Masked Subject T1"
+    plot_before_after_t1_dwi.inputs.after_label = "Registered DWI"
     # this node plots the extracted brain mask as outline on the initial dwi
     # image
     plot_bet = Node(SimpleShowMaskRPT(), name="plot_bet")
@@ -245,7 +245,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
             # plot the initial T2 template as before
             (
                 inputnode,
-                plot_before_after_mask_t2,
+                plot_before_after_mask_t1,
                 [
                     ("template_t2_initial", "before"),
                 ],
@@ -253,7 +253,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
             # plot the masked T2 template as after
             (
                 inputnode,
-                plot_before_after_mask_t2,
+                plot_before_after_mask_t1,
                 [
                     ("template_t2_masked", "after"),
                 ],
@@ -262,14 +262,14 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
             # after
             (
                 inputnode,
-                plot_before_after_t2_dwi,
+                plot_before_after_t1_dwi,
                 [
-                    ("template_t2_masked", "before"),
+                    ("template_t1_masked", "before"),
                 ],
             ),
             (
                 get_registered_mean_bzero,
-                plot_before_after_t2_dwi,
+                plot_before_after_t1_dwi,
                 [("out", "after")],
             ),
             # plot the transformed mask as an outline on transformed dwi image
@@ -282,7 +282,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 ],
             ),
             # merge the outputs of plot_bet, plot_before_after_eddy,
-            # plot_before_after_mask_t2, plot_transformed
+            # plot_before_after_mask_t1, plot_transformed
             (
                 plot_bet,
                 merge_node,
@@ -298,14 +298,14 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 ],
             ),
             (
-                plot_before_after_mask_t2,
+                plot_before_after_mask_t1,
                 merge_node,
                 [
                     ("out_report", "in3"),
                 ],
             ),
             (
-                plot_before_after_t2_dwi,
+                plot_before_after_t1_dwi,
                 merge_node,
                 [("out_report", "in4")],
             ),
