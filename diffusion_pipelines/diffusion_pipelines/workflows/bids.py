@@ -11,7 +11,14 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
     ### SelectFiles node
     # String template with {}-based strings
     templates = {
-        "T1": "sub-{subject_id}/*/anat/sub-{subject_id}*_T1w.nii.gz",
+        "preprocessed_t1": (
+            "derivatives/smriprep/sub-{subject_id}/*/anat/sub-{subject_id}"
+            "*preproc_T1w.nii.gz"
+        ),
+        "preprocessed_t1_mask": (
+            "derivatives/smriprep/sub-{subject_id}/*/anat/sub-{subject_id}"
+            "*brain_mask.nii.gz"
+        ),
         "dwi": (
             "sub-{subject_id}/*/dwi/sub-{subject_id}*_acq-{acquisition}"
             "*_dwi.nii.gz"
