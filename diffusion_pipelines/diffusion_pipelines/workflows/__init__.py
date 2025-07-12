@@ -1,4 +1,4 @@
-from .preprocess import init_preprocess_wf
+from .preproc import init_preprocess_wf
 from .recon import init_recon_wf
 from .report import init_report_wf
 from .tracto import init_tracto_wf
