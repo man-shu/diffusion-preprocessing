@@ -87,7 +87,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
         out_file = os.path.join(os.getcwd(), "mean_bzero.nii.gz")
         mean_bzero_img.to_filename(out_file)
 
-    return out_file
+        return out_file
 
     # define a function to get the mean of b=0 of the input dwi file
     MeanBZero = Function(
