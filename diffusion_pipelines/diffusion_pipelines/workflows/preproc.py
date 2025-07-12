@@ -72,7 +72,7 @@ def _set_inputs_outputs(config, preproc_wf):
 def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
 
     def _get_mean_bzero(dwi_file, bval):
-    """Mean of the b=0 volumes of the input dwi file."""
+        """Mean of the b=0 volumes of the input dwi file."""
         import os
         from nilearn.image import index_img, mean_img
 
@@ -241,11 +241,9 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             # apply the mask to the dwi
             (input_subject, strip_dwi, [("dwi", "in_file")]),
             (bet, strip_dwi, [("mask_file", "mask_file")]),
-
             # apply mask to the preprocessed subject T1
             (input_subject, strip_t1, [("preprocessed_t1", "in_file")]),
             (input_subject, strip_t1, [("preprocessed_t1_mask", "mask_file")]),
-
             # edddy correct the skull-stripped dwi
             (strip_dwi, eddycorrect, [("out_file", "inputnode.in_file")]),
             # register the skull-stripped dwi to the skull-stripped subject T1
