@@ -36,15 +36,18 @@ def _parse_pipeline(config):
         raise ValueError(
             "[PIPELINE] section is missing in the config file. "
             "Specify atleast one pipeline to run. "
-            "Available pipelines: preprocessing, reconstruction, "
-            "tractography. "
+            "Available pipelines: 'preprocessing', 'reconstruction', "
+            "'tractography'. "
             "Set the ones you want to run to True. "
-            "Running tractography will run reconstruction and preprocessing "
-            "as well. "
+            "The 'preprocessing' pipeline depends on outputs from the "
+            "'reconstruction' pipeline, so setting 'preprocessing' to True "
+            "will automatically set 'reconstruction' to True as well. "
+            "Similarly, running 'tractography' will run 'reconstruction' and"
+            " 'preprocessing' as well. "
             "Example:\n"
             "[PIPELINE]\n"
-            "preprocess = True\n"
-            "reconstruction = False\n"
+            "reconstruction = True\n"
+            "preprocessing = False\n"
             "tractography = False"
         )
     else:
@@ -52,7 +55,8 @@ def _parse_pipeline(config):
             if key not in VALID_PIPELINES:
                 raise ValueError(
                     f"Invalid key {key} in [PIPELINE] section. "
-                    "Available pipelines: preprocessing, reconstruction, tractography."
+                    "Available pipelines: preprocessing, reconstruction, "
+                    "tractography."
                 )
             else:
                 if config["PIPELINE"][key] == "True":
@@ -64,6 +68,17 @@ def _parse_pipeline(config):
                         f"Invalid value for {key} in [PIPELINE] section. "
                         "Expected True or False."
                     )
+        # if preprocessing is True, we set reconstruction to True as well
+        # preprocessing does not run reconstruction inside it, but it
+        # requires the outputs from reconstruction to run.
+        if (
+            config["PIPELINE"]["preprocessing"]
+            and not config["PIPELINE"]["reconstruction"]
+        ):
+            config["PIPELINE"]["reconstruction"] = True
+
+        # we set the reconstruction and preprocessing to False if tractography
+        # is True. This is becaause tractography workflow runs both inside it.
         if config["PIPELINE"]["tractography"]:
             config["PIPELINE"]["reconstruction"] = False
             config["PIPELINE"]["preprocessing"] = False
@@ -205,7 +220,8 @@ def main():
     if len(sys.argv) != 2:
         print(sys.argv)
         print(
-            "Usage: diffusion_pipelines <path_to_config_file> or '-' to read from stdin"
+            "Usage: diffusion_pipelines <path_to_config_file> or '-' to"
+            " read from stdin"
         )
         sys.exit(1)
 
