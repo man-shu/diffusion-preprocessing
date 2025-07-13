@@ -12,13 +12,6 @@ from pathlib import Path
 
 
 def _set_inputs_outputs(config, preproc_wf):
-    # inputs from the config file
-    preproc_wf.inputs.input_template.T2 = Path(
-        config["TEMPLATE"]["directory"], config["TEMPLATE"]["t2"]
-    )
-    preproc_wf.inputs.input_template.mask = Path(
-        config["TEMPLATE"]["directory"], config["TEMPLATE"]["mask"]
-    )
     # bids dataset
     bidsdata_wf = init_bidsdata_wf(config=config)
     # outputs
@@ -30,7 +23,11 @@ def _set_inputs_outputs(config, preproc_wf):
                 bidsdata_wf,
                 preproc_wf.get_node("input_subject"),
                 [
-                    ("selectfiles.T1", "preprocessed_T1"),
+                    ("selectfiles.preprocessed_t1", "preprocessed_t1"),
+                    (
+                        "selectfiles.preprocessed_t1_mask",
+                        "preprocessed_t1_mask",
+                    ),
                     ("selectfiles.dwi", "dwi"),
                     ("selectfiles.bval", "bval"),
                     ("selectfiles.bvec", "bvec"),
