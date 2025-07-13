@@ -131,7 +131,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
     get_intial_mean_bzero = Node(MeanBZero, name="get_intial_mean_bzero")
     # this node is used to get the mean of b=0 of the eddy corrected dwi file
     get_eddy_mean_bzero = get_intial_mean_bzero.clone("get_eddy_mean_bzero")
-    # this node is used to get the mean of b=0 of the t2 template registered dwi file
+    # this node is used to get the mean of b=0 of the subject t1 registered dwi file
     get_registered_mean_bzero = get_intial_mean_bzero.clone(
         "get_registered_mean_bzero"
     )
@@ -208,7 +208,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                     ("bval", "bval"),
                 ],
             ),
-            # get the zero index of the dwi file registered to the t2 template
+            # get the mean b=0 the dwi file registered to the subject t1
             (
                 inputnode,
                 get_registered_mean_bzero,
@@ -242,29 +242,29 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                     ("out", "after"),
                 ],
             ),
-            # plot the initial T2 template as before
+            # plot the initial subject T1 as before
             (
                 inputnode,
                 plot_before_after_mask_t1,
                 [
-                    ("template_t2_initial", "before"),
+                    ("t1_initial", "before"),
                 ],
             ),
-            # plot the masked T2 template as after
+            # plot the masked subject T1 as after
             (
                 inputnode,
                 plot_before_after_mask_t1,
                 [
-                    ("template_t2_masked", "after"),
+                    ("t1_masked", "after"),
                 ],
             ),
-            # plot the masked T2 template as before and transformed dwi as
+            # plot the masked subject T1 as before and transformed dwi as
             # after
             (
                 inputnode,
                 plot_before_after_t1_dwi,
                 [
-                    ("template_t1_masked", "before"),
+                    ("t1_masked", "before"),
                 ],
             ),
             (
