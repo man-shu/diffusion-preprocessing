@@ -58,6 +58,11 @@ def create_html_report(
                 with open(plot, "r", encoding="utf-8") as f:
                     svg_text = f.read()
                 f.close()
+                print("************")
+                print("\n\n\n\n\n\n")
+                print(f"Embedding {plot} in report")
+                print("\n\n\n\n\n\n")
+                print("************")
                 # get the plot name from the path
                 if "smriprep" in plot:
                     plot_name = plot.split(os.path.sep)[-1]
