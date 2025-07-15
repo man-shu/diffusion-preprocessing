@@ -32,6 +32,14 @@ def _set_inputs_outputs(config, preproc_wf):
                     ("selectfiles.bval", "bval"),
                     ("selectfiles.bvec", "bvec"),
                     ("decode_entities.bids_entities", "bids_entities"),
+                    (
+                        "selectfiles.plot_recon_surface_on_t1",
+                        "plot_recon_surface_on_t1",
+                    ),
+                    (
+                        "selectfiles.plot_recon_segmentations_on_t1",
+                        "plot_recon_segmentations_on_t1",
+                    ),
                 ],
             ),
             (
