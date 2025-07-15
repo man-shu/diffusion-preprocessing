@@ -59,7 +59,10 @@ def create_html_report(
                     svg_text = f.read()
                 f.close()
                 # get the plot name from the path
-                plot_name = plot.split("/")[-2]
+                if "smriprep" in plot:
+                    plot_name = plot.split(os.path.sep)[-1]
+                else:
+                    plot_name = plot.split(os.path.sep)[-2]
                 to_embed[plot_name] = svg_text
         return _embed_svg(to_embed)
 
