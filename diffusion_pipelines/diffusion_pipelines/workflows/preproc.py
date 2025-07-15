@@ -166,6 +166,8 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                 "t1_initial",
                 "t1_masked",
                 "bids_entities",
+                "plot_recon_surface_on_t1",
+                "plot_recon_segmentations_on_t1",
             ]
         ),
         name="output",
@@ -292,6 +294,22 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             # collect all the outputs in the output node
             # get subject id
             (input_subject, output, [("bids_entities", "bids_entities")]),
+            # get the plots from smriprep
+            (
+                input_subject,
+                output,
+                [("plot_recon_surface_on_t1", "plot_recon_surface_on_t1")],
+            ),
+            (
+                input_subject,
+                output,
+                [
+                    (
+                        "plot_recon_segmentations_on_t1",
+                        "plot_recon_segmentations_on_t1",
+                    )
+                ],
+            ),
             (strip_dwi, output, [("out_file", "dwi_masked")]),
             (conv_affine, output, [("affine_ras", "rigid_dwi_2_t1")]),
             (input_subject, output, [("preprocessed_t1", "t1_initial")]),
@@ -339,6 +357,14 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                         "report_inputnode.dwi_rigid_registered",
                     ),
                     ("bids_entities", "report_inputnode.bids_entities"),
+                    (
+                        "plot_recon_surface_on_t1",
+                        "report_inputnode.plot_recon_surface_on_t1",
+                    ),
+                    (
+                        "plot_recon_segmentations_on_t1",
+                        "report_inputnode.plot_recon_segmentations_on_t1",
+                    ),
                 ],
             ),
         ]

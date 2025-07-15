@@ -113,6 +113,8 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 "t1_initial",
                 "t1_masked",
                 "bids_entities",
+                "plot_recon_surface_on_t1",
+                "plot_recon_segmentations_on_t1",
             ]
         ),
         name="report_inputnode",
@@ -141,15 +143,15 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
         SimpleBeforeAfter(), name="plot_before_after_eddy"
     )
     # set labels for the before and after images
-    plot_before_after_eddy.inputs.before_label = "Distorted"
-    plot_before_after_eddy.inputs.after_label = "Eddy Corrected"
+    plot_before_after_eddy.inputs.before_label = "Distorted DWI"
+    plot_before_after_eddy.inputs.after_label = "Eddy Corrected DWI"
     # this node plots before and after images of masking T1 template
     plot_before_after_mask_t1 = Node(
         SimpleBeforeAfter(), name="plot_before_after_mask_t1"
     )
     # set labels for the before and after images
-    plot_before_after_mask_t1.inputs.before_label = "T1 Template"
-    plot_before_after_mask_t1.inputs.after_label = "Masked T1 Template"
+    plot_before_after_mask_t1.inputs.before_label = "Subject T1"
+    plot_before_after_mask_t1.inputs.after_label = "Masked Subject T1"
     # this node plots the masked subject T1 as before and the dwi registered
     # to it as after
     plot_before_after_t1_dwi = Node(
@@ -167,7 +169,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
 
     # Create a Merge node to combine the outputs of plot_bet,
     # plot_before_after_eddy, and plot_transformed
-    merge_node = Node(Merge(5), name="merge_node")
+    merge_node = Node(Merge(7), name="merge_node")
 
     # embed plots in a html template
     CreateHTML = Function(
@@ -315,6 +317,16 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 [
                     ("out_report", "in5"),
                 ],
+            ),
+            (
+                inputnode,
+                merge_node,
+                [("plot_recon_surface_on_t1", "in6")],
+            ),
+            (
+                inputnode,
+                merge_node,
+                [("plot_recon_segmentations_on_t1", "in7")],
             ),
             # input the bids_entities
             (

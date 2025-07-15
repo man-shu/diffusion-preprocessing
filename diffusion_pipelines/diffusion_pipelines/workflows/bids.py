@@ -19,6 +19,14 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
             "derivatives/smriprep/sub-{subject_id}/*/anat/sub-{subject_id}"
             "_ses-??_desc-brain_mask.nii.gz"
         ),
+        "plot_recon_surface_on_t1": (
+            "derivatives/smriprep/sub-{subject_id}/figures"
+            "/sub-{subject_id}*_desc-reconall_T1w.svg"
+        ),
+        "plot_recon_segmentations_on_t1": (
+            "derivatives/smriprep/sub-{subject_id}/figures"
+            "/sub-{subject_id}*_dseg.svg"
+        ),
         "dwi": (
             "sub-{subject_id}/*/dwi/sub-{subject_id}*_acq-{acquisition}"
             "*_dwi.nii.gz"
