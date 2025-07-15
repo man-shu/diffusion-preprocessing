@@ -534,7 +534,7 @@ def init_recon_wf(output_dir=".", config=None):
             validate=True,
         ),
         # other parameters
-        sloppy=False,
+        sloppy=True,
         debug=False,
         derivatives=[],
         freesurfer=True,
