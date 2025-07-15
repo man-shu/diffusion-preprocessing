@@ -53,19 +53,19 @@ def create_html_report(
 
     def _get_html_text(subject_id, *args):
         to_embed = {"subject_id": subject_id}
+        recon_plots = {
+            "T1w.svg": "plot_recon_surface_on_t1",
+            "dseg.svg": "plot_recon_segmentations_on_t1",
+        }
         for plot in args:
             if plot is not None:
                 with open(plot, "r", encoding="utf-8") as f:
                     svg_text = f.read()
                 f.close()
-                print("************")
-                print("\n\n\n\n\n\n")
-                print(f"Embedding {plot} in report")
-                print("\n\n\n\n\n\n")
-                print("************")
                 # get the plot name from the path
                 if "smriprep" in plot:
-                    plot_name = plot.split(os.path.sep)[-1]
+                    suffix = plot.split(os.path.sep)[-1].split("_")[0]
+                    plot_name = recon_plots[suffix]
                 else:
                     plot_name = plot.split(os.path.sep)[-2]
                 to_embed[plot_name] = svg_text
