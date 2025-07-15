@@ -148,7 +148,16 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
 
     input_subject = Node(
         IdentityInterface(
-            fields=["dwi", "bval", "bvec", "bids_entities"],
+            fields=[
+                "preprocessed_t1",
+                "preprocessed_t1_mask",
+                "dwi",
+                "bval",
+                "bvec",
+                "bids_entities",
+                "plot_recon_surface_on_t1",
+                "plot_recon_segmentations_on_t1",
+            ],
         ),
         name="input_subject",
     )
