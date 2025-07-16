@@ -64,7 +64,7 @@ def create_html_report(
                 f.close()
                 # get the plot name from the path
                 if "smriprep" in plot:
-                    suffix = plot.split(os.path.sep)[-1].split("_")[0]
+                    suffix = plot.split(os.path.sep)[-1].split("_")[-1]
                     plot_name = recon_plots[suffix]
                 else:
                     plot_name = plot.split(os.path.sep)[-2]
