@@ -84,6 +84,10 @@ ENV PATH="$INSTALL_DIR/miniconda3/bin:$PATH" \
     LC_ALL="C.UTF-8" \
     PYTHONNOUSERSITE=1
 
+# remove channels that need TOS agreement
+RUN conda config --remove channels main && \
+    conda config --remove channels r
+
 # Install selected FSL conda packages
 COPY docker/files/fsl_deps.txt $INSTALL_DIR/fsl/fsl_deps.txt
 RUN conda install --yes --file $INSTALL_DIR/fsl/fsl_deps.txt -c https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/public/ -c conda-forge
