@@ -74,7 +74,7 @@ ENV PERL5LIB="$MINC_LIB_DIR/perl5/5.8.5" \
 
 # Install conda
 RUN cd $INSTALL_DIR/miniconda3 && \
-    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O $INSTALL_DIR/miniconda3/miniconda.sh && \
+    wget https://repo.anaconda.com/miniconda/Miniconda3-py313_25.5.1-0-Linux-x86_64.sh -O $INSTALL_DIR/miniconda3/miniconda.sh && \
     bash $INSTALL_DIR/miniconda3/miniconda.sh -b -u -p $INSTALL_DIR/miniconda3 && \
     rm $INSTALL_DIR/miniconda3/miniconda.sh
 
@@ -83,6 +83,11 @@ ENV PATH="$INSTALL_DIR/miniconda3/bin:$PATH" \
     LANG="C.UTF-8" \
     LC_ALL="C.UTF-8" \
     PYTHONNOUSERSITE=1
+
+# remove channels that need TOS agreement
+RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+
 
 # Install selected FSL conda packages
 COPY docker/files/fsl_deps.txt $INSTALL_DIR/fsl/fsl_deps.txt

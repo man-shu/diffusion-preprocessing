@@ -12,13 +12,6 @@ from pathlib import Path
 
 
 def _set_inputs_outputs(config, preproc_wf):
-    # inputs from the config file
-    preproc_wf.inputs.input_template.T2 = Path(
-        config["TEMPLATE"]["directory"], config["TEMPLATE"]["t2"]
-    )
-    preproc_wf.inputs.input_template.mask = Path(
-        config["TEMPLATE"]["directory"], config["TEMPLATE"]["mask"]
-    )
     # bids dataset
     bidsdata_wf = init_bidsdata_wf(config=config)
     # outputs
@@ -30,10 +23,23 @@ def _set_inputs_outputs(config, preproc_wf):
                 bidsdata_wf,
                 preproc_wf.get_node("input_subject"),
                 [
+                    ("selectfiles.preprocessed_t1", "preprocessed_t1"),
+                    (
+                        "selectfiles.preprocessed_t1_mask",
+                        "preprocessed_t1_mask",
+                    ),
                     ("selectfiles.dwi", "dwi"),
                     ("selectfiles.bval", "bval"),
                     ("selectfiles.bvec", "bvec"),
                     ("decode_entities.bids_entities", "bids_entities"),
+                    (
+                        "selectfiles.plot_recon_surface_on_t1",
+                        "plot_recon_surface_on_t1",
+                    ),
+                    (
+                        "selectfiles.plot_recon_segmentations_on_t1",
+                        "plot_recon_segmentations_on_t1",
+                    ),
                 ],
             ),
             (
@@ -69,6 +75,33 @@ def _set_inputs_outputs(config, preproc_wf):
 
 
 def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
+
+    def _get_mean_bzero(dwi_file, bval):
+        """Mean of the b=0 volumes of the input dwi file."""
+        import os
+        from nilearn.image import index_img, mean_img
+
+        import numpy as np
+
+        bvals = np.loadtxt(bval)
+        # get the index of the b=0 volumes
+        bzero_index = np.where(bvals == 0)[0]
+        # get the mean image of the b=0 volumes
+        mean_bzero_img = mean_img(index_img(dwi_file, bzero_index))
+        # save the mean image
+        out_file = os.path.join(os.getcwd(), "mean_bzero.nii.gz")
+        mean_bzero_img.to_filename(out_file)
+
+        return out_file
+
+    # define a function to get the mean of b=0 of the input dwi file
+    MeanBZero = Function(
+        input_names=["dwi_file", "bval"],
+        output_names=["out"],
+        function=_get_mean_bzero,
+    )
+    # this node is used to get the mean of b=0 of the input dwi file
+    get_intial_mean_bzero = Node(MeanBZero, name="get_intial_mean_bzero")
 
     def convert_affine_itk_2_ras(input_affine):
         import subprocess
@@ -115,7 +148,16 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
 
     input_subject = Node(
         IdentityInterface(
-            fields=["dwi", "bval", "bvec", "bids_entities"],
+            fields=[
+                "preprocessed_t1",
+                "preprocessed_t1_mask",
+                "dwi",
+                "bval",
+                "bvec",
+                "bids_entities",
+                "plot_recon_surface_on_t1",
+                "plot_recon_segmentations_on_t1",
+            ],
         ),
         name="input_subject",
     )
@@ -133,14 +175,16 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                 "bval",
                 "bvec_rotated",
                 "mask",
-                "rigid_dwi_2_template",
+                "rigid_dwi_2_t1",
                 "eddy_corrected",
                 "dwi_initial",
                 "dwi_masked",
                 "bet_mask",
-                "template_t2_initial",
-                "template_t2_masked",
+                "t1_initial",
+                "t1_masked",
                 "bids_entities",
+                "plot_recon_surface_on_t1",
+                "plot_recon_segmentations_on_t1",
             ]
         ),
         name="output",
@@ -150,11 +194,11 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     fslroi.inputs.t_min = 0
     fslroi.inputs.t_size = 1
 
-    strip_fsl_roi = Node(interface=fsl.ApplyMask(), name="strip_fsl_roi")
+    strip_mean_bzero = Node(interface=fsl.ApplyMask(), name="strip_mean_bzero")
 
     strip_dwi = Node(interface=fsl.ApplyMask(), name="strip_dwi")
 
-    strip_t2_template = Node(interface=fsl.ApplyMask(), name="strip_template")
+    strip_t1 = Node(interface=fsl.ApplyMask(), name="strip_t1")
 
     bet = Node(interface=fsl.BET(), name="bet")
     bet.inputs.mask = True
@@ -202,30 +246,30 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     workflow = Workflow(name=name, base_dir=output_dir)
     workflow.connect(
         [
-            # create mask for the dwi
-            (input_subject, fslroi, [("dwi", "in_file")]),
-            # get subject id
-            (input_subject, output, [("bids_entities", "bids_entities")]),
-            (fslroi, bet, [("roi_file", "in_file")]),
-            # apply mask to fsl_roi output
-            (fslroi, strip_fsl_roi, [("roi_file", "in_file")]),
-            (bet, strip_fsl_roi, [("mask_file", "mask_file")]),
+            # get mean of b=0 volumes of the input dwi file
+            (input_subject, get_intial_mean_bzero, [("dwi", "dwi_file")]),
+            (input_subject, get_intial_mean_bzero, [("bval", "bval")]),
+            # get mask from the mean b=0 volumes
+            (get_intial_mean_bzero, bet, [("out", "in_file")]),
+            # apply mask to mean b=0 output
+            (get_intial_mean_bzero, strip_mean_bzero, [("out", "in_file")]),
+            (bet, strip_mean_bzero, [("mask_file", "mask_file")]),
             # apply the mask to the dwi
             (input_subject, strip_dwi, [("dwi", "in_file")]),
             (bet, strip_dwi, [("mask_file", "mask_file")]),
-            # apply the input template mask to the template
-            (input_template, strip_t2_template, [("T2", "in_file")]),
-            (input_template, strip_t2_template, [("mask", "mask_file")]),
+            # apply mask to the preprocessed subject T1
+            (input_subject, strip_t1, [("preprocessed_t1", "in_file")]),
+            (input_subject, strip_t1, [("preprocessed_t1_mask", "mask_file")]),
             # edddy correct the skull-stripped dwi
             (strip_dwi, eddycorrect, [("out_file", "inputnode.in_file")]),
-            # register the skull-stripped dwi to the skull-stripped template
+            # register the skull-stripped dwi to the skull-stripped subject T1
             (
-                strip_fsl_roi,
+                strip_mean_bzero,
                 rigid_registration,
                 [("out_file", "moving_image")],
             ),
             (
-                strip_t2_template,
+                strip_t1,
                 rigid_registration,
                 [("out_file", "fixed_image")],
             ),
@@ -248,7 +292,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                 [("outputnode.eddy_corrected", "input_image")],
             ),
             (
-                strip_t2_template,
+                strip_t1,
                 apply_registration,
                 [("out_file", "reference_image")],
             ),
@@ -260,15 +304,33 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             # also apply the registration to the mask
             (bet, apply_registration_mask, [("mask_file", "input_image")]),
             (
-                strip_t2_template,
+                strip_t1,
                 apply_registration_mask,
                 [("out_file", "reference_image")],
             ),
             # collect all the outputs in the output node
+            # get subject id
+            (input_subject, output, [("bids_entities", "bids_entities")]),
+            # get the plots from smriprep
+            (
+                input_subject,
+                output,
+                [("plot_recon_surface_on_t1", "plot_recon_surface_on_t1")],
+            ),
+            (
+                input_subject,
+                output,
+                [
+                    (
+                        "plot_recon_segmentations_on_t1",
+                        "plot_recon_segmentations_on_t1",
+                    )
+                ],
+            ),
             (strip_dwi, output, [("out_file", "dwi_masked")]),
-            (conv_affine, output, [("affine_ras", "rigid_dwi_2_template")]),
-            (input_template, output, [("T2", "template_t2_initial")]),
-            (strip_t2_template, output, [("out_file", "template_t2_masked")]),
+            (conv_affine, output, [("affine_ras", "rigid_dwi_2_t1")]),
+            (input_subject, output, [("preprocessed_t1", "t1_initial")]),
+            (strip_t1, output, [("out_file", "t1_masked")]),
             (
                 apply_registration,
                 output,
@@ -297,12 +359,12 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                     ("dwi_masked", "report_inputnode.dwi_masked"),
                     ("bval", "report_inputnode.bval"),
                     (
-                        "template_t2_initial",
-                        "report_inputnode.template_t2_initial",
+                        "t1_initial",
+                        "report_inputnode.t1_initial",
                     ),
                     (
-                        "template_t2_masked",
-                        "report_inputnode.template_t2_masked",
+                        "t1_masked",
+                        "report_inputnode.t1_masked",
                     ),
                     ("eddy_corrected", "report_inputnode.eddy_corrected"),
                     ("mask", "report_inputnode.mask"),
@@ -312,6 +374,14 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                         "report_inputnode.dwi_rigid_registered",
                     ),
                     ("bids_entities", "report_inputnode.bids_entities"),
+                    (
+                        "plot_recon_surface_on_t1",
+                        "report_inputnode.plot_recon_surface_on_t1",
+                    ),
+                    (
+                        "plot_recon_segmentations_on_t1",
+                        "report_inputnode.plot_recon_segmentations_on_t1",
+                    ),
                 ],
             ),
         ]

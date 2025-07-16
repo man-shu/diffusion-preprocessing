@@ -534,7 +534,7 @@ def init_recon_wf(output_dir=".", config=None):
             validate=True,
         ),
         # other parameters
-        sloppy=False,
+        sloppy=True,
         debug=False,
         derivatives=[],
         freesurfer=True,
@@ -544,7 +544,7 @@ def init_recon_wf(output_dir=".", config=None):
         longitudinal=False,
         low_mem=False,
         msm_sulc=False,
-        omp_nthreads=config["NIPYPE"]["n_jobs"],
+        omp_nthreads=20,
         run_uuid="123",
         skull_strip_mode="auto",
         skull_strip_fixed_seed=True,

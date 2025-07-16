@@ -33,12 +33,12 @@ def init_sink_wf(config, name="sink_wf"):
         substitutions = [
             ("_subject_id_", "sub-"),
             (
-                "_dwi_roi_brain_mask_trans",
-                "_space-MNI152NLin2009ASym_desc-mask_dwi",
+                "mean_bzero_brain_mask_trans",
+                f"{bids_name}_space-individualT1_desc-mask_dwi",
             ),
             (
                 "vol0000_flirt_merged_trans",
-                f"{bids_name}_space-MNI152NLin2009ASym_dwi",
+                f"{bids_name}_space-individualT1_dwi",
             ),
             ("vol0000_flirt_merged", f"{bids_name}_desc-eddycorrected_dwi"),
         ]
