@@ -76,6 +76,11 @@ def get_parser():
         '\t"sessionwise" will independently process each session. If multiple runs are '
         'found, the behavior will be similar to "first-lex"',
     )
+    g_bids.add_argument(
+        "--acquisition",
+        action="store",
+        help="Specify the acquisition type (the string after acq- in file BIDS names).",
+    )
 
     g_perfm = parser.add_argument_group("Options to handle performance")
     g_perfm.add_argument(

@@ -1,9 +1,6 @@
-from bids.layout import BIDSLayout
-from nipype import IdentityInterface, Node, MapNode, Workflow
+from nipype import IdentityInterface, Node, Workflow
 from nipype.interfaces.utility import Function
 from nipype.interfaces.io import DataSink
-from configparser import ConfigParser
-from pathlib import Path
 
 
 def init_sink_wf(config, name="sink_wf"):
@@ -53,7 +50,7 @@ def init_sink_wf(config, name="sink_wf"):
 
     ### DataSink node
     sink = Node(DataSink(), name="sink")
-    sink.inputs.base_directory = config["OUTPUT"]["derivatives"]
+    sink.inputs.base_directory = config.output_dir
 
     # Create the workflow
     sink_wf = Workflow(name=name)

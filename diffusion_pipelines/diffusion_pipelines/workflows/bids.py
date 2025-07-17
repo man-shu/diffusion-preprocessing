@@ -44,25 +44,23 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
     # Create SelectFiles node
     sf = Node(
         SelectFiles(
-            templates,
-            base_directory=config["DATASET"]["directory"],
-            sort_filelist=True,
+            templates, base_directory=config.bids_dir, sort_filelist=True
         ),
         name="selectfiles",
     )
 
-    sf.inputs.acquisition = config["DATASET"]["acquisition"]
-    layout = BIDSLayout(Path(config["DATASET"]["directory"]))
+    sf.inputs.acquisition = config.acquisition
+    layout = BIDSLayout(config.bids_dir)
     # set subjects as iterables
     # if subject is not specified, all subjects will be processed
-    if config["DATASET"]["subject"] == "all":
+    if config.participant_label == ["all"]:
         sf.iterables = [("subject_id", layout.get_subjects())]
     # otherwise, only the specified subjects will be processed
-    elif isinstance(config["DATASET"]["subject"], list):
-        for subject in config["DATASET"]["subject"]:
+    elif isinstance(config.participant_label, list):
+        for subject in config.participant_label:
             if subject not in layout.get_subjects():
                 raise ValueError(f"Subject {subject} not found in dataset")
-        sf.iterables = [("subject_id", config["DATASET"]["subject"])]
+        sf.iterables = [("subject_id", config.participant_label)]
 
     ### Node to decode entities
     def decode_entities(file_name):

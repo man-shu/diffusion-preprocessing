@@ -4,7 +4,7 @@ from smriprep.workflows.base import init_smriprep_wf
 from bids.layout import BIDSLayout
 
 
-def init_recon_wf(config):
+def init_recon_wf(output_dir, config):
     output_spaces = config.output_spaces.checkpoint()
 
     # Initialize BIDSLayout
