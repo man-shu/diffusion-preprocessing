@@ -37,4 +37,31 @@ def init_recon_wf(output_dir=".", config=None):
         bids_filters=None,
         cifti_output="91k",
     )
+
+    # Build main workflow
+    retval["workflow"] = init_smriprep_wf(
+        sloppy=opts.sloppy,
+        debug=False,
+        derivatives=derivatives,
+        freesurfer=opts.run_reconall,
+        fs_subjects_dir=opts.fs_subjects_dir,
+        hires=opts.hires,
+        fs_no_resume=opts.fs_no_resume,
+        layout=layout,
+        longitudinal=opts.longitudinal,
+        low_mem=opts.low_mem,
+        msm_sulc=opts.msm_sulc,
+        omp_nthreads=omp_nthreads,
+        output_dir=str(output_dir),
+        run_uuid=run_uuid,
+        skull_strip_fixed_seed=opts.skull_strip_fixed_seed,
+        skull_strip_mode=opts.skull_strip_mode,
+        skull_strip_template=opts.skull_strip_template[0],
+        spaces=output_spaces,
+        subject_session_list=subject_session_list,
+        work_dir=str(work_dir),
+        bids_filters=bids_filters,
+        cifti_output=opts.cifti_output,
+    )
+
     return wf
