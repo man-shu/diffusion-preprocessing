@@ -17,6 +17,9 @@ def get_parser():
     def _drop_ses(value):
         return value.removeprefix("ses-")
 
+    def _drop_sub(value):
+        return value.removeprefix("sub-")
+
     parser = ArgumentParser(
         description="diffusion_pipelines",
         formatter_class=RawTextHelpFormatter,
@@ -46,6 +49,7 @@ def get_parser():
         "--participant_label",
         action="store",
         nargs="+",
+        type=_drop_sub,
         help="a space delimited list of participant identifiers or a single "
         "identifier (the sub- prefix can be removed)",
     )
