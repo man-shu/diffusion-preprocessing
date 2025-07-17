@@ -66,15 +66,6 @@ def get_parser():
         help="Search PATH(s) for pre-computed derivatives.",
     )
     g_bids.add_argument(
-        "--bids-filter-file",
-        action="store",
-        type=Path,
-        metavar="PATH",
-        help="a JSON file describing custom BIDS input filters using pybids "
-        "{<suffix>:{<entity>:<filter>,...},...} "
-        "(https://github.com/bids-standard/pybids/blob/master/bids/layout/config/bids.json)",
-    )
-    g_bids.add_argument(
         "--subject-anatomical-reference",
         choices=["first-lex", "unbiased", "sessionwise"],
         default="first",
@@ -129,7 +120,7 @@ def get_parser():
     )
     g_conf.add_argument(
         "--longitudinal",
-        action="store_true",
+        action="store_false",
         help='DEPRECATED: use "--subject-anatomical-reference unbiased" instead',
     )
 
