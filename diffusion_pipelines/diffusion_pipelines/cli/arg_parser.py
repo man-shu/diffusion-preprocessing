@@ -240,5 +240,17 @@ def get_parser():
         default=False,
         help="Use low-quality tools for speed - TESTING ONLY",
     )
+    g_other.add_argument(
+        "--preproc",
+        action="store_true",
+        default=False,
+        help="Preprocess the diffusion image.",
+    )
+    g_other.add_argument(
+        "--tracto",
+        action="store_true",
+        default=False,
+        help="Run tractography pipeline.",
+    )
 
     return parser
