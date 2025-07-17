@@ -11,6 +11,8 @@ from diffusion_pipelines.workflows import (
 from configparser import ConfigParser
 from nipype import config as nipype_config
 
+from diffusion_pipelines.cli.arg_parser import get_parser
+
 VALID_PIPELINES = ["preprocessing", "reconstruction", "tractography"]
 
 
@@ -223,6 +225,10 @@ def main():
     """
     Main function to run the diffusion preprocessing pipeline.
     """
+
+    config = get_parser().parse_args()
+
+    breakpoint()
 
     # get the config file path from the command line argument
     if len(sys.argv) != 2:
