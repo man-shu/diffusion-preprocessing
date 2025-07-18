@@ -2,9 +2,10 @@
 #SBATCH --job-name=diffusion_pipelines
 #SBATCH --output=log_slurm/jobid_%A_%a.out 
 #SBATCH --error=log_slurm/jobid_%A_%a.err
-#SBATCH --partition=normal
-#SBATCH --ntasks=100
+#SBATCH --partition=normal,parietal
+#SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=10
+#SBATCH --cpus-per-task=8
 #SBATCH --time=48:00:00
 #SBATCH --array=1-151%100
 
