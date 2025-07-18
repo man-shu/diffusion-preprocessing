@@ -5,7 +5,6 @@
 #SBATCH --partition=normal,parietal
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=10
-#SBATCH --cpus-per-task=8
 #SBATCH --time=48:00:00
 #SBATCH --array=1-151%100
 
