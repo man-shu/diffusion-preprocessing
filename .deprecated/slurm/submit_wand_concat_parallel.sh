@@ -3,9 +3,9 @@
 #SBATCH --output=log_slurm/jobid_%A_%a.out 
 #SBATCH --error=log_slurm/jobid_%A_%a.err
 #SBATCH --partition=normal
-#SBATCH --ntasks=1
+#SBATCH --ntasks=100
+#SBATCH --ntasks-per-node=10
 #SBATCH --time=48:00:00
-#SBATCH --cpus-per-task=8
 #SBATCH --array=1-151%100
 
 dirs=(/data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data/WAND-concat/sub-*)

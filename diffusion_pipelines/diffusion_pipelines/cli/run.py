@@ -42,7 +42,7 @@ def _run_pipeline(config, to_run):
     timestamp = time.strftime("%Y%m%d-%H%M%S")
 
     if config.run_uuid is None:
-        config.run_uuid = timestamp
+        config.run_uuid = f"{timestamp}_{config.participant_label[0]}"
 
     # pipeline to initialization function mapping
     pipeline_function = {
