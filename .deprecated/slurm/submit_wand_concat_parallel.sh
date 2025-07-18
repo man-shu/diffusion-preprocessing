@@ -13,7 +13,7 @@ echo ${dirs[${SLURM_ARRAY_TASK_ID}]:91}
 
 module load singularity
 
-srun singularity exec \ 
+srun singularity exec \
 --env-file /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/singularity_env.txt \
 --bind /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data:/home/input \
 /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/diffusion-preprocessing_main_singularity.sif \

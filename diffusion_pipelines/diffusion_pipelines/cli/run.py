@@ -54,7 +54,7 @@ def _run_pipeline(config, to_run):
         # create the pipeline
         wf = pipeline_function[pipeline](
             output_dir=os.path.join(
-                config.work_dir, f"{pipeline}_output_{timestamp}"
+                config.work_dir, f"{pipeline}_output_{config.run_uuid}"
             ),
             config=config,
         )
@@ -62,7 +62,7 @@ def _run_pipeline(config, to_run):
             graph2use="flat",
             dotfilename=os.path.join(
                 config.work_dir,
-                f"{pipeline}_output_{timestamp}",
+                f"{pipeline}_output_{config.run_uuid}",
                 "graph.dot",
             ),
             format="svg",
