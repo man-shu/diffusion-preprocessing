@@ -50,7 +50,7 @@ def init_sink_wf(config, name="sink_wf"):
 
     ### DataSink node
     sink = Node(DataSink(), name="sink")
-    sink.inputs.base_directory = config.output_dir
+    sink.inputs.base_directory = str(config.output_dir)
 
     # Create the workflow
     sink_wf = Workflow(name=name)

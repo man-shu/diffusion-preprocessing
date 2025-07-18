@@ -1,9 +1,7 @@
 from bids.layout import BIDSLayout, parse_file_entities
-from nipype import IdentityInterface, Node, MapNode, Workflow
+from nipype import Node, Workflow
 from nipype.interfaces.utility import Function
-from nipype.interfaces.io import BIDSDataGrabber, SelectFiles
-from configparser import ConfigParser
-from pathlib import Path
+from nipype.interfaces.io import SelectFiles
 
 
 def init_bidsdata_wf(config, name="bidsdata_wf"):
@@ -44,13 +42,13 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
     # Create SelectFiles node
     sf = Node(
         SelectFiles(
-            templates, base_directory=config.bids_dir, sort_filelist=True
+            templates, base_directory=str(config.bids_dir), sort_filelist=True
         ),
         name="selectfiles",
     )
 
     sf.inputs.acquisition = config.acquisition
-    layout = BIDSLayout(config.bids_dir)
+    layout = BIDSLayout(str(config.bids_dir))
     # set subjects as iterables
     # if subject is not specified, all subjects will be processed
     if config.participant_label == ["all"]:
