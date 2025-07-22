@@ -27,4 +27,6 @@ srun singularity exec \
 --no-msm \
 --fs-no-resume \
 --no-submm-recon \
---preproc
+--preproc \
+--preproc-t1 /home/input/WAND-sep/derivatives/smriprep/sub-01187/ses-02/anat/sub-01187_ses-02_desc-preproc_T1w.nii.gz \
+--preproc-t1-mask /home/input/WAND-sep/derivatives/smriprep/sub-01187/ses-02/anat/sub-01187_ses-02_desc-brain_mask.nii.gz

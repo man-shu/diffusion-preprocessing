@@ -261,6 +261,14 @@ def get_parser():
         help="path to the preprocessed (via reconstruction wf) T1-weighted image",
     )
     g_other.add_argument(
+        "-pt1m",
+        "--preproc-t1-mask",
+        action="store",
+        type=Path,
+        default=None,
+        help="path to the preprocessed (via reconstruction wf) T1-weighted mask",
+    )
+    g_other.add_argument(
         "--tracto",
         action="store_true",
         default=False,

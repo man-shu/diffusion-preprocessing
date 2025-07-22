@@ -27,9 +27,9 @@ def _parse_pipelines(config):
         to_run = ["reconstruction", "preprocessing"]
     # if only preprocessing is True in config, run preprocessing
     elif config.preproc and not config.recon:
-        assert config.preproc_t1 is not None, (
-            "If --preproc is set, you must provide the path to a preprocessed "
-            "T1-weighted image using the -pt1 option."
+        assert config.preproc_t1 and config.preproc_t1_mask is not None, (
+            "If --preproc is set, you must provide the paths to preprocessed "
+            "T1-weighted image and mask using the -pt1 and -pt1m options."
         )
         to_run = ["preprocessing"]
 
