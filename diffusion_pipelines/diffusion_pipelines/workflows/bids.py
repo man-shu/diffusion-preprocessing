@@ -15,7 +15,7 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
                 "_ses-??_desc-preproc_T1w.nii.gz"
             )
             if config.preproc_t1 is None
-            else config.preproc_t1
+            else str(config.preproc_t1)
         ),
         "preprocessed_t1_mask": (
             (
@@ -23,7 +23,7 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
                 "_ses-??_desc-brain_mask.nii.gz"
             )
             if config.preproc_t1_mask is None
-            else config.preproc_t1_mask
+            else str(config.preproc_t1_mask)
         ),
         "plot_recon_surface_on_t1": (
             "derivatives/smriprep/sub-{subject_id}/figures"
