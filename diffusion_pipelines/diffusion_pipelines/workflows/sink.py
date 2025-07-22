@@ -1,6 +1,7 @@
 from nipype import IdentityInterface, Node, Workflow
 from nipype.interfaces.utility import Function
 from nipype.interfaces.io import DataSink
+import os
 
 
 def init_sink_wf(config, name="sink_wf"):
@@ -35,9 +36,13 @@ def init_sink_wf(config, name="sink_wf"):
             ),
             (
                 "vol0000_flirt_merged_trans",
-                f"{bids_name}_space-individualT1_dwi",
+                f"{bids_name}_space-individualT1_desc-eddycorrected_dwi",
             ),
             ("vol0000_flirt_merged", f"{bids_name}_desc-eddycorrected_dwi"),
+            (
+                f"get_registered_mean_bzero{os.sep}mean_bzero.nii.gz",
+                f"{bids_name}_space-individualT1_desc-eddycorrected_meanbzero_dwi",
+            ),
         ]
         return substitutions
 
