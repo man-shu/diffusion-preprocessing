@@ -271,7 +271,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                 get_eddy_mean_bzero,
                 [("outputnode.eddy_corrected", "dwi_file")],
             ),
-            (eddycorrect, get_eddy_mean_bzero, [("outputnode.bval", "bval")]),
+            (input_subject, get_eddy_mean_bzero, [("bval", "bval")]),
             # register the skull-stripped dwi to the skull-stripped subject T1
             (
                 get_eddy_mean_bzero,
