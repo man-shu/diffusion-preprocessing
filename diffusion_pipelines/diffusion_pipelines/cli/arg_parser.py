@@ -241,10 +241,24 @@ def get_parser():
         help="Use low-quality tools for speed - TESTING ONLY",
     )
     g_other.add_argument(
+        "--recon",
+        action="store_true",
+        default=False,
+        help="Run the reconstruction wf (smriprep)",
+    )
+    g_other.add_argument(
         "--preproc",
         action="store_true",
         default=False,
         help="Preprocess the diffusion image.",
+    )
+    g_other.add_argument(
+        "-pt1",
+        "--preproc-t1",
+        action="store",
+        type=Path,
+        default=None,
+        help="path to the preprocessed (via reconstruction wf) T1-weighted image",
     )
     g_other.add_argument(
         "--tracto",

@@ -17,13 +17,21 @@ def _parse_pipelines(config):
     """
 
     # if no pipelines are specified, we will only run reconstruction by default
-    to_run = ["reconstruction"]
+    if config.recon and not config.preproc and not config.tracto:
+        to_run = ["reconstruction"]
 
     # make sure the pipelines are in the correct order
-    # if preprocessing is True in config, run reconstruction first
-    # and then preprocessing
-    if config.preproc:
+    # if preprocessing and reconstruction is True in config,
+    # run reconstruction first and then preprocessing
+    if config.recon and config.preproc:
         to_run = ["reconstruction", "preprocessing"]
+    # if only preprocessing is True in config, run preprocessing
+    elif config.preproc and not config.recon:
+        assert config.preproc_t1 is not None, (
+            "If --preproc is set, you must provide the path to a preprocessed "
+            "T1-weighted image using the -pt1 option."
+        )
+        to_run = ["preprocessing"]
 
     # if tractography is True in config, it will run reconstruction and
     # preprocessing as well, so we just run tractography
