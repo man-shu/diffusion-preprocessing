@@ -103,6 +103,9 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     # this node is used to get the mean of b=0 of the input dwi file
     get_intial_mean_bzero = Node(MeanBZero, name="get_intial_mean_bzero")
 
+    # this node is used to get the mean of b=0 of the eddy-corrected dwi file
+    get_eddy_mean_bzero = get_intial_mean_bzero.clone("get_eddy_mean_bzero")
+
     def convert_affine_itk_2_ras(input_affine):
         import subprocess
         import os, os.path
@@ -262,11 +265,18 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             (input_subject, strip_t1, [("preprocessed_t1_mask", "mask_file")]),
             # edddy correct the skull-stripped dwi
             (strip_dwi, eddycorrect, [("out_file", "inputnode.in_file")]),
+            # compute the mean of the b=0 eddycorrected volumes
+            (
+                eddycorrect,
+                get_eddy_mean_bzero,
+                [("outputnode.eddy_corrected", "dwi_file")],
+            ),
+            (eddycorrect, get_eddy_mean_bzero, [("outputnode.bval", "bval")]),
             # register the skull-stripped dwi to the skull-stripped subject T1
             (
-                strip_mean_bzero,
+                get_eddy_mean_bzero,
                 rigid_registration,
-                [("out_file", "moving_image")],
+                [("out", "moving_image")],
             ),
             (
                 strip_t1,
