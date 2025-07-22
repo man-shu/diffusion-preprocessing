@@ -212,11 +212,10 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
 
     rigid_registration = Node(
         interface=ants.RegistrationSynQuick(),
-        transform_type="r",
         name="affine_reg",
     )
     rigid_registration.inputs.num_threads = 8
-    rigid_registration.inputs.transform_type = "a"
+    rigid_registration.inputs.transform_type = "r"
 
     conv_affine = Node(
         interface=ConvertAffine2RAS, name="convert_affine_itk_2_ras"
