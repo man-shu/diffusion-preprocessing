@@ -211,7 +211,9 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     eddycorrect.inputs.inputnode.ref_num = 0
 
     rigid_registration = Node(
-        interface=ants.RegistrationSynQuick(), name="affine_reg"
+        interface=ants.RegistrationSynQuick(),
+        transform_type="r",
+        name="affine_reg",
     )
     rigid_registration.inputs.num_threads = 8
     rigid_registration.inputs.transform_type = "a"
