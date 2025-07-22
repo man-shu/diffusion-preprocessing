@@ -1,7 +1,6 @@
 from nipype import IdentityInterface, Node, Workflow
 from nipype.interfaces.utility import Function
 from nipype.interfaces.io import DataSink
-import os
 
 
 def init_sink_wf(config, name="sink_wf"):
@@ -12,6 +11,8 @@ def init_sink_wf(config, name="sink_wf"):
 
     ### build the full file name
     def build_substitutions(bids_entities):
+
+        import os
 
         def _build_bids(bids_entities):
             replacements = {
