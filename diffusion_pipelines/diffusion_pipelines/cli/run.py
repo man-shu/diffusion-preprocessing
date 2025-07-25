@@ -27,9 +27,14 @@ def _parse_pipelines(config):
         to_run = ["reconstruction", "preprocessing"]
     # if only preprocessing is True in config, run preprocessing
     elif config.preproc and not config.recon:
-        assert config.preproc_t1 and config.preproc_t1_mask is not None, (
+        assert (
+            config.preproc_t1
+            and config.preproc_t1_mask
+            and config.fs_native_to_t1w_xfm is not None
+        ), (
             "If --preproc is set, you must provide the paths to preprocessed "
-            "T1-weighted image and mask using the -pt1 and -pt1m options."
+            "T1-weighted image and its mask using the -pt1 and -pt1m options."
+            " Also, the fsnative2t1w_xfm transformation file is required."
         )
         to_run = ["preprocessing"]
 
