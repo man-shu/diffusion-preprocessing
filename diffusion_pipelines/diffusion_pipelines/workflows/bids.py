@@ -25,6 +25,14 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
             if config.preproc_t1_mask is None
             else str(config.preproc_t1_mask)
         ),
+        "fsnative2t1w_xfm": (
+            (
+                "derivatives/smriprep/sub-{subject_id}/*/anat/sub-{subject_id}"
+                "_ses-??_from-fsnative_to-T1w_mode-image_xfm.txt"
+            )
+            if config.fsnative2t1w_xfm is None
+            else str(config.fsnative2t1w_xfm)
+        ),
         "plot_recon_surface_on_t1": (
             "derivatives/smriprep/sub-{subject_id}/figures"
             "/sub-{subject_id}*_desc-reconall_T1w.svg"

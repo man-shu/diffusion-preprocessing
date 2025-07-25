@@ -29,6 +29,10 @@ def _set_inputs_outputs(config, preproc_wf):
                         "selectfiles.preprocessed_t1_mask",
                         "preprocessed_t1_mask",
                     ),
+                    (
+                        "selectfiles.fsnative2t1w_xfm",
+                        "fsnative2t1w_xfm",
+                    ),
                     ("selectfiles.dwi", "dwi"),
                     ("selectfiles.bval", "bval"),
                     ("selectfiles.bvec", "bvec"),
@@ -107,6 +111,17 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     # this node is used to get the mean of b=0 of the eddy-corrected dwi file
     get_eddy_mean_bzero = get_intial_mean_bzero.clone("get_eddy_mean_bzero")
 
+    def get_subject_id(bids_entities):
+        """Get the subject id from the BIDS entities."""
+        return bids_entities["subject"]
+
+    GetSubjectID = Function(
+        input_names=["bids_entities"],
+        output_names=["subject_id"],
+        function=get_subject_id,
+    )
+    get_subject_id_node = Node(GetSubjectID, name="get_subject_id")
+
     def convert_affine_itk_2_ras(input_affine):
         import subprocess
         import os, os.path
@@ -155,6 +170,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             fields=[
                 "preprocessed_t1",
                 "preprocessed_t1_mask",
+                "fsnative2t1w_xfm",
                 "dwi",
                 "bval",
                 "bvec",
@@ -244,6 +260,8 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     apply_registration_mask.inputs.input_image_type = 3
     apply_registration_mask.inputs.interpolation = "NearestNeighbor"
 
+    bbreg_wf = init_bbreg_wf(name="bbreg_wf", omp_nthreads=8)
+
     report = init_report_wf(
         name="report", calling_wf_name=name, output_dir=output_dir
     )
@@ -277,20 +295,34 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             # register the skull-stripped dwi to the skull-stripped subject T1
             (
                 get_eddy_mean_bzero,
-                rigid_registration,
-                [("out", "moving_image")],
+                bbreg_wf,
+                [("out", "in_file")],
             ),
             (
-                strip_t1,
-                rigid_registration,
-                [("out_file", "fixed_image")],
+                input_subject,
+                bbreg_wf,
+                [("fsnative2t1w_xfm", "fsnative2t1w_xfm")],
+            ),
+            (
+                input_subject,
+                get_subject_id_node,
+                [("bids_entities", "bids_entities")],
+            ),
+            (
+                get_subject_id_node,
+                bbreg_wf,
+                [("subject_id", "inputnode.subject_id")],
             ),
             # some matrix format conversions
-            (rigid_registration, transforms_to_list, [("out_matrix", "in1")]),
             (
-                rigid_registration,
+                bbreg_wf,
+                transforms_to_list,
+                [("itk_epi_to_t1w", "in1")],
+            ),
+            (
+                bbreg_wf,
                 conv_affine,
-                [("out_matrix", "input_affine")],
+                [("itk_epi_to_t1w", "input_affine")],
             ),
             # rotate the gradients
             (input_subject, rotate_gradients, [("bvec", "gradient_file")]),
