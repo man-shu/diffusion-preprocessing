@@ -2,6 +2,7 @@ from bids.layout import BIDSLayout, parse_file_entities
 from nipype import Node, Workflow
 from nipype.interfaces.utility import Function
 from nipype.interfaces.io import SelectFiles
+from niworkflows.interfaces.bids import BIDSFreeSurferDir
 
 
 def init_bidsdata_wf(config, name="bidsdata_wf"):
