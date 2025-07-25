@@ -89,7 +89,7 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
         function=decode_entities,
     )
 
-    fsdir = pe.Node(
+    fsdir = Node(
         BIDSFreeSurferDir(
             derivatives=config.output_dir,
             freesurfer_home=os.getenv("FREESURFER_HOME"),
