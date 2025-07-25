@@ -296,12 +296,12 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             (
                 get_eddy_mean_bzero,
                 bbreg_wf,
-                [("out", "in_file")],
+                [("out", "inputnode.in_file")],
             ),
             (
                 input_subject,
                 bbreg_wf,
-                [("fsnative2t1w_xfm", "fsnative2t1w_xfm")],
+                [("fsnative2t1w_xfm", "inputnode.fsnative2t1w_xfm")],
             ),
             (
                 input_subject,
@@ -317,12 +317,12 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             (
                 bbreg_wf,
                 transforms_to_list,
-                [("itk_epi_to_t1w", "in1")],
+                [("outputnode.itk_epi_to_t1w", "in1")],
             ),
             (
                 bbreg_wf,
                 conv_affine,
-                [("itk_epi_to_t1w", "input_affine")],
+                [("outputnode.itk_epi_to_t1w", "input_affine")],
             ),
             # rotate the gradients
             (input_subject, rotate_gradients, [("bvec", "gradient_file")]),
