@@ -15,6 +15,7 @@ from niworkflows.anat.coregistration import init_bbreg_wf
 def _set_inputs_outputs(config, preproc_wf):
     # bids dataset
     bidsdata_wf = init_bidsdata_wf(config=config)
+    breakpoint()
     # outputs
     sink_wf = init_sink_wf(config=config)
     # create the full workflow
@@ -47,6 +48,11 @@ def _set_inputs_outputs(config, preproc_wf):
                         "plot_recon_segmentations_on_t1",
                     ),
                 ],
+            ),
+            (
+                bidsdata_wf.get_node("fsdir"),
+                preproc_wf.get_node("input_subject"),
+                [("subjects_dir", "fs_subjects_dir")],
             ),
             (
                 bidsdata_wf,
