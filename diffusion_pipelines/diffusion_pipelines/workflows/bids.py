@@ -96,7 +96,7 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
             derivatives=config.output_dir,
             freesurfer_home=os.getenv("FREESURFER_HOME"),
         ),
-        name="fsdir_preproc_run_{}".format(run_uuid.replace("-", "_")),
+        name="fsdir_preproc_run_{}".format(config.run_uuid.replace("-", "_")),
         run_without_submitting=True,
     )
 
