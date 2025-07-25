@@ -91,15 +91,6 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
         function=decode_entities,
     )
 
-    fsdir = Node(
-        BIDSFreeSurferDir(
-            derivatives=config.output_dir,
-            freesurfer_home=os.getenv("FREESURFER_HOME"),
-        ),
-        name="fsdir_preproc_run_{}".format(config.run_uuid.replace("-", "_")),
-        run_without_submitting=True,
-    )
-
     decode_entities = Node(DecodeEntities, name="decode_entities")
 
     bidsdata_wf = Workflow(name=name)

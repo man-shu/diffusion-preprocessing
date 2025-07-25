@@ -10,6 +10,8 @@ from .bids import init_bidsdata_wf
 from .sink import init_sink_wf
 from pathlib import Path
 from niworkflows.anat.coregistration import init_bbreg_wf
+from niworkflows.interfaces.bids import BIDSFreeSurferDir
+import os
 
 
 def _set_inputs_outputs(config, preproc_wf):
@@ -18,6 +20,15 @@ def _set_inputs_outputs(config, preproc_wf):
     breakpoint()
     # outputs
     sink_wf = init_sink_wf(config=config)
+    # get freesurfer directory
+    fsdir = Node(
+        BIDSFreeSurferDir(
+            derivatives=config.output_dir,
+            freesurfer_home=os.getenv("FREESURFER_HOME"),
+        ),
+        name="fsdir_preproc",
+    ).run()
+    breakpoint()
     # create the full workflow
     preproc_wf.connect(
         [
@@ -38,7 +49,6 @@ def _set_inputs_outputs(config, preproc_wf):
                     ("selectfiles.bval", "bval"),
                     ("selectfiles.bvec", "bvec"),
                     ("decode_entities.bids_entities", "bids_entities"),
-                    ("fsdir.subjects_dir", "fs_subjects_dir"),
                     (
                         "selectfiles.plot_recon_surface_on_t1",
                         "plot_recon_surface_on_t1",
@@ -50,9 +60,9 @@ def _set_inputs_outputs(config, preproc_wf):
                 ],
             ),
             (
-                bidsdata_wf.get_node("fsdir"),
+                fsdir,
                 preproc_wf.get_node("input_subject"),
-                [("subjects_dir", "fs_subjects_dir")],
+                [("outputnode.subjects_dir", "fs_subjects_dir")],
             ),
             (
                 bidsdata_wf,
