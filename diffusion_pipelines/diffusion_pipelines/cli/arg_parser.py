@@ -269,7 +269,7 @@ def get_parser():
         help="path to the preprocessed (via reconstruction wf) T1-weighted mask",
     )
     g_other.add_argument(
-        "--fs2t1",
+        "-fs2t1",
         "--fs-native-to-t1w-xfm",
         action="store",
         type=Path,
