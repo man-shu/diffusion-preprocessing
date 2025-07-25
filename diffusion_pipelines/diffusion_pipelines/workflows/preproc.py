@@ -9,6 +9,7 @@ from .report import init_report_wf
 from .bids import init_bidsdata_wf
 from .sink import init_sink_wf
 from pathlib import Path
+from niworkflows.anat.coregistration import init_bbreg_wf
 
 
 def _set_inputs_outputs(config, preproc_wf):
