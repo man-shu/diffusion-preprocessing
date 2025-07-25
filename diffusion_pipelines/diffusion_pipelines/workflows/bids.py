@@ -3,6 +3,7 @@ from nipype import Node, Workflow
 from nipype.interfaces.utility import Function
 from nipype.interfaces.io import SelectFiles
 from niworkflows.interfaces.bids import BIDSFreeSurferDir
+import os
 
 
 def init_bidsdata_wf(config, name="bidsdata_wf"):
