@@ -9,13 +9,27 @@ from .report import init_report_wf
 from .bids import init_bidsdata_wf
 from .sink import init_sink_wf
 from pathlib import Path
+from niworkflows.anat.coregistration import init_bbreg_wf
+from niworkflows.interfaces.bids import BIDSFreeSurferDir
+import os
 
 
 def _set_inputs_outputs(config, preproc_wf):
     # bids dataset
     bidsdata_wf = init_bidsdata_wf(config=config)
+    breakpoint()
     # outputs
     sink_wf = init_sink_wf(config=config)
+    # get freesurfer directory
+    fsdir = Node(
+        BIDSFreeSurferDir(
+            derivatives=config.output_dir,
+            freesurfer_home=os.getenv("FREESURFER_HOME"),
+        ),
+        name="fsdir_preproc",
+    )
+    fsdir.run()
+    breakpoint()
     # create the full workflow
     preproc_wf.connect(
         [
@@ -27,6 +41,10 @@ def _set_inputs_outputs(config, preproc_wf):
                     (
                         "selectfiles.preprocessed_t1_mask",
                         "preprocessed_t1_mask",
+                    ),
+                    (
+                        "selectfiles.fsnative2t1w_xfm",
+                        "fsnative2t1w_xfm",
                     ),
                     ("selectfiles.dwi", "dwi"),
                     ("selectfiles.bval", "bval"),
@@ -41,6 +59,11 @@ def _set_inputs_outputs(config, preproc_wf):
                         "plot_recon_segmentations_on_t1",
                     ),
                 ],
+            ),
+            (
+                fsdir,
+                preproc_wf.get_node("input_subject"),
+                [("outputnode.subjects_dir", "fs_subjects_dir")],
             ),
             (
                 bidsdata_wf,
@@ -106,6 +129,17 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     # this node is used to get the mean of b=0 of the eddy-corrected dwi file
     get_eddy_mean_bzero = get_intial_mean_bzero.clone("get_eddy_mean_bzero")
 
+    def get_subject_id(bids_entities):
+        """Get the subject id from the BIDS entities."""
+        return bids_entities["subject"]
+
+    GetSubjectID = Function(
+        input_names=["bids_entities"],
+        output_names=["subject_id"],
+        function=get_subject_id,
+    )
+    get_subject_id_node = Node(GetSubjectID, name="get_subject_id")
+
     def convert_affine_itk_2_ras(input_affine):
         import subprocess
         import os, os.path
@@ -154,6 +188,8 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             fields=[
                 "preprocessed_t1",
                 "preprocessed_t1_mask",
+                "fsnative2t1w_xfm",
+                "fs_subjects_dir",
                 "dwi",
                 "bval",
                 "bvec",
@@ -243,6 +279,8 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     apply_registration_mask.inputs.input_image_type = 3
     apply_registration_mask.inputs.interpolation = "NearestNeighbor"
 
+    bbreg_wf = init_bbreg_wf(name="bbreg_wf", omp_nthreads=8)
+
     report = init_report_wf(
         name="report", calling_wf_name=name, output_dir=output_dir
     )
@@ -276,20 +314,39 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             # register the skull-stripped dwi to the skull-stripped subject T1
             (
                 get_eddy_mean_bzero,
-                rigid_registration,
-                [("out", "moving_image")],
+                bbreg_wf,
+                [("out", "inputnode.in_file")],
             ),
             (
-                strip_t1,
-                rigid_registration,
-                [("out_file", "fixed_image")],
+                input_subject,
+                bbreg_wf,
+                [("fsnative2t1w_xfm", "inputnode.fsnative2t1w_xfm")],
+            ),
+            (
+                input_subject,
+                get_subject_id_node,
+                [("bids_entities", "bids_entities")],
+            ),
+            (
+                get_subject_id_node,
+                bbreg_wf,
+                [("subject_id", "inputnode.subject_id")],
+            ),
+            (
+                input_subject,
+                bbreg_wf,
+                [("fs_subjects_dir", "inputnode.subjects_dir")],
             ),
             # some matrix format conversions
-            (rigid_registration, transforms_to_list, [("out_matrix", "in1")]),
             (
-                rigid_registration,
+                bbreg_wf,
+                transforms_to_list,
+                [("outputnode.itk_epi_to_t1w", "in1")],
+            ),
+            (
+                bbreg_wf,
                 conv_affine,
-                [("out_matrix", "input_affine")],
+                [("outputnode.itk_epi_to_t1w", "input_affine")],
             ),
             # rotate the gradients
             (input_subject, rotate_gradients, [("bvec", "gradient_file")]),
