@@ -37,6 +37,7 @@ def _set_inputs_outputs(config, preproc_wf):
                     ("selectfiles.bval", "bval"),
                     ("selectfiles.bvec", "bvec"),
                     ("decode_entities.bids_entities", "bids_entities"),
+                    ("fsdir.subjects_dir", "fs_subjects_dir"),
                     (
                         "selectfiles.plot_recon_surface_on_t1",
                         "plot_recon_surface_on_t1",
@@ -171,6 +172,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                 "preprocessed_t1",
                 "preprocessed_t1_mask",
                 "fsnative2t1w_xfm",
+                "fs_subjects_dir",
                 "dwi",
                 "bval",
                 "bvec",
@@ -312,6 +314,11 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                 get_subject_id_node,
                 bbreg_wf,
                 [("subject_id", "inputnode.subject_id")],
+            ),
+            (
+                input_subject,
+                bbreg_wf,
+                [("fs_subjects_dir", "inputnode.subjects_dir")],
             ),
             # some matrix format conversions
             (
