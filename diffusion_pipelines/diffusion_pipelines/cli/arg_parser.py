@@ -282,5 +282,11 @@ def get_parser():
         default=False,
         help="Run tractography pipeline.",
     )
+    g_other.add_argument(
+        "--debug",
+        action="store_true",
+        default=False,
+        help="Run in debug mode.",
+    )
 
     return parser

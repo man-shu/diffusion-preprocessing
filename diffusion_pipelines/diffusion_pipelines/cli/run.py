@@ -63,6 +63,8 @@ def _run_pipeline(config, to_run):
         "reconstruction": init_recon_wf,
         "tractography": init_tracto_wf,
     }
+    if config.debug:
+        nipype_config.enable_debug_mode()
     for pipeline in to_run:
         # create the pipeline
         wf = pipeline_function[pipeline](
