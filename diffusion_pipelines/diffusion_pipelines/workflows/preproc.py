@@ -129,7 +129,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
 
     def get_subject_id(bids_entities):
         """Get the subject id from the BIDS entities."""
-        return bids_entities["subject"]
+        return f"sub-{bids_entities['subject']}"
 
     GetSubjectID = Function(
         input_names=["bids_entities"],
