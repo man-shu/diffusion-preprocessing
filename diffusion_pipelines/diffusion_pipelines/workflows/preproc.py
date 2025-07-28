@@ -24,7 +24,7 @@ def _set_inputs_outputs(config, preproc_wf):
         BIDSFreeSurferDir(
             derivatives=config.output_dir,
             freesurfer_home=os.getenv("FREESURFER_HOME"),
-            spaces=config.output_spaces,
+            spaces=config.output_spaces.get_fs_spaces(),
         ),
         name="fsdir_preproc",
     )
