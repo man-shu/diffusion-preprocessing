@@ -61,7 +61,7 @@ def _set_inputs_outputs(config, preproc_wf):
             (
                 fsdir,
                 preproc_wf.get_node("input_subject"),
-                [("outputnode.subjects_dir", "fs_subjects_dir")],
+                [("subjects_dir", "fs_subjects_dir")],
             ),
             (
                 bidsdata_wf,
