@@ -17,7 +17,6 @@ import os
 def _set_inputs_outputs(config, preproc_wf):
     # bids dataset
     bidsdata_wf = init_bidsdata_wf(config=config)
-    breakpoint()
     # outputs
     sink_wf = init_sink_wf(config=config)
     # get freesurfer directory
@@ -29,6 +28,7 @@ def _set_inputs_outputs(config, preproc_wf):
         name="fsdir_preproc",
     )
     # create the full workflow
+    breakpoint()
     preproc_wf.connect(
         [
             (
