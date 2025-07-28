@@ -24,12 +24,11 @@ def _set_inputs_outputs(config, preproc_wf):
         BIDSFreeSurferDir(
             derivatives=config.output_dir,
             freesurfer_home=os.getenv("FREESURFER_HOME"),
+            spaces=config.output_spaces,
         ),
         name="fsdir_preproc",
-        spaces=config.output_spaces,
     )
     # create the full workflow
-    breakpoint()
     preproc_wf.connect(
         [
             (
