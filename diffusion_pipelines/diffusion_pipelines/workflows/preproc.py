@@ -26,6 +26,7 @@ def _set_inputs_outputs(config, preproc_wf):
             freesurfer_home=os.getenv("FREESURFER_HOME"),
         ),
         name="fsdir_preproc",
+        spaces=config.output_spaces,
     )
     # create the full workflow
     breakpoint()
