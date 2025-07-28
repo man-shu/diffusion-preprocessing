@@ -277,7 +277,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     apply_registration_mask.inputs.input_image_type = 3
     apply_registration_mask.inputs.interpolation = "NearestNeighbor"
 
-    bbreg_wf = init_bbreg_wf(name="bbreg_wf", omp_nthreads=8)
+    bbreg_wf = init_bbreg_wf(name="bbreg_wf", omp_nthreads=8, use_bbr=True)
 
     report = init_report_wf(
         name="report", calling_wf_name=name, output_dir=output_dir
