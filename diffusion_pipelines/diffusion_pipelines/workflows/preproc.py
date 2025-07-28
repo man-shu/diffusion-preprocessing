@@ -28,8 +28,6 @@ def _set_inputs_outputs(config, preproc_wf):
         ),
         name="fsdir_preproc",
     )
-    fsdir.run()
-    breakpoint()
     # create the full workflow
     preproc_wf.connect(
         [
