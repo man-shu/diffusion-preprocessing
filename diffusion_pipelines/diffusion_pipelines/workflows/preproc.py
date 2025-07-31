@@ -96,7 +96,7 @@ def _set_inputs_outputs(config, preproc_wf):
     return preproc_wf
 
 
-def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
+def _preprocess_wf(config, name="preprocess", bet_frac=0.34, output_dir="."):
 
     def _get_mean_bzero(dwi_file, bval):
         """Mean of the b=0 volumes of the input dwi file."""
@@ -138,27 +138,6 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
         function=get_subject_id,
     )
     get_subject_id_node = Node(GetSubjectID, name="get_subject_id")
-
-    def convert_affine_itk_2_ras(input_affine):
-        import subprocess
-        import os, os.path
-
-        output_file = os.path.join(
-            os.getcwd(), f"{os.path.basename(input_affine)}.ras"
-        )
-        subprocess.check_output(
-            f"c3d_affine_tool "
-            f"-itk {input_affine} "
-            f"-o {output_file} -info-full ",
-            shell=True,
-        ).decode("utf8")
-        return output_file
-
-    ConvertAffine2RAS = Function(
-        input_names=["input_affine"],
-        output_names=["affine_ras"],
-        function=convert_affine_itk_2_ras,
-    )
 
     def rotate_gradients_lta(lta_file, gradient_file):
         import os
@@ -284,7 +263,10 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     )
 
     bbreg_wf = init_bbreg_wf(
-        name="bbreg_wf", omp_nthreads=8, use_bbr=True, epi2t1w_dof=12
+        name="bbreg_wf",
+        omp_nthreads=config.omp_nthreads,
+        use_bbr=True,
+        epi2t1w_dof=12,
     )
 
     report = init_report_wf(
@@ -467,6 +449,6 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
 
 
 def init_preprocess_wf(output_dir=".", config=None):
-    wf = _preprocess_wf(output_dir=output_dir)
+    wf = _preprocess_wf(output_dir=output_dir, config=config)
     wf = _set_inputs_outputs(config, wf)
     return wf
