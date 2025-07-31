@@ -159,26 +159,52 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
         function=convert_affine_itk_2_ras,
     )
 
-    def rotate_gradients_(input_affine, gradient_file):
+    def rotate_gradients_lta(lta_file, gradient_file):
         import os
         import os.path
         import numpy as np
         from scipy.linalg import polar
 
-        affine = np.loadtxt(input_affine)
+        # Parse the LTA file to extract the transformation matrix
+        with open(lta_file, "r") as f:
+            lines = f.readlines()
+
+        # Find the matrix section (after "1 4 4" line)
+        matrix_start = None
+        for i, line in enumerate(lines):
+            if line.strip() == "1 4 4":
+                matrix_start = i + 1
+                break
+
+        if matrix_start is None:
+            raise ValueError(
+                "Could not find transformation matrix in LTA file"
+            )
+
+        # Read the 4x4 transformation matrix
+        matrix_lines = lines[matrix_start : matrix_start + 4]
+        affine = np.array(
+            [list(map(float, line.strip().split())) for line in matrix_lines]
+        )
+
+        # Extract rotation component using polar decomposition
         u, p = polar(affine[:3, :3], side="right")
+
+        # Load and rotate gradients
         gradients = np.loadtxt(gradient_file)
         new_gradients = np.linalg.solve(u, gradients).T
+
+        # Save rotated gradients
         name, ext = os.path.splitext(os.path.basename(gradient_file))
         output_name = os.path.join(os.getcwd(), f"{name}_rot{ext}")
         np.savetxt(output_name, new_gradients)
 
         return output_name
 
-    RotateGradientsAffine = Function(
-        input_names=["input_affine", "gradient_file"],
+    RotateGradientsLTA = Function(
+        input_names=["lta_file", "gradient_file"],
         output_names=["rotated_gradients"],
-        function=rotate_gradients_,
+        function=rotate_gradients_lta,
     )
 
     input_subject = Node(
@@ -251,12 +277,8 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     rigid_registration.inputs.num_threads = 8
     rigid_registration.inputs.transform_type = "r"
 
-    conv_affine = Node(
-        interface=ConvertAffine2RAS, name="convert_affine_itk_2_ras"
-    )
-
     rotate_gradients = Node(
-        interface=RotateGradientsAffine, name="rotate_gradients"
+        interface=RotateGradientsLTA, name="rotate_gradients"
     )
 
     transforms_to_list = Node(
@@ -341,14 +363,13 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                 transforms_to_list,
                 [("outputnode.itk_epi_to_t1w", "in1")],
             ),
+            # rotate the gradients using the LTA file directly
+            (input_subject, rotate_gradients, [("bvec", "gradient_file")]),
             (
                 bbreg_wf,
-                conv_affine,
-                [("outputnode.itk_epi_to_t1w", "input_affine")],
+                rotate_gradients,
+                [("outputnode.lta_epi_to_t1w", "lta_file")],
             ),
-            # rotate the gradients
-            (input_subject, rotate_gradients, [("bvec", "gradient_file")]),
-            (conv_affine, rotate_gradients, [("affine_ras", "input_affine")]),
             # apply the registration to the skull-stripped and eddy-corrected
             # dwi
             (transforms_to_list, apply_registration, [("out", "transforms")]),
@@ -394,7 +415,11 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                 ],
             ),
             (strip_dwi, output, [("out_file", "dwi_masked")]),
-            (conv_affine, output, [("affine_ras", "rigid_dwi_2_t1")]),
+            (
+                bbreg_wf,
+                output,
+                [("outputnode.lta_epi_to_t1w", "rigid_dwi_2_t1")],
+            ),
             (input_subject, output, [("preprocessed_t1", "t1_initial")]),
             (strip_t1, output, [("out_file", "t1_masked")]),
             (
