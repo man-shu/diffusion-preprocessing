@@ -118,7 +118,7 @@ def _preprocess_wf(config, name="preprocess", bet_frac=0.34, output_dir="."):
 
     # define a function to get the mean of b=0 of the input dwi file
     MeanBZero = Function(
-        input_names=["dwi_file", "bval"],
+        input_names=["dwi_file", "bval", "prefix"],
         output_names=["out"],
         function=_get_mean_bzero,
     )
