@@ -2,6 +2,7 @@ import inspect
 from nipype import IdentityInterface, Node, Workflow, MapNode
 import nipype.interfaces.fsl as fsl
 import nipype.interfaces.ants as ants
+import nipype.interfaces.freesurfer as fs
 from niflow.nipype1.workflows.dmri.fsl.epi import create_eddy_correct_pipeline
 from nipype.interfaces import utility
 from nipype.interfaces.utility.wrappers import Function
@@ -270,34 +271,17 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
     eddycorrect = create_eddy_correct_pipeline("eddycorrect")
     eddycorrect.inputs.inputnode.ref_num = 0
 
-    rigid_registration = Node(
-        interface=ants.RegistrationSynQuick(),
-        name="affine_reg",
-    )
-    rigid_registration.inputs.num_threads = 8
-    rigid_registration.inputs.transform_type = "r"
-
     rotate_gradients = Node(
         interface=RotateGradientsLTA, name="rotate_gradients"
     )
 
-    transforms_to_list = Node(
-        interface=utility.Merge(1), name="transforms_to_list"
-    )
-
     apply_registration = Node(
-        interface=ants.ApplyTransforms(), name="apply_registration"
+        interface=fs.ApplyVolTransform(), name="apply_registration"
     )
-    apply_registration.inputs.dimension = 3
-    apply_registration.inputs.input_image_type = 3
-    apply_registration.inputs.interpolation = "NearestNeighbor"
 
     apply_registration_mask = Node(
-        interface=ants.ApplyTransforms(), name="apply_registration_mask"
+        interface=fs.ApplyVolTransform(), name="apply_registration_mask"
     )
-    apply_registration_mask.inputs.dimension = 3
-    apply_registration_mask.inputs.input_image_type = 3
-    apply_registration_mask.inputs.interpolation = "NearestNeighbor"
 
     bbreg_wf = init_bbreg_wf(name="bbreg_wf", omp_nthreads=8, use_bbr=True)
 
@@ -358,11 +342,6 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                 [("fs_subjects_dir", "inputnode.subjects_dir")],
             ),
             # some matrix format conversions
-            (
-                bbreg_wf,
-                transforms_to_list,
-                [("outputnode.itk_epi_to_t1w", "in1")],
-            ),
             # rotate the gradients using the LTA file directly
             (input_subject, rotate_gradients, [("bvec", "gradient_file")]),
             (
@@ -371,29 +350,33 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
                 [("outputnode.lta_epi_to_t1w", "lta_file")],
             ),
             # apply the registration to the skull-stripped and eddy-corrected
-            # dwi
-            (transforms_to_list, apply_registration, [("out", "transforms")]),
+            # dwi using FreeSurfer's ApplyVolTransform
+            (
+                bbreg_wf,
+                apply_registration,
+                [("outputnode.lta_epi_to_t1w", "lta_file")],
+            ),
             (
                 eddycorrect,
                 apply_registration,
-                [("outputnode.eddy_corrected", "input_image")],
+                [("outputnode.eddy_corrected", "source_file")],
             ),
             (
                 strip_t1,
                 apply_registration,
-                [("out_file", "reference_image")],
-            ),
-            (
-                transforms_to_list,
-                apply_registration_mask,
-                [("out", "transforms")],
+                [("out_file", "target_file")],
             ),
             # also apply the registration to the mask
-            (bet, apply_registration_mask, [("mask_file", "input_image")]),
+            (
+                bbreg_wf,
+                apply_registration_mask,
+                [("outputnode.lta_epi_to_t1w", "lta_file")],
+            ),
+            (bet, apply_registration_mask, [("mask_file", "source_file")]),
             (
                 strip_t1,
                 apply_registration_mask,
-                [("out_file", "reference_image")],
+                [("out_file", "target_file")],
             ),
             # collect all the outputs in the output node
             # get subject id
@@ -425,7 +408,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             (
                 apply_registration,
                 output,
-                [("output_image", "dwi_rigid_registered")],
+                [("transformed_file", "dwi_rigid_registered")],
             ),
             (
                 rotate_gradients,
@@ -434,7 +417,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             ),
             (input_subject, output, [("bval", "bval")]),
             (bet, output, [("mask_file", "bet_mask")]),
-            (apply_registration_mask, output, [("output_image", "mask")]),
+            (apply_registration_mask, output, [("transformed_file", "mask")]),
             (
                 eddycorrect,
                 output,
