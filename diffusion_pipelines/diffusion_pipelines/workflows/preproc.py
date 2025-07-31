@@ -283,7 +283,9 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
         interface=fs.ApplyVolTransform(), name="apply_registration_mask"
     )
 
-    bbreg_wf = init_bbreg_wf(name="bbreg_wf", omp_nthreads=8, use_bbr=True)
+    bbreg_wf = init_bbreg_wf(
+        name="bbreg_wf", omp_nthreads=8, use_bbr=True, epi2t1w_dof=12
+    )
 
     report = init_report_wf(
         name="report", calling_wf_name=name, output_dir=output_dir
@@ -347,14 +349,14 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             (
                 bbreg_wf,
                 rotate_gradients,
-                [("outputnode.lta_epi_to_t1w", "lta_file")],
+                [("outputnode.out_lta_file", "lta_file")],
             ),
             # apply the registration to the skull-stripped and eddy-corrected
             # dwi using FreeSurfer's ApplyVolTransform
             (
                 bbreg_wf,
                 apply_registration,
-                [("outputnode.lta_epi_to_t1w", "lta_file")],
+                [("outputnode.out_lta_file", "lta_file")],
             ),
             (
                 eddycorrect,
@@ -370,7 +372,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             (
                 bbreg_wf,
                 apply_registration_mask,
-                [("outputnode.lta_epi_to_t1w", "lta_file")],
+                [("outputnode.out_lta_file", "lta_file")],
             ),
             (bet, apply_registration_mask, [("mask_file", "source_file")]),
             (
@@ -401,7 +403,7 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             (
                 bbreg_wf,
                 output,
-                [("outputnode.lta_epi_to_t1w", "rigid_dwi_2_t1")],
+                [("outputnode.out_lta_file", "rigid_dwi_2_t1")],
             ),
             (input_subject, output, [("preprocessed_t1", "t1_initial")]),
             (strip_t1, output, [("out_file", "t1_masked")]),
