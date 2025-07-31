@@ -32,7 +32,7 @@ def init_sink_wf(config, name="sink_wf"):
         substitutions = [
             ("_subject_id_", "sub-"),
             (
-                "mean_bzero_brain_mask_warped",
+                "initial_mean_bzero_brain_mask_warped",
                 f"{bids_name}_space-individualT1_desc-mask_bbreg_dwi",
             ),
             (
@@ -41,7 +41,7 @@ def init_sink_wf(config, name="sink_wf"):
             ),
             ("vol0000_flirt_merged", f"{bids_name}_desc-eddycorrected_dwi"),
             (
-                f"registered_mean_bzero.nii.gz",
+                f"registered_mean_bzero",
                 f"{bids_name}_space-individualT1_desc-eddycorrected_bbreg_meanbzero_dwi",
             ),
         ]
