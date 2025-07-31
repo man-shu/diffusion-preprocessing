@@ -347,16 +347,16 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             # rotate the gradients using the LTA file directly
             (input_subject, rotate_gradients, [("bvec", "gradient_file")]),
             (
-                bbreg_wf,
+                bbreg_wf.get_node("bbregister"),
                 rotate_gradients,
-                [("outputs.out_lta_file", "lta_file")],
+                [("out_lta_file", "lta_file")],
             ),
             # apply the registration to the skull-stripped and eddy-corrected
             # dwi using FreeSurfer's ApplyVolTransform
             (
-                bbreg_wf,
+                bbreg_wf.get_node("bbregister"),
                 apply_registration,
-                [("outputs.out_lta_file", "lta_file")],
+                [("out_lta_file", "lta_file")],
             ),
             (
                 eddycorrect,
@@ -370,9 +370,9 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             ),
             # also apply the registration to the mask
             (
-                bbreg_wf,
+                bbreg_wf.get_node("bbregister"),
                 apply_registration_mask,
-                [("outputs.out_lta_file", "lta_file")],
+                [("out_lta_file", "lta_file")],
             ),
             (bet, apply_registration_mask, [("mask_file", "source_file")]),
             (
@@ -401,9 +401,9 @@ def _preprocess_wf(name="preprocess", bet_frac=0.34, output_dir="."):
             ),
             (strip_dwi, output, [("out_file", "dwi_masked")]),
             (
-                bbreg_wf,
+                bbreg_wf.get_node("bbregister"),
                 output,
-                [("outputs.out_lta_file", "rigid_dwi_2_t1")],
+                [("out_lta_file", "rigid_dwi_2_t1")],
             ),
             (input_subject, output, [("preprocessed_t1", "t1_initial")]),
             (strip_t1, output, [("out_file", "t1_masked")]),
