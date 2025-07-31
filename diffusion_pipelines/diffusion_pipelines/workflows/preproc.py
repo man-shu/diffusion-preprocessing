@@ -98,7 +98,7 @@ def _set_inputs_outputs(config, preproc_wf):
 
 def _preprocess_wf(config, name="preprocess", bet_frac=0.34, output_dir="."):
 
-    def _get_mean_bzero(dwi_file, bval):
+    def _get_mean_bzero(dwi_file, bval, prefix):
         """Mean of the b=0 volumes of the input dwi file."""
         import os
         from nilearn.image import index_img, mean_img
@@ -111,7 +111,7 @@ def _preprocess_wf(config, name="preprocess", bet_frac=0.34, output_dir="."):
         # get the mean image of the b=0 volumes
         mean_bzero_img = mean_img(index_img(dwi_file, bzero_index))
         # save the mean image
-        out_file = os.path.join(os.getcwd(), "mean_bzero.nii.gz")
+        out_file = os.path.join(os.getcwd(), f"{prefix}_mean_bzero.nii.gz")
         mean_bzero_img.to_filename(out_file)
 
         return out_file
@@ -124,9 +124,17 @@ def _preprocess_wf(config, name="preprocess", bet_frac=0.34, output_dir="."):
     )
     # this node is used to get the mean of b=0 of the input dwi file
     get_intial_mean_bzero = Node(MeanBZero, name="get_intial_mean_bzero")
+    get_intial_mean_bzero.inputs.prefix = "initial"
 
     # this node is used to get the mean of b=0 of the eddy-corrected dwi file
     get_eddy_mean_bzero = get_intial_mean_bzero.clone("get_eddy_mean_bzero")
+    get_eddy_mean_bzero.inputs.prefix = "eddy"
+
+    # this node is used to get the mean of b=0 of the eddy-corrected and registered dwi file
+    get_registered_mean_bzero = get_intial_mean_bzero.clone(
+        "get_registered_mean_bzero"
+    )
+    get_registered_mean_bzero.inputs.prefix = "registered"
 
     def get_subject_id(bids_entities):
         """Get the subject id from the BIDS entities."""
@@ -350,6 +358,13 @@ def _preprocess_wf(config, name="preprocess", bet_frac=0.34, output_dir="."):
                 apply_registration,
                 [("out_file", "target_file")],
             ),
+            # get a mean b=0 image of the registered dwi
+            (
+                apply_registration,
+                get_registered_mean_bzero,
+                [("transformed_file", "dwi_file")],
+            ),
+            (input_subject, get_registered_mean_bzero, [("bval", "bval")]),
             # also apply the registration to the mask
             (
                 bbreg_wf.get_node("bbregister"),

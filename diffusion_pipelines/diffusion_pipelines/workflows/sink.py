@@ -41,7 +41,7 @@ def init_sink_wf(config, name="sink_wf"):
             ),
             ("vol0000_flirt_merged", f"{bids_name}_desc-eddycorrected_dwi"),
             (
-                f"get_registered_mean_bzero{os.sep}mean_bzero.nii.gz",
+                f"registered_mean_bzero.nii.gz",
                 f"{bids_name}_space-individualT1_desc-eddycorrected_bbreg_meanbzero_dwi",
             ),
         ]
