@@ -3,7 +3,7 @@
 #SBATCH --output=log_slurm/jobid_%A.out 
 #SBATCH --error=log_slurm/jobid_%A.err
 #SBATCH --partition=normal,parietal
-#SBATCH --c20
+#SBATCH -c20
 
 module load singularity
 
