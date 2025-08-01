@@ -84,6 +84,11 @@ def _set_inputs_outputs(config, preproc_wf):
                     ),
                     ("eddy_corrected", "preprocess.@eddy_corrected"),
                     ("mask", "preprocess.@mask"),
+                    (
+                        "registered_mean_bzero",
+                        "preprocess.@registered_mean_bzero",
+                    ),
+                    ("bvec_rotated", "preprocess.@bvec_rotated"),
                 ],
             ),
             (
@@ -229,6 +234,7 @@ def _preprocess_wf(config, name="preprocess", bet_frac=0.34, output_dir="."):
                 "rigid_dwi_2_t1",
                 "eddy_corrected",
                 "dwi_initial",
+                "registered_mean_bzero",
                 "dwi_masked",
                 "bet_mask",
                 "t1_initial",
@@ -423,6 +429,11 @@ def _preprocess_wf(config, name="preprocess", bet_frac=0.34, output_dir="."):
                 [("outputnode.eddy_corrected", "eddy_corrected")],
             ),
             (input_subject, output, [("dwi", "dwi_initial")]),
+            (
+                get_registered_mean_bzero,
+                output,
+                [("out", "registered_mean_bzero")],
+            ),
             # connect the report workflow
             (
                 output,

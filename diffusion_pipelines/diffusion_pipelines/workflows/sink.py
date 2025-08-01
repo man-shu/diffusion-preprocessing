@@ -44,6 +44,10 @@ def init_sink_wf(config, name="sink_wf"):
                 f"registered_mean_bzero",
                 f"{bids_name}_space-individualT1_desc-eddycorrected_bbreg_meanbzero_dwi",
             ),
+            (
+                f"{bids_name}_dwi_rot.bvec",
+                f"{bids_name}_desc-rotated_dwi.bvec",
+            ),
         ]
         return substitutions
 
