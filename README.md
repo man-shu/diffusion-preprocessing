@@ -43,7 +43,7 @@
     --output-spaces fsLR:den-32k MNI152NLin6Asym T1w fsaverage5 \
     --cifti-output 91k \
     --nprocs 1 \
-    --omp-nthreads 50 \
+    --omp-nthreads 8 \
     --participant-label sub-01187 \
     --acquisition AxCaliber1 \
     --no-msm \
@@ -65,7 +65,7 @@
     --work-dir /home/input/cache \
     --output-spaces fsLR:den-32k MNI152NLin6Asym T1w fsaverage5 \
     --nprocs 1 \
-    --omp-nthreads 50 \
+    --omp-nthreads 8 \
     --participant-label sub-01187 \
     --acquisition AxCaliber1 \
     --preproc \
@@ -88,7 +88,7 @@
     --output-spaces fsLR:den-32k MNI152NLin6Asym T1w fsaverage5 \
     --cifti-output 91k \
     --nprocs 1 \
-    --omp-nthreads 50 \
+    --omp-nthreads 8 \
     --participant-label sub-01187 \
     --acquisition AxCaliber1 \
     --no-msm \
