@@ -2,6 +2,8 @@ from bids.layout import BIDSLayout, parse_file_entities
 from nipype import Node, Workflow
 from nipype.interfaces.utility import Function
 from nipype.interfaces.io import SelectFiles
+from niworkflows.interfaces.bids import BIDSFreeSurferDir
+import os
 
 
 def init_bidsdata_wf(config, name="bidsdata_wf"):
@@ -24,6 +26,14 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
             )
             if config.preproc_t1_mask is None
             else str(config.preproc_t1_mask)
+        ),
+        "fsnative2t1w_xfm": (
+            (
+                "derivatives/smriprep/sub-{subject_id}/*/anat/sub-{subject_id}"
+                "_ses-??_from-fsnative_to-T1w_mode-image_xfm.txt"
+            )
+            if config.fs_native_to_t1w_xfm is None
+            else str(config.fs_native_to_t1w_xfm)
         ),
         "plot_recon_surface_on_t1": (
             "derivatives/smriprep/sub-{subject_id}/figures"
@@ -80,6 +90,7 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
         output_names=["bids_entities"],
         function=decode_entities,
     )
+
     decode_entities = Node(DecodeEntities, name="decode_entities")
 
     bidsdata_wf = Workflow(name=name)

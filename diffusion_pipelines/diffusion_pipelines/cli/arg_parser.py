@@ -269,10 +269,24 @@ def get_parser():
         help="path to the preprocessed (via reconstruction wf) T1-weighted mask",
     )
     g_other.add_argument(
+        "-fs2t1",
+        "--fs-native-to-t1w-xfm",
+        action="store",
+        type=Path,
+        default=None,
+        help="path to the fsnative2t1w_xfm transformation file",
+    )
+    g_other.add_argument(
         "--tracto",
         action="store_true",
         default=False,
         help="Run tractography pipeline.",
+    )
+    g_other.add_argument(
+        "--debug",
+        action="store_true",
+        default=False,
+        help="Run in debug mode.",
     )
 
     return parser
