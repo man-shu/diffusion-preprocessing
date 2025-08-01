@@ -24,9 +24,11 @@ srun singularity exec \
 --output-spaces fsLR:den-32k MNI152NLin6Asym T1w fsaverage5 \
 --cifti-output 91k \
 --nprocs 1 \
---omp-nthreads 8 \
+--omp-nthreads 10 \
 --participant-label ${dirs[${SLURM_ARRAY_TASK_ID}]:91} \
 --acquisition AxCaliberConcat \
---no-msm \
---no-submm-recon \
---preproc
+--preproc \
+--preproc-t1 /home/input/WAND-concat/derivatives/smriprep/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:91}/ses-02/anat/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:91}_ses-02_desc-preproc_T1w.nii.gz \
+--preproc-t1-mask /home/input/WAND-concat/derivatives/smriprep/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:91}/ses-02/anat/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:91}_ses-02_desc-brain_mask.nii.gz \
+--fs-native-to-t1w-xfm /home/input/WAND-concat/derivatives/smriprep/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:91}/ses-02/anat/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:91}_ses-02_from-fsnative_to-T1w_mode-image_xfm.txt \
+--debug
