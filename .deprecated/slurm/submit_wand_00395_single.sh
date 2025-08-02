@@ -22,7 +22,6 @@ srun singularity exec \
 --participant-label sub-00395 \
 --acquisition AxCaliberConcat \
 --no-msm \
---fs-no-resume \
 --no-submm-recon \
 --recon \
 --preproc \
