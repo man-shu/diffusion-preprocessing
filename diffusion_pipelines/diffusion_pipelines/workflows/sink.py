@@ -33,16 +33,17 @@ def init_sink_wf(config, name="sink_wf"):
             ("_subject_id_", "sub-"),
             (
                 "initial_mean_bzero_brain_mask_warped",
-                f"{bids_name}_space-individualT1_desc-mask_bbreg_dwi",
+                f"{bids_name}_space-individualT1_desc-mask+bbreg_dwi",
             ),
             (
                 "vol0000_flirt_merged_warped",
-                f"{bids_name}_space-individualT1_desc-eddycorrected_bbreg_dwi",
+                f"{bids_name}_space-individualT1_desc-eddycorrected+bbreg_dwi",
             ),
             ("vol0000_flirt_merged", f"{bids_name}_desc-eddycorrected_dwi"),
             (
                 f"registered_mean_bzero",
-                f"{bids_name}_space-individualT1_desc-eddycorrected_bbreg_meanbzero_dwi",
+                f"{bids_name}_space-individualT1_"
+                "desc-eddycorrected+bbreg+meanb0_dwi",
             ),
             (
                 f"{bids_name}_dwi_rot.bvec",
