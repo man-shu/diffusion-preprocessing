@@ -132,6 +132,14 @@ def get_parser():
         action="store_false",
         help='DEPRECATED: use "--subject-anatomical-reference unbiased" instead',
     )
+    g_conf.add_argument(
+        "--b0-threshold",
+        action="store",
+        default=0,
+        type=int,
+        help="Threshold for B0 images - images with lower or equal values "
+        "will be considered as B0 images. Default is 0",
+    )
 
     #  ANTs options
     g_ants = parser.add_argument_group(

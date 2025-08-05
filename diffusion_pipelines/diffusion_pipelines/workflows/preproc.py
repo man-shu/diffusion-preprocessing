@@ -110,7 +110,9 @@ def _preprocess_wf(
     config, name="diffusion_preprocess", bet_frac=0.34, output_dir="."
 ):
 
-    def _get_mean_bzero(dwi_file, bval, prefix):
+    def _get_mean_bzero(
+        dwi_file, bval, prefix, bval_threshold=config.b0_threshold
+    ):
         """Mean of the b=0 volumes of the input dwi file."""
         import os
         from nilearn.image import index_img, mean_img
@@ -119,7 +121,7 @@ def _preprocess_wf(
 
         bvals = np.loadtxt(bval)
         # get the index of the b=0 volumes
-        bzero_index = np.where(bvals == 0)[0]
+        bzero_index = np.where(bvals <= bval_threshold)[0]
         # get the mean image of the b=0 volumes
         mean_bzero_img = mean_img(index_img(dwi_file, bzero_index))
         # save the mean image
