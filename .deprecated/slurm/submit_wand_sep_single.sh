@@ -3,9 +3,7 @@
 #SBATCH --output=log_slurm/jobid_%A.out 
 #SBATCH --error=log_slurm/jobid_%A.err
 #SBATCH --partition=normal,parietal
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=20
-#SBATCH --ntasks-per-node=10
+#SBATCH -c=20
 
 module load singularity
 
@@ -17,16 +15,13 @@ srun singularity exec \
 /home/input/WAND-sep \
 /home/input/WAND-sep/derivatives \
 --work-dir /home/input/cache \
---fs-subjects-dir /home/input/WAND-sep/derivatives/freesurfer \
 --output-spaces fsLR:den-32k MNI152NLin6Asym T1w fsaverage5 \
---cifti-output 91k \
 --nprocs 1 \
 --omp-nthreads 20 \
 --participant-label sub-01187 \
 --acquisition AxCaliber1 \
---no-msm \
---fs-no-resume \
---no-submm-recon \
 --preproc \
 --preproc-t1 /home/input/WAND-sep/derivatives/smriprep/sub-01187/ses-02/anat/sub-01187_ses-02_desc-preproc_T1w.nii.gz \
---preproc-t1-mask /home/input/WAND-sep/derivatives/smriprep/sub-01187/ses-02/anat/sub-01187_ses-02_desc-brain_mask.nii.gz
+--preproc-t1-mask /home/input/WAND-sep/derivatives/smriprep/sub-01187/ses-02/anat/sub-01187_ses-02_desc-brain_mask.nii.gz \
+--fs-native-to-t1w-xfm /home/input/WAND-sep/derivatives/smriprep/sub-01187/ses-02/anat/sub-01187_ses-02_from-fsnative_to-T1w_mode-image_xfm.txt \
+--debug
