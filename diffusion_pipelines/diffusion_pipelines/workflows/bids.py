@@ -4,6 +4,7 @@ from nipype.interfaces.utility import Function
 from nipype.interfaces.io import SelectFiles
 from niworkflows.interfaces.bids import BIDSFreeSurferDir
 import os
+from pathlib import Path
 
 
 def init_bidsdata_wf(config, name="bidsdata_wf"):
@@ -12,48 +13,97 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
     # String template with {}-based strings
     templates = {
         "preprocessed_t1": (
-            (
-                "derivatives/smriprep/sub-{subject_id}/*/anat/sub-{subject_id}"
-                "_ses-??_desc-preproc_T1w.nii.gz"
+            str(
+                Path(
+                    (
+                        "derivatives/smriprep/sub-{subject_id}"
+                        "/ses-{session_id}/anat/sub-{subject_id}"
+                        "_ses-{session_id}_desc-preproc_T1w.nii.gz"
+                    )
+                )
             )
-            if config.preproc_t1 is None
+            if config.preproc_t1 is None and config.recon is True
             else str(config.preproc_t1)
         ),
         "preprocessed_t1_mask": (
-            (
-                "derivatives/smriprep/sub-{subject_id}/*/anat/sub-{subject_id}"
-                "_ses-??_desc-brain_mask.nii.gz"
+            str(
+                Path(
+                    (
+                        "derivatives/smriprep/sub-{subject_id}"
+                        "/ses-{session_id}/anat/sub-{subject_id}"
+                        "_ses-{session_id}_desc-brain_mask.nii.gz"
+                    )
+                )
             )
-            if config.preproc_t1_mask is None
+            if config.preproc_t1_mask is None and config.recon is True
             else str(config.preproc_t1_mask)
         ),
         "fsnative2t1w_xfm": (
-            (
-                "derivatives/smriprep/sub-{subject_id}/*/anat/sub-{subject_id}"
-                "_ses-??_from-fsnative_to-T1w_mode-image_xfm.txt"
+            str(
+                Path(
+                    (
+                        "derivatives/smriprep/sub-{subject_id}"
+                        "/ses-{session_id}/anat/sub-{subject_id}_ses-"
+                        "{session_id}_from-fsnative_to-T1w_mode-image_xfm.txt"
+                    )
+                )
             )
-            if config.fs_native_to_t1w_xfm is None
+            if config.fs_native_to_t1w_xfm is None and config.recon is True
             else str(config.fs_native_to_t1w_xfm)
         ),
         "plot_recon_surface_on_t1": (
-            "derivatives/smriprep/sub-{subject_id}/figures"
-            "/sub-{subject_id}*_desc-reconall_T1w.svg"
+            str(
+                Path(
+                    (
+                        "derivatives/smriprep/sub-{subject_id}/figures"
+                        "/sub-{subject_id}_ses-{session_id}*"
+                        "_desc-reconall_T1w.svg"
+                    )
+                )
+            )
         ),
         "plot_recon_segmentations_on_t1": (
-            "derivatives/smriprep/sub-{subject_id}/figures"
-            "/sub-{subject_id}*_dseg.svg"
+            str(
+                Path(
+                    (
+                        "derivatives/smriprep/sub-{subject_id}/figures"
+                        "/sub-{subject_id}_ses-{session_id}*_dseg.svg"
+                    )
+                )
+            )
         ),
         "dwi": (
-            "sub-{subject_id}/*/dwi/sub-{subject_id}*_acq-{acquisition}"
-            "*_dwi.nii.gz"
+            str(
+                Path(
+                    (
+                        "sub-{subject_id}/ses-{session_id}/dwi/"
+                        "sub-{subject_id}_ses-{session_id}*"
+                        "_acq-{acquisition}*_dwi.nii.gz"
+                    )
+                )
+            )
         ),
         "bval": (
-            "sub-{subject_id}/*/dwi/sub-{subject_id}*_acq-{acquisition}"
-            "*_dwi.bval"
+            str(
+                Path(
+                    (
+                        "sub-{subject_id}/ses-{session_id}/dwi/"
+                        "sub-{subject_id}_ses-{session_id}*"
+                        "_acq-{acquisition}*_dwi.bval"
+                    )
+                )
+            )
         ),
         "bvec": (
-            "sub-{subject_id}/*/dwi/sub-{subject_id}*_acq-{acquisition}"
-            "*_dwi.bvec"
+            str(
+                Path(
+                    (
+                        "sub-{subject_id}/ses-{session_id}/dwi/"
+                        "sub-{subject_id}_ses-{session_id}*"
+                        "_acq-{acquisition}*_dwi.bvec"
+                    )
+                )
+            )
         ),
     }
 
@@ -77,6 +127,12 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
             if subject not in layout.get_subjects():
                 raise ValueError(f"Subject {subject} not found in dataset")
         sf.iterables = [("subject_id", config.participant_label)]
+
+    if config.session_label is not None:
+        sf.iterables.append(("session_id", config.session_label))
+    # all sessions
+    else:
+        sf.iterables.append(("session_id", layout.get_sessions()))
 
     ### Node to decode entities
     def decode_entities(file_name):
