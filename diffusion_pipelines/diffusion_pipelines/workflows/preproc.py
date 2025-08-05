@@ -80,28 +80,35 @@ def _set_inputs_outputs(config, preproc_wf):
                 [
                     (
                         "dwi_rigid_registered",
-                        "preprocess.@registered_dwi",
+                        "diffusion_preprocess.@registered_dwi",
                     ),
-                    ("eddy_corrected", "preprocess.@eddy_corrected"),
-                    ("mask", "preprocess.@mask"),
+                    ("eddy_corrected", "diffusion_preprocess.@eddy_corrected"),
+                    ("mask", "diffusion_preprocess.@mask"),
                     (
                         "registered_mean_bzero",
-                        "preprocess.@registered_mean_bzero",
+                        "diffusion_preprocess.@registered_mean_bzero",
                     ),
-                    ("bvec_rotated", "preprocess.@bvec_rotated"),
+                    ("bvec_rotated", "diffusion_preprocess.@bvec_rotated"),
                 ],
             ),
             (
                 preproc_wf.get_node("report"),
                 sink_wf.get_node("sink"),
-                [("report_outputnode.out_file", "preprocess.@report")],
+                [
+                    (
+                        "report_outputnode.out_file",
+                        "diffusion_preprocess.@report",
+                    )
+                ],
             ),
         ]
     )
     return preproc_wf
 
 
-def _preprocess_wf(config, name="preprocess", bet_frac=0.34, output_dir="."):
+def _preprocess_wf(
+    config, name="diffusion_preprocess", bet_frac=0.34, output_dir="."
+):
 
     def _get_mean_bzero(dwi_file, bval, prefix):
         """Mean of the b=0 volumes of the input dwi file."""
