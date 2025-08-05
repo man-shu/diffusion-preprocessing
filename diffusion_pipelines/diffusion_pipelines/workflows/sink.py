@@ -1,6 +1,7 @@
 from nipype import IdentityInterface, Node, Workflow
 from nipype.interfaces.utility import Function
 from nipype.interfaces.io import DataSink
+from pathlib import Path
 
 
 def init_sink_wf(config, name="sink_wf"):
@@ -29,9 +30,20 @@ def init_sink_wf(config, name="sink_wf"):
             return bids_name
 
         bids_name = _build_bids(bids_entities)
+
         substitutions = [
-            ("_subject_id_", "sub-"),
             (
+                (
+                    f"_session_id_{bids_entities['session']}"
+                    f"_subject_id_{bids_entities['subject']}"
+                ),
+                str(
+                    Path(
+                        f"sub-{bids_entities['subject']}/"
+                        f"ses-{bids_entities['session']}/dwi/"
+                    )
+                ),
+            )(
                 "initial_mean_bzero_brain_mask_warped",
                 f"{bids_name}_space-individualT1_desc-mask+bbreg_dwi",
             ),
