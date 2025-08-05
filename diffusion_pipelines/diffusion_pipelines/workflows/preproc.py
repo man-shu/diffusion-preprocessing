@@ -110,9 +110,7 @@ def _preprocess_wf(
     config, name="diffusion_preprocess", bet_frac=0.34, output_dir="."
 ):
 
-    def _get_mean_bzero(
-        dwi_file, bval, prefix, bval_threshold=config.b0_threshold
-    ):
+    def _get_mean_bzero(dwi_file, bval, prefix, bval_threshold):
         """Mean of the b=0 volumes of the input dwi file."""
         import os
         from nilearn.image import index_img, mean_img
@@ -132,23 +130,26 @@ def _preprocess_wf(
 
     # define a function to get the mean of b=0 of the input dwi file
     MeanBZero = Function(
-        input_names=["dwi_file", "bval", "prefix"],
+        input_names=["dwi_file", "bval", "prefix", "bval_threshold"],
         output_names=["out"],
         function=_get_mean_bzero,
     )
     # this node is used to get the mean of b=0 of the input dwi file
     get_intial_mean_bzero = Node(MeanBZero, name="get_intial_mean_bzero")
     get_intial_mean_bzero.inputs.prefix = "initial"
+    get_intial_mean_bzero.inputs.bval_threshold = config.b0_threshold
 
     # this node is used to get the mean of b=0 of the eddy-corrected dwi file
     get_eddy_mean_bzero = get_intial_mean_bzero.clone("get_eddy_mean_bzero")
     get_eddy_mean_bzero.inputs.prefix = "eddy"
+    get_eddy_mean_bzero.inputs.bval_threshold = config.b0_threshold
 
     # this node is used to get the mean of b=0 of the eddy-corrected and registered dwi file
     get_registered_mean_bzero = get_intial_mean_bzero.clone(
         "get_registered_mean_bzero"
     )
     get_registered_mean_bzero.inputs.prefix = "registered"
+    get_registered_mean_bzero.inputs.bval_threshold = config.b0_threshold
 
     def get_subject_id(bids_entities):
         """Get the subject id from the BIDS entities."""
@@ -243,7 +244,6 @@ def _preprocess_wf(
                 "rigid_dwi_2_t1",
                 "eddy_corrected",
                 "dwi_initial",
-                "registered_mean_bzero",
                 "dwi_masked",
                 "bet_mask",
                 "t1_initial",
@@ -251,6 +251,9 @@ def _preprocess_wf(
                 "bids_entities",
                 "plot_recon_surface_on_t1",
                 "plot_recon_segmentations_on_t1",
+                "initial_mean_bzero",
+                "eddy_mean_bzero",
+                "registered_mean_bzero",
             ]
         ),
         name="output",
@@ -443,6 +446,16 @@ def _preprocess_wf(
                 output,
                 [("out", "registered_mean_bzero")],
             ),
+            (
+                get_intial_mean_bzero,
+                output,
+                [("out", "initial_mean_bzero")],
+            ),
+            (
+                get_eddy_mean_bzero,
+                output,
+                [("out", "eddy_mean_bzero")],
+            ),
             # connect the report workflow
             (
                 output,
@@ -474,6 +487,15 @@ def _preprocess_wf(
                     (
                         "plot_recon_segmentations_on_t1",
                         "report_inputnode.plot_recon_segmentations_on_t1",
+                    ),
+                    (
+                        "initial_mean_bzero",
+                        "report_inputnode.initial_mean_bzero",
+                    ),
+                    ("eddy_mean_bzero", "report_inputnode.eddy_mean_bzero"),
+                    (
+                        "registered_mean_bzero",
+                        "report_inputnode.registered_mean_bzero",
                     ),
                 ],
             ),

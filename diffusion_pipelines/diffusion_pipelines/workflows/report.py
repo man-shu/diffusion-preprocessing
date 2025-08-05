@@ -10,25 +10,6 @@ TEMPLATE_ROOT = os.path.join(os.path.dirname(__file__), "report_template")
 REPORT_TEMPLATE = os.path.join(TEMPLATE_ROOT, "report_template.html")
 
 
-def _get_mean_bzero(dwi_file, bval):
-    """Mean of the b=0 volumes of the input dwi file."""
-    import os
-    from nilearn.image import index_img, mean_img
-
-    import numpy as np
-
-    bvals = np.loadtxt(bval)
-    # get the index of the b=0 volumes
-    bzero_index = np.where(bvals == 0)[0]
-    # get the mean image of the b=0 volumes
-    mean_bzero_img = mean_img(index_img(dwi_file, bzero_index))
-    # save the mean image
-    out_file = os.path.join(os.getcwd(), "mean_bzero.nii.gz")
-    mean_bzero_img.to_filename(out_file)
-
-    return out_file
-
-
 def create_html_report(
     calling_wf_name,
     report_wf_name,
@@ -123,6 +104,9 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 "bids_entities",
                 "plot_recon_surface_on_t1",
                 "plot_recon_segmentations_on_t1",
+                "initial_mean_bzero",
+                "eddy_mean_bzero",
+                "registered_mean_bzero",
             ]
         ),
         name="report_inputnode",
@@ -131,21 +115,6 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
         IdentityInterface(fields=["out_file"]),
         name="report_outputnode",
     )
-    # define a function to get the mean of b=0 of the input dwi file
-    MeanBZero = Function(
-        input_names=["dwi_file", "bval"],
-        output_names=["out"],
-        function=_get_mean_bzero,
-    )
-    # this node is used to get the mean of b=0 of the input dwi file
-    get_intial_mean_bzero = Node(MeanBZero, name="get_intial_mean_bzero")
-    # this node is used to get the mean of b=0 of the eddy corrected dwi file
-    get_eddy_mean_bzero = get_intial_mean_bzero.clone("get_eddy_mean_bzero")
-    # this node is used to get the mean of b=0 of the subject t1 registered dwi file
-    get_registered_mean_bzero = get_intial_mean_bzero.clone(
-        "get_registered_mean_bzero"
-    )
-
     # this node plots the before and after images of the eddy correction
     plot_before_after_eddy = Node(
         SimpleBeforeAfter(), name="plot_before_after_eddy"
@@ -200,33 +169,6 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
     workflow = Workflow(name=name, base_dir=output_dir)
     workflow.connect(
         [
-            # get the zero index of the input dwi file
-            (
-                inputnode,
-                get_intial_mean_bzero,
-                [
-                    ("dwi_masked", "dwi_file"),
-                    ("bval", "bval"),
-                ],
-            ),
-            # get the zero index of the eddy corrected dwi file
-            (
-                inputnode,
-                get_eddy_mean_bzero,
-                [
-                    ("eddy_corrected", "dwi_file"),
-                    ("bval", "bval"),
-                ],
-            ),
-            # get the mean b=0 the dwi file registered to the subject t1
-            (
-                inputnode,
-                get_registered_mean_bzero,
-                [
-                    ("dwi_rigid_registered", "dwi_file"),
-                    ("bval", "bval"),
-                ],
-            ),
             # plot the extracted brain mask as outline on the initial dwi image
             (
                 inputnode,
@@ -238,49 +180,39 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
             ),
             # plot the initial dwi as before
             (
-                get_intial_mean_bzero,
+                inputnode,
                 plot_before_after_eddy,
-                [
-                    ("out", "before"),
-                ],
+                [("initial_mean_bzero", "before")],
             ),
             # plot the eddy corrected dwi as after
             (
-                get_eddy_mean_bzero,
+                inputnode,
                 plot_before_after_eddy,
-                [
-                    ("out", "after"),
-                ],
+                [("eddy_mean_bzero", "after")],
             ),
             # plot the initial subject T1 as before
             (
                 inputnode,
                 plot_before_after_mask_t1,
-                [
-                    ("t1_initial", "before"),
-                ],
+                [("t1_initial", "before")],
             ),
             # plot the masked subject T1 as after
             (
                 inputnode,
                 plot_before_after_mask_t1,
-                [
-                    ("t1_masked", "after"),
-                ],
+                [("t1_masked", "after")],
             ),
             # plot the masked subject T1 as before and transformed dwi as
             # after
             (
                 inputnode,
                 plot_before_after_t1_dwi,
-                [
-                    ("t1_masked", "before"),
-                ],
+                [("t1_masked", "before")],
             ),
             (
-                get_registered_mean_bzero,
+                inputnode,
                 plot_before_after_t1_dwi,
-                [("out", "after")],
+                [("registered_mean_bzero", "after")],
             ),
             # plot the transformed mask as an outline on transformed dwi image
             (
