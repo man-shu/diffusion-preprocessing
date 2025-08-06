@@ -18,7 +18,7 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
                     (
                         "derivatives/smriprep/sub-{subject_id}"
                         "/ses-{session_id}/anat/sub-{subject_id}"
-                        "_ses-{session_id}_desc-preproc_T1w.nii.gz"
+                        "_ses-{session_id}*_desc-preproc_T1w.nii.gz"
                     )
                 )
             )
@@ -31,7 +31,7 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
                     (
                         "derivatives/smriprep/sub-{subject_id}"
                         "/ses-{session_id}/anat/sub-{subject_id}"
-                        "_ses-{session_id}_desc-brain_mask.nii.gz"
+                        "_ses-{session_id}*_desc-brain_mask.nii.gz"
                     )
                 )
             )
@@ -44,7 +44,7 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
                     (
                         "derivatives/smriprep/sub-{subject_id}"
                         "/ses-{session_id}/anat/sub-{subject_id}_ses-"
-                        "{session_id}_from-fsnative_to-T1w_mode-image_xfm.txt"
+                        "{session_id}*_from-fsnative_to-T1w_mode-image_xfm.txt"
                     )
                 )
             )
