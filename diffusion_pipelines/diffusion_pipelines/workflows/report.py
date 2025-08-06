@@ -53,12 +53,13 @@ def create_html_report(
         return _embed_svg(to_embed)
 
     subject_id = f"_subject_id_{bids_entities["subject"]}"
+    session_id = f"_session_id_{bids_entities["session"]}"
     html_text = _get_html_text(subject_id, *plots)
     out_file = os.path.join(
         output_dir,
         calling_wf_name,
         report_wf_name,
-        subject_id,
+        f"{session_id}{subject_id}",
         "report.html",
     )
     report_html = HTMLDocument(html_text).save_as_html(out_file)
