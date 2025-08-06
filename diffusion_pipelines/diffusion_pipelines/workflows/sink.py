@@ -43,7 +43,8 @@ def init_sink_wf(config, name="sink_wf"):
                         f"ses-{bids_entities['session']}/dwi/"
                     )
                 ),
-            )(
+            ),
+            (
                 "initial_mean_bzero_brain_mask_warped",
                 f"{bids_name}_space-individualT1_desc-mask+bbreg_dwi",
             ),
