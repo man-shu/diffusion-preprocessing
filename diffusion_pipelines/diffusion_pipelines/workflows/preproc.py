@@ -36,25 +36,25 @@ def _set_inputs_outputs(config, preproc_wf):
                 bidsdata_wf,
                 preproc_wf.get_node("input_subject"),
                 [
-                    ("selectfiles.preprocessed_t1", "preprocessed_t1"),
+                    ("output.preprocessed_t1", "preprocessed_t1"),
                     (
-                        "selectfiles.preprocessed_t1_mask",
+                        "output.preprocessed_t1_mask",
                         "preprocessed_t1_mask",
                     ),
                     (
-                        "selectfiles.fsnative2t1w_xfm",
+                        "output.fsnative2t1w_xfm",
                         "fsnative2t1w_xfm",
                     ),
-                    ("selectfiles.dwi", "dwi"),
-                    ("selectfiles.bval", "bval"),
-                    ("selectfiles.bvec", "bvec"),
+                    ("output.dwi", "dwi"),
+                    ("output.bval", "bval"),
+                    ("output.bvec", "bvec"),
                     ("decode_entities.bids_entities", "bids_entities"),
                     (
-                        "selectfiles.plot_recon_surface_on_t1",
+                        "output.plot_recon_surface_on_t1",
                         "plot_recon_surface_on_t1",
                     ),
                     (
-                        "selectfiles.plot_recon_segmentations_on_t1",
+                        "output.plot_recon_segmentations_on_t1",
                         "plot_recon_segmentations_on_t1",
                     ),
                 ],

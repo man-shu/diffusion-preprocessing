@@ -149,7 +149,73 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
 
     decode_entities = Node(DecodeEntities, name="decode_entities")
 
+    ### Node to only pick one file
+    def pick_files(file_name_list):
+        from bids.layout import parse_file_entities
+
+        if isinstance(file_name_list, str):
+            return file_name_list
+
+        # Filter files based on space
+        for file_name in file_name_list:
+            entities = parse_file_entities(file_name)
+            if entities["space"] is None:
+                return file_name
+
+    PickFiles = Function(
+        input_names=["file_name_list"],
+        output_names=["file_name"],
+        function=pick_files,
+    )
+    pick_t1 = Node(PickFiles, name="pick_t1")
+    pick_mask = pick_t1.clone("pick_mask")
+    pick_xfm = pick_t1.clone("pick_xfm")
+
+    output = Node(
+        IdentityInterface(
+            fields=[
+                "preprocessed_t1",
+                "preprocessed_t1_mask",
+                "fsnative2t1w_xfm",
+                "dwi",
+                "bval",
+                "bvec",
+                "plot_recon_surface_on_t1",
+                "plot_recon_segmentations_on_t1",
+            ]
+        ),
+        name="output",
+    )
+
     bidsdata_wf = Workflow(name=name)
-    bidsdata_wf.connect(sf, "dwi", decode_entities, "file_name")
+    bidsdata_wf.connect(
+        [
+            (sf, decode_entities, [("dwi", "file_name")]),
+            (sf, pick_t1, [("preprocessed_t1", "file_name_list")]),
+            (sf, pick_mask, [("preprocessed_t1_mask", "file_name_list")]),
+            (sf, pick_xfm, [("fsnative2t1w_xfm", "file_name_list")]),
+            (sf, output, [("dwi", "dwi")]),
+            (sf, output, [("bval", "bval")]),
+            (sf, output, [("bvec", "bvec")]),
+            (
+                sf,
+                output,
+                [("plot_recon_surface_on_t1", "plot_recon_surface_on_t1")],
+            ),
+            (
+                sf,
+                output,
+                [
+                    (
+                        "plot_recon_segmentations_on_t1",
+                        "plot_recon_segmentations_on_t1",
+                    )
+                ],
+            ),
+            (pick_t1, output, [("file_name", "preprocessed_t1")]),
+            (pick_mask, output, [("file_name", "preprocessed_t1_mask")]),
+            (pick_xfm, output, [("file_name", "fsnative2t1w_xfm")]),
+        ]
+    )
 
     return bidsdata_wf
