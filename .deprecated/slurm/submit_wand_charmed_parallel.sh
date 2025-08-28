@@ -9,7 +9,7 @@
 #SBATCH --array=1-151%100
 
 dirs=(/data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data/WAND/sub-*)
-echo ${dirs[${SLURM_ARRAY_TASK_ID}]:91}
+echo ${dirs[${SLURM_ARRAY_TASK_ID}]:84}
 
 module load singularity
 
@@ -25,10 +25,10 @@ srun singularity exec \
 --cifti-output 91k \
 --nprocs 1 \
 --omp-nthreads 10 \
---participant-label ${dirs[${SLURM_ARRAY_TASK_ID}]:91} \
+--participant-label ${dirs[${SLURM_ARRAY_TASK_ID}]:84} \
 --acquisition CHARMED_dir-AP \
 --preproc \
---preproc-t1 /home/input/WAND-concat/derivatives/smriprep/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:91}/ses-02/anat/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:91}_ses-02_desc-preproc_T1w.nii.gz \
---preproc-t1-mask /home/input/WAND-concat/derivatives/smriprep/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:91}/ses-02/anat/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:91}_ses-02_desc-brain_mask.nii.gz \
---fs-native-to-t1w-xfm /home/input/WAND-concat/derivatives/smriprep/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:91}/ses-02/anat/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:91}_ses-02_from-fsnative_to-T1w_mode-image_xfm.txt \
+--preproc-t1 /home/input/WAND-concat/derivatives/smriprep/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:84}/ses-02/anat/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:84}_ses-02_desc-preproc_T1w.nii.gz \
+--preproc-t1-mask /home/input/WAND-concat/derivatives/smriprep/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:84}/ses-02/anat/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:84}_ses-02_desc-brain_mask.nii.gz \
+--fs-native-to-t1w-xfm /home/input/WAND-concat/derivatives/smriprep/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:84}/ses-02/anat/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:84}_ses-02_from-fsnative_to-T1w_mode-image_xfm.txt \
 --debug
