@@ -6,7 +6,7 @@
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=10
 #SBATCH --time=48:00:00
-#SBATCH --array=0-151%100
+#SBATCH --array=1-151%100
 
 dirs=(/data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data/WAND/sub-*)
 echo ${dirs[${SLURM_ARRAY_TASK_ID}]:91}
