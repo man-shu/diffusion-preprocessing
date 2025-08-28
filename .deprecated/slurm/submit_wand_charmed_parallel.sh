@@ -15,8 +15,7 @@ module load singularity
 
 srun singularity exec \
 --env-file /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/singularity_env.txt \
---bind /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data:/home/input \
---bind /data/parietal/store4/data:/home/input \
+--bind /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data,/data/parietal/store4/data:/home/input \
 /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/diffusion-preprocessing_main_singularity.sif \
 /opt/miniconda3/bin/diffusion_pipelines \
 /home/input/WAND \
