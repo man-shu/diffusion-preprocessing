@@ -85,6 +85,12 @@ def get_parser():
         action="store",
         help="Specify the acquisition type (the string after acq- in file BIDS names).",
     )
+    g_bids.add_argument(
+        "--phase-encoding-direction",
+        "-ped",
+        action="store",
+        help="Specify the phase encoding direction (the string after dir- in file BIDS names).",
+    )
 
     g_perfm = parser.add_argument_group("Options to handle performance")
     g_perfm.add_argument(

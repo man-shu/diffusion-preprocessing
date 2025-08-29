@@ -78,7 +78,8 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
                     (
                         "sub-{subject_id}/ses-{session_id}/dwi/"
                         "sub-{subject_id}_ses-{session_id}*"
-                        "_acq-{acquisition}*_dwi.nii.gz"
+                        "_acq-{acquisition}_dir-{phase_encoding_direction}*"
+                        "_dwi.nii.gz"
                     )
                 )
             )
@@ -89,7 +90,8 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
                     (
                         "sub-{subject_id}/ses-{session_id}/dwi/"
                         "sub-{subject_id}_ses-{session_id}*"
-                        "_acq-{acquisition}*_dwi.bval"
+                        "_acq-{acquisition}_dir-{phase_encoding_direction}*"
+                        "_dwi.bval"
                     )
                 )
             )
@@ -100,7 +102,8 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
                     (
                         "sub-{subject_id}/ses-{session_id}/dwi/"
                         "sub-{subject_id}_ses-{session_id}*"
-                        "_acq-{acquisition}*_dwi.bvec"
+                        "_acq-{acquisition}_dir-{phase_encoding_direction}*"
+                        "_dwi.bvec"
                     )
                 )
             )
@@ -116,6 +119,7 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
     )
 
     sf.inputs.acquisition = config.acquisition
+    sf.inputs.phase_encoding_direction = config.phase_encoding_direction
     layout = BIDSLayout(str(config.bids_dir))
     # set subjects as iterables
     # if subject is not specified, all subjects will be processed
