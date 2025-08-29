@@ -11,7 +11,7 @@ out_dir = Path(
 )
 sub_dirs = list(root_directory.glob("sub-*"))
 sub_dirs.sort()
-dry = True
+dry = False
 
 
 def safe_copy_files(out_dir, sub_dir):
@@ -54,8 +54,9 @@ def copy_files(out_dir, sub_dir):
                     shutil.copy2(dwi_file, output_path)
                 print(f"Copied {dwi_file} -> {output_path}")
             else:
-                print(
-                    f"Warning: No {extension} file found for protocol {protocol}"
+                raise FileNotFoundError(
+                    f"No {extension} file found for {sub_dir.name} "
+                    f"with protocol {protocol}"
                 )
 
 
