@@ -1,5 +1,5 @@
 from bids.layout import BIDSLayout, parse_file_entities
-from nipype import Node, Workflow
+from nipype import Node, Workflow, IdentityInterface
 from nipype.interfaces.utility import Function
 from nipype.interfaces.io import SelectFiles
 from niworkflows.interfaces.bids import BIDSFreeSurferDir
