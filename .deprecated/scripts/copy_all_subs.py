@@ -7,7 +7,7 @@ from joblib import Parallel, delayed
 protocols = ["CHARMED_dir-AP"]
 root_directory = Path("/data/parietal/store4/data/WAND")
 out_dir = Path(
-    "/data/parietal/store3/work/haggarwa/diffusion/data/WAND-concat"
+    "/data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data/WAND-concat"
 )
 sub_dirs = list(root_directory.glob("sub-*"))
 sub_dirs.sort()
