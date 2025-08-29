@@ -21,8 +21,8 @@ srun singularity exec \
 --omp-nthreads 20 \
 --participant-label sub-00395 \
 --acquisition AxCaliberConcat \
---no-msm \
---no-submm-recon \
---recon \
 --preproc \
+--preproc-t1 /home/input/WAND-concat/derivatives/smriprep/sub-00395/ses-02/anat/sub-00395_ses-02_desc-preproc_T1w.nii.gz \
+--preproc-t1-mask /home/input/WAND-concat/derivatives/smriprep/sub-00395/ses-02/anat/sub-00395_ses-02_desc-brain_mask.nii.gz \
+--fs-native-to-t1w-xfm /home/input/WAND-concat/derivatives/smriprep/sub-00395/ses-02/anat/sub-00395_ses-02_from-fsnative_to-T1w_mode-image_xfm.txt \
 --debug
