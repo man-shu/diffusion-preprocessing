@@ -3,6 +3,7 @@ from nipype import Node, Workflow, IdentityInterface
 from nipype.interfaces.utility import Function
 from nipype.interfaces.io import SelectFiles
 from niworkflows.interfaces.bids import BIDSFreeSurferDir
+from niworkflows.utils.bids import collect_data
 import os
 from pathlib import Path
 
@@ -109,6 +110,23 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
             )
         ),
     }
+
+    DEFAULT_BIDS_QUERIES = {
+        "dwi": {"suffix": "dwi"},
+        "t1w": {"datatype": "anat", "suffix": "T1w", "desc": "preproc"},
+    }
+
+    subject_data, layout = collect_data(
+        str(config.bids_dir),
+        config.participant_label,
+        session_id=config.session_label,
+        bids_filters=bids_filters,
+        group_echos=False,
+        queries=DEFAULT_BIDS_QUERIES,
+        bids_validate=False,
+    )
+
+    breakpoint()
 
     # Create SelectFiles node
     sf = Node(
