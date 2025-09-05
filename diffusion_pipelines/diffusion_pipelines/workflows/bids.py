@@ -115,6 +115,11 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
         "dwi": {"suffix": "dwi"},
         "t1w": {"datatype": "anat", "suffix": "T1w", "desc": "preproc"},
     }
+    bids_filters = (
+        json.loads(config.bids_filter_file.read_text())
+        if config.bids_filter_file
+        else None
+    )
 
     subject_data, layout = collect_data(
         str(config.bids_dir),
