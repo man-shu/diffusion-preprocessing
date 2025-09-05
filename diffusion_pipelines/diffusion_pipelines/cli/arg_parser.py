@@ -91,6 +91,15 @@ def get_parser():
         action="store",
         help="Specify the phase encoding direction (the string after dir- in file BIDS names).",
     )
+    g_bids.add_argument(
+        "--bids-filter-file",
+        action="store",
+        type=Path,
+        metavar="PATH",
+        help="a JSON file describing custom BIDS input filters using pybids "
+        "{<suffix>:{<entity>:<filter>,...},...} "
+        "(https://github.com/bids-standard/pybids/blob/master/bids/layout/config/bids.json)",
+    )
 
     g_perfm = parser.add_argument_group("Options to handle performance")
     g_perfm.add_argument(
