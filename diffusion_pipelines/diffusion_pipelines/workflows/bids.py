@@ -121,8 +121,10 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
         else None
     )
 
+    layout = BIDSLayout(str(config.bids_dir), validate=False, derivatives=True)
+
     subject_data, layout = collect_data(
-        str(config.bids_dir),
+        layout,
         config.participant_label,
         session_id=config.session_label,
         bids_filters=bids_filters,
