@@ -68,6 +68,7 @@ def collect_data(
             type(bids_dir),
             type(str(bids_dir)),
         )
+        breakpoint()
         layout = BIDSLayout(
             bids_dir=str(bids_dir),
             validate=bids_validate,
