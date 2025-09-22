@@ -63,10 +63,14 @@ def collect_data(
     if isinstance(bids_dir, BIDSLayout):
         layout = bids_dir
     else:
-        print(f"Initializing BIDSLayout with root: {bids_dir}")
+        print(
+            f"Initializing BIDSLayout with root: {bids_dir}",
+            type(bids_dir),
+            type(str(bids_dir)),
+        )
         layout = BIDSLayout(
-            bids_dir=bids_dir,
-            validate=False,
+            bids_dir=str(bids_dir),
+            validate=bids_validate,
             derivatives=True,
             invalid_filters="allow",
         )
@@ -145,8 +149,8 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
     )
 
     subject_data, layout = collect_data(
-        config.bids_dir,
-        config.participant_label,
+        bids_dir=config.bids_dir,
+        participant_label=config.participant_label,
         session_id=config.session_label,
         bids_filters=bids_filters,
         bids_validate=False,
