@@ -6,6 +6,7 @@ from nipype.interfaces.io import SelectFiles
 from niworkflows.interfaces.bids import BIDSDataGrabber
 import os
 from pathlib import Path
+import json
 
 DEFAULT_BIDS_QUERIES = {
     "dwi": {
