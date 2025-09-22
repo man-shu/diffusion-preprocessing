@@ -144,7 +144,6 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
         config.participant_label,
         session_id=config.session_label,
         bids_filters=bids_filters,
-        queries=DEFAULT_BIDS_QUERIES,
         bids_validate=False,
     )
 
