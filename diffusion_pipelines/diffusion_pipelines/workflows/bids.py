@@ -7,6 +7,7 @@ from niworkflows.interfaces.bids import BIDSDataGrabber
 import os
 from pathlib import Path
 import json
+import copy
 
 DEFAULT_BIDS_QUERIES = {
     "dwi": {
