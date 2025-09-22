@@ -63,7 +63,12 @@ def collect_data(
     if isinstance(bids_dir, BIDSLayout):
         layout = bids_dir
     else:
-        layout = BIDSLayout(str(bids_dir), validate=bids_validate)
+        layout = BIDSLayout(
+            bids_dir=bids_dir,
+            validate=False,
+            derivatives=True,
+            invalid_filters="allow",
+        )
 
     queries = copy.deepcopy(DEFAULT_BIDS_QUERIES)
 
@@ -138,10 +143,8 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
         else None
     )
 
-    layout = BIDSLayout(str(config.bids_dir), validate=False, derivatives=True)
-
     subject_data, layout = collect_data(
-        layout,
+        str(config.bids_dir),
         config.participant_label,
         session_id=config.session_label,
         bids_filters=bids_filters,
