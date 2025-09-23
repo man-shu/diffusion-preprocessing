@@ -73,7 +73,6 @@ def collect_data(
             root=str(bids_dir),
             validate=bids_validate,
             derivatives=str(derivatives_dir),
-            invalid_filters="allow",
         )
 
     queries = copy.deepcopy(DEFAULT_BIDS_QUERIES)
@@ -107,7 +106,13 @@ def collect_data(
         queries[acq].update(entities)
 
     subj_data = {
-        dtype: sorted(layout.get(**layout_get_kwargs, **query))
+        dtype: sorted(
+            layout.get(
+                **layout_get_kwargs,
+                **query,
+                invalid_filters="allow",
+            )
+        )
         for dtype, query in queries.items()
     }
 
