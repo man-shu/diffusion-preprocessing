@@ -108,7 +108,7 @@ def collect_data(config, bids_validate=False, bids_filters=None):
         )
         for dtype, query in queries.items()
     }
-
+    breakpoint()
     # Filter out unwanted files
     # DWI: only raw files (no derivatives)
     # T1w, brain_mask, fsnative2t1w_xfm: only derivatives
