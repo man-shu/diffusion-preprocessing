@@ -152,7 +152,8 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
     )
 
     bids_datasource = Node(
-        IdentityInterface(fields=subject_data.keys()), name="bids_datasource"
+        IdentityInterface(fields=list(subject_data.keys())),
+        name="bids_datasource",
     )
     bids_datasource.inputs.trait_set(**subject_data)
 
