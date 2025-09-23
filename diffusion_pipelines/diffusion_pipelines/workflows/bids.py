@@ -45,6 +45,7 @@ DEFAULT_BIDS_QUERIES = {
     "plot_recon_surface_on_t1": {
         "extension": [".svg"],
         "suffix": "T1w",
+        "desc": "reconall",
     },
     "plot_recon_segmentations_on_t1": {
         "extension": [".svg"],
