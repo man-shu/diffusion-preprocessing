@@ -120,7 +120,13 @@ def collect_data(config, bids_validate=False, bids_filters=None):
             else:
                 if "derivative" in f:
                     selected.append(f)
-        subj_data[dtype] = selected
+        if len(selected) == 0:
+            subj_data[dtype] = selected[0]
+        else:
+            raise RuntimeError(
+                f"Found multiple {dtype} files for participant "
+                f"{config.participant_label}: {selected}"
+            )
 
         if (
             dtype not in ["dwi", "bval", "bvec"]
