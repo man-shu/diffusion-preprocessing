@@ -53,39 +53,32 @@ DEFAULT_BIDS_QUERIES = {
 }
 
 
-def collect_data(
-    bids_dir,
-    derivatives_dir,
-    participant_label,
-    session_id=None,
-    bids_validate=True,
-    bids_filters=None,
-):
-    if isinstance(bids_dir, BIDSLayout):
-        layout = bids_dir
+def collect_data(config, bids_validate=False, bids_filters=None):
+    if isinstance(config.bids_dir, BIDSLayout):
+        layout = config.bids_dir
     else:
         print(
-            f"Initializing BIDSLayout with root: {bids_dir}",
-            type(bids_dir),
-            type(str(bids_dir)),
+            f"Initializing BIDSLayout with root: {config.bids_dir}",
+            type(config.bids_dir),
+            type(str(config.bids_dir)),
         )
         layout = BIDSLayout(
-            root=str(bids_dir),
+            root=str(config.bids_dir),
             validate=bids_validate,
-            derivatives=str(derivatives_dir),
+            derivatives=str(config.output_dir),
         )
 
     queries = copy.deepcopy(DEFAULT_BIDS_QUERIES)
 
-    session_id = session_id or Query.OPTIONAL
+    session_id = config.session_label or Query.OPTIONAL
     layout_get_kwargs = {
         "return_type": "file",
-        "subject": participant_label,
+        "subject": config.participant_label,
         "session": session_id,
     }
 
     reserved_entities = [
-        ("subject", participant_label),
+        ("subject", config.participant_label),
         ("session", session_id),
     ]
 
@@ -155,12 +148,7 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
     )
 
     subject_data, layout = collect_data(
-        bids_dir=config.bids_dir,
-        derivatives_dir=config.output_dir,
-        participant_label=config.participant_label,
-        session_id=config.session_label,
-        bids_filters=bids_filters,
-        bids_validate=False,
+        config=config, bids_filters=bids_filters
     )
 
     bids_datasource = Node(
