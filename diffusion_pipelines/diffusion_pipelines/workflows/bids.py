@@ -120,7 +120,7 @@ def collect_data(config, bids_validate=False, bids_filters=None):
             else:
                 if "derivative" in f:
                     selected.append(f)
-        if len(selected) == 0:
+        if len(selected) == 1:
             subj_data[dtype] = selected[0]
         else:
             raise RuntimeError(
