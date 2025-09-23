@@ -130,11 +130,12 @@ def collect_data(config, bids_validate=False, bids_filters=None):
             and config.preproc
         ):
             raise FileNotFoundError(
-                f"No {dtype} files found for participant {participant_label}."
-                "If you are running diffusion preprocessing without "
-                "reconstruction, please ensure that the necessary files "
-                "are available. Otherwise, use the --recon flag to enable "
-                "reconstruction and generate the required files."
+                f"No {dtype} files found for participant "
+                f"{config.participant_label}. If you are running diffusion "
+                "preprocessing without reconstruction, please ensure that the "
+                "necessary files are available. Otherwise, use the --recon "
+                "flag to enable reconstruction and generate the required "
+                "files."
             )
     return subj_data, layout
 
