@@ -70,7 +70,7 @@ def collect_data(
             type(str(bids_dir)),
         )
         layout = BIDSLayout(
-            bids_dir=str(bids_dir),
+            root=str(bids_dir),
             validate=bids_validate,
             derivatives=str(derivatives_dir),
             invalid_filters="allow",
