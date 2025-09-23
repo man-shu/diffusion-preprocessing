@@ -55,6 +55,7 @@ DEFAULT_BIDS_QUERIES = {
 
 def collect_data(
     bids_dir,
+    derivatives_dir,
     participant_label,
     session_id=None,
     bids_validate=True,
@@ -68,11 +69,10 @@ def collect_data(
             type(bids_dir),
             type(str(bids_dir)),
         )
-        breakpoint()
         layout = BIDSLayout(
             bids_dir=str(bids_dir),
             validate=bids_validate,
-            derivatives=True,
+            derivatives=str(derivatives_dir),
             invalid_filters="allow",
         )
 
@@ -151,6 +151,7 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
 
     subject_data, layout = collect_data(
         bids_dir=config.bids_dir,
+        derivatives_dir=config.output_dir,
         participant_label=config.participant_label,
         session_id=config.session_label,
         bids_filters=bids_filters,
