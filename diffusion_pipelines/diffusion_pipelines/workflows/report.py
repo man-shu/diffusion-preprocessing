@@ -52,15 +52,27 @@ def create_html_report(
                 to_embed[plot_name] = svg_text
         return _embed_svg(to_embed)
 
-    subject_id = f"_subject_id_{bids_entities["subject"]}"
-    session_id = f"_session_id_{bids_entities["session"]}"
+    def _build_bids(bids_entities):
+        replacements = {
+            "subject": "sub-",
+            "session": "_ses-",
+            "acquisition": "_acq-",
+            "direction": "_dir-",
+            "part": "_part-",
+        }
+        bids_name = ""
+        for key, value in bids_entities.items():
+            if key in replacements:
+                bids_name += f"{replacements[key]}{value}"
+        return bids_name
+
     html_text = _get_html_text(subject_id, *plots)
+    bids_name = _build_bids(bids_entities)
     out_file = os.path.join(
         output_dir,
         calling_wf_name,
         report_wf_name,
-        f"{session_id}{subject_id}",
-        "report.html",
+        f"{bids_name}_report.html",
     )
     report_html = HTMLDocument(html_text).save_as_html(out_file)
     print(f"Report for {calling_wf_name} created at {out_file}")
