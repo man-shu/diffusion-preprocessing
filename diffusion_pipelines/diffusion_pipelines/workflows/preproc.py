@@ -57,6 +57,7 @@ def _set_inputs_outputs(config, preproc_wf):
                         "output.plot_recon_segmentations_on_t1",
                         "plot_recon_segmentations_on_t1",
                     ),
+                    ("output.ribbon_mask", "ribbon_mask"),
                 ],
             ),
             (
@@ -223,6 +224,7 @@ def _preprocess_wf(
                 "bids_entities",
                 "plot_recon_surface_on_t1",
                 "plot_recon_segmentations_on_t1",
+                "ribbon_mask",
             ],
         ),
         name="input_subject",
@@ -241,6 +243,7 @@ def _preprocess_wf(
                 "bval",
                 "bvec_rotated",
                 "mask",
+                "ribbon_mask",
                 "rigid_dwi_2_t1",
                 "eddy_corrected",
                 "dwi_initial",
@@ -497,6 +500,7 @@ def _preprocess_wf(
                         "registered_mean_bzero",
                         "report_inputnode.registered_mean_bzero",
                     ),
+                    ("ribbon_mask", "report_inputnode.ribbon_mask"),
                 ],
             ),
         ]

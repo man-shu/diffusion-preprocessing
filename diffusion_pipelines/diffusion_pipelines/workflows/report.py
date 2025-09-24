@@ -115,6 +115,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 "initial_mean_bzero",
                 "eddy_mean_bzero",
                 "registered_mean_bzero",
+                "ribbon_mask",
             ]
         ),
         name="report_inputnode",
@@ -152,9 +153,38 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
     # image
     plot_transformed = Node(SimpleShowMaskRPT(), name="plot_transformed")
 
+    def plot_ribbon_on_dwi(dwi_file, ribbon_mask):
+        import nibabel as nib
+        from niworkflows.viz.utils import (
+            compose_view,
+            cuts_from_bbox,
+            plot_registration,
+        )
+
+        dwi_img = nib.load(dwi_file)
+        ribbon_img = nib.load(ribbon_mask)
+        svg = plot_registration(
+            dwi_img,
+            "Ribbon mask on DWI",
+            estimate_brightness=True,
+            ribbon_img=ribbon_img,
+            cuts=cuts_from_bbox(ribbon_img, cuts=7),
+            contour=ribbon_img,
+        )
+        compose_view(svg, [], "ribbon_on_dwi.svg")
+
+        return out_file
+
+    RibbonOnDWI = Function(
+        input_names=["dwi_file", "ribbon_mask"],
+        output_names=["out_file"],
+        function=plot_ribbon_on_dwi,
+    )
+    plot_ribbon_on_dwi = Node(RibbonOnDWI, name="plot_ribbon_on_dwi")
+
     # Create a Merge node to combine the outputs of plot_bet,
     # plot_before_after_eddy, and plot_transformed
-    merge_node = Node(Merge(7), name="merge_node")
+    merge_node = Node(Merge(8), name="merge_node")
 
     # embed plots in a html template
     CreateHTML = Function(
@@ -231,6 +261,14 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                     ("mask", "mask_file"),
                 ],
             ),
+            (
+                inputnode,
+                plot_ribbon_on_dwi,
+                [
+                    ("dwi_initial", "dwi_file"),
+                    ("ribbon_mask", "ribbon_mask"),
+                ],
+            ),
             # merge the outputs of plot_bet, plot_before_after_eddy,
             # plot_before_after_mask_t1, plot_transformed
             (
@@ -275,6 +313,13 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 inputnode,
                 merge_node,
                 [("plot_recon_segmentations_on_t1", "in7")],
+            ),
+            (
+                plot_ribbon_on_dwi,
+                merge_node,
+                [
+                    ("out_file", "in8"),
+                ],
             ),
             # input the bids_entities
             (

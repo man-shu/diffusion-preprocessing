@@ -36,6 +36,13 @@ DEFAULT_BIDS_QUERIES = {
         "space": None,
         "extension": [".nii", ".nii.gz"],
     },
+    "ribbon_mask": {
+        "datatype": "anat",
+        "suffix": "mask",
+        "desc": "ribbon",
+        "space": None,
+        "extension": [".nii", ".nii.gz"],
+    },
     "fsnative2t1w_xfm": {
         "datatype": "anat",
         "suffix": "xfm",
@@ -111,7 +118,7 @@ def collect_data(config, bids_validate=False, bids_filters=None):
     }
     # Filter out unwanted files
     # DWI: only raw files (no derivatives)
-    # T1w, brain_mask, fsnative2t1w_xfm: only derivatives
+    # T1w, brain_mask, ribbon mask, fsnative2t1w_xfm: only derivatives
     for dtype, files in subj_data.items():
         selected = []
         for f in files:
@@ -190,6 +197,7 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
                 "bvec",
                 "plot_recon_surface_on_t1",
                 "plot_recon_segmentations_on_t1",
+                "ribbon_mask",
             ]
         ),
         name="output",
@@ -223,6 +231,7 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
                 output,
                 [("brain_mask", "preprocessed_t1_mask")],
             ),
+            (bids_datasource, output, [("ribbon_mask", "ribbon_mask")]),
             (
                 bids_datasource,
                 output,
