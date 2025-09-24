@@ -66,7 +66,7 @@ def create_html_report(
                 bids_name += f"{replacements[key]}{value}"
         return bids_name
 
-    html_text = _get_html_text(subject_id, *plots)
+    html_text = _get_html_text(bids_entities["subject"], *plots)
     bids_name = _build_bids(bids_entities)
     out_file = os.path.join(
         output_dir,
