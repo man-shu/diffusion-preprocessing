@@ -79,11 +79,6 @@ def create_html_report(
     return out_file
 
 
-# Define a dummy function that does nothing
-def wait_func(*args, **kwargs):
-    pass
-
-
 def init_report_wf(calling_wf_name, output_dir, name="report"):
     """Create a workflow to generate a report for the diffusion preprocessing
     pipeline.
