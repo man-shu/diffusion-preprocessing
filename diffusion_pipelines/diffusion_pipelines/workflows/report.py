@@ -170,7 +170,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
             cuts=cuts_from_bbox(ribbon_img, cuts=7),
             contour=ribbon_img,
         )
-        out_file = compose_view(svg, [], "ribbon_on_dwi.svg")
+        out_file = compose_view(svg, [], out_file="ribbon_on_dwi.svg")
 
         return out_file
 
