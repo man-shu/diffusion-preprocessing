@@ -164,7 +164,7 @@ def init_bidsdata_wf(config, name="bidsdata_wf"):
     subject_data, layout = collect_data(
         config=config, bids_filters=bids_filters
     )
-
+    breakpoint()
     bids_datasource = Node(
         IdentityInterface(fields=list(subject_data.keys())),
         name="bids_datasource",
