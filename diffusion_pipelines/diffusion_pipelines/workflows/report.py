@@ -167,7 +167,6 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
             dwi_img,
             "Ribbon mask on DWI",
             estimate_brightness=True,
-            ribbon_img=ribbon_img,
             cuts=cuts_from_bbox(ribbon_img, cuts=7),
             contour=ribbon_img,
         )
