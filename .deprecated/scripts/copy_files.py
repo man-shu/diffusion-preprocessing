@@ -12,7 +12,7 @@ out_dir = Path(
 )
 sub_dirs = list(root_directory.glob("sub-*"))
 sub_dirs.sort()
-dry = True
+dry = False
 
 
 def copy_files(out_dir, sub_dir):

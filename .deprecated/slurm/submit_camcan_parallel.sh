@@ -9,7 +9,7 @@
 #SBATCH --array=0-641%100
 
 dirs=(/data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data/camcan/sub-*)
-echo ${dirs[${SLURM_ARRAY_TASK_ID}]:87}
+echo ${dirs[${SLURM_ARRAY_TASK_ID}]:86}
 
 module load singularity
 
