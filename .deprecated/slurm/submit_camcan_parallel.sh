@@ -5,7 +5,7 @@
 #SBATCH --partition=normal,parietal
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=10
-#SBATCH --time=240:00:00
+#SBATCH --time=90:00:00
 #SBATCH --array=0-641%100
 
 dirs=(/data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data/camcan/sub-*)
