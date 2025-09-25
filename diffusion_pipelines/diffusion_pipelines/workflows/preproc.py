@@ -444,6 +444,7 @@ def _preprocess_wf(
                 [("outputnode.eddy_corrected", "eddy_corrected")],
             ),
             (input_subject, output, [("dwi", "dwi_initial")]),
+            (input_subject, output, [("ribbon_mask", "ribbon_mask")]),
             (
                 get_registered_mean_bzero,
                 output,
