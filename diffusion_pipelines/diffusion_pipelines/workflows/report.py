@@ -153,7 +153,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
     # image
     plot_transformed = Node(SimpleShowMaskRPT(), name="plot_transformed")
 
-    def plot_ribbon_on_dwi(dwi_file, ribbon_mask):
+    def ribbon_on_dwi(dwi_file, ribbon_mask):
         import nibabel as nib
         from niworkflows.viz.utils import (
             compose_view,
@@ -178,7 +178,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
     RibbonOnDWI = Function(
         input_names=["dwi_file", "ribbon_mask"],
         output_names=["out_file"],
-        function=plot_ribbon_on_dwi,
+        function=ribbon_on_dwi,
     )
     plot_ribbon_on_dwi = Node(RibbonOnDWI, name="plot_ribbon_on_dwi")
 
