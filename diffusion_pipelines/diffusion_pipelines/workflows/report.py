@@ -115,6 +115,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 "initial_mean_bzero",
                 "eddy_mean_bzero",
                 "registered_mean_bzero",
+                "ribbon_mask",
             ]
         ),
         name="report_inputnode",
@@ -152,9 +153,37 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
     # image
     plot_transformed = Node(SimpleShowMaskRPT(), name="plot_transformed")
 
+    def ribbon_on_dwi(dwi_file, ribbon_mask):
+        import nibabel as nib
+        from niworkflows.viz.utils import (
+            compose_view,
+            cuts_from_bbox,
+            plot_registration,
+        )
+
+        dwi_img = nib.load(dwi_file)
+        ribbon_img = nib.load(ribbon_mask)
+        svg = plot_registration(
+            dwi_img,
+            "Ribbon mask on DWI",
+            estimate_brightness=True,
+            cuts=cuts_from_bbox(ribbon_img, cuts=7),
+            contour=ribbon_img,
+        )
+        out_file = compose_view(svg, [], out_file="ribbon_on_dwi.svg")
+
+        return out_file
+
+    RibbonOnDWI = Function(
+        input_names=["dwi_file", "ribbon_mask"],
+        output_names=["out_file"],
+        function=ribbon_on_dwi,
+    )
+    plot_ribbon_on_dwi = Node(RibbonOnDWI, name="plot_ribbon_on_dwi")
+
     # Create a Merge node to combine the outputs of plot_bet,
     # plot_before_after_eddy, and plot_transformed
-    merge_node = Node(Merge(7), name="merge_node")
+    merge_node = Node(Merge(8), name="merge_node")
 
     # embed plots in a html template
     CreateHTML = Function(
@@ -199,24 +228,12 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 [("eddy_mean_bzero", "after")],
             ),
             # plot the initial subject T1 as before
-            (
-                inputnode,
-                plot_before_after_mask_t1,
-                [("t1_initial", "before")],
-            ),
+            (inputnode, plot_before_after_mask_t1, [("t1_initial", "before")]),
             # plot the masked subject T1 as after
-            (
-                inputnode,
-                plot_before_after_mask_t1,
-                [("t1_masked", "after")],
-            ),
+            (inputnode, plot_before_after_mask_t1, [("t1_masked", "after")]),
             # plot the masked subject T1 as before and transformed dwi as
             # after
-            (
-                inputnode,
-                plot_before_after_t1_dwi,
-                [("t1_masked", "before")],
-            ),
+            (inputnode, plot_before_after_t1_dwi, [("t1_masked", "before")]),
             (
                 inputnode,
                 plot_before_after_t1_dwi,
@@ -231,41 +248,21 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                     ("mask", "mask_file"),
                 ],
             ),
+            (
+                inputnode,
+                plot_ribbon_on_dwi,
+                [
+                    ("registered_mean_bzero", "dwi_file"),
+                    ("ribbon_mask", "ribbon_mask"),
+                ],
+            ),
             # merge the outputs of plot_bet, plot_before_after_eddy,
             # plot_before_after_mask_t1, plot_transformed
-            (
-                plot_bet,
-                merge_node,
-                [
-                    ("out_report", "in1"),
-                ],
-            ),
-            (
-                plot_before_after_eddy,
-                merge_node,
-                [
-                    ("out_report", "in2"),
-                ],
-            ),
-            (
-                plot_before_after_mask_t1,
-                merge_node,
-                [
-                    ("out_report", "in3"),
-                ],
-            ),
-            (
-                plot_before_after_t1_dwi,
-                merge_node,
-                [("out_report", "in4")],
-            ),
-            (
-                plot_transformed,
-                merge_node,
-                [
-                    ("out_report", "in5"),
-                ],
-            ),
+            (plot_bet, merge_node, [("out_report", "in1")]),
+            (plot_before_after_eddy, merge_node, [("out_report", "in2")]),
+            (plot_before_after_mask_t1, merge_node, [("out_report", "in3")]),
+            (plot_before_after_t1_dwi, merge_node, [("out_report", "in4")]),
+            (plot_transformed, merge_node, [("out_report", "in5")]),
             (
                 inputnode,
                 merge_node,
@@ -276,22 +273,11 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 merge_node,
                 [("plot_recon_segmentations_on_t1", "in7")],
             ),
+            (plot_ribbon_on_dwi, merge_node, [("out_file", "in8")]),
             # input the bids_entities
-            (
-                inputnode,
-                create_html,
-                [
-                    ("bids_entities", "bids_entities"),
-                ],
-            ),
+            (inputnode, create_html, [("bids_entities", "bids_entities")]),
             # create the html report
-            (
-                merge_node,
-                create_html,
-                [
-                    ("out", "plots"),
-                ],
-            ),
+            (merge_node, create_html, [("out", "plots")]),
             # output the html report
             (create_html, outputnode, [("out_file", "out_file")]),
         ]
