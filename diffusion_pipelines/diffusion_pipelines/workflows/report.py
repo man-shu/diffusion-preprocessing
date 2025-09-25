@@ -253,7 +253,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 inputnode,
                 plot_ribbon_on_dwi,
                 [
-                    ("dwi_initial", "dwi_file"),
+                    ("registered_mean_bzero", "dwi_file"),
                     ("ribbon_mask", "ribbon_mask"),
                 ],
             ),
