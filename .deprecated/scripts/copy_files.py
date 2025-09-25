@@ -5,10 +5,10 @@ from joblib import Parallel, delayed
 
 protocols = ["T1w"]
 root_directory = Path(
-    "/data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data/WAND"
+    "/data/parietal/store3/work/ggomezji/datasets/camcan/cc700/BIDS_20190411/anat"
 )
 out_dir = Path(
-    "/data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data/WAND-concat"
+    "/data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data/camcan"
 )
 sub_dirs = list(root_directory.glob("sub-*"))
 sub_dirs.sort()
@@ -18,16 +18,14 @@ dry = True
 def copy_files(out_dir, sub_dir):
     for protocol in protocols:
         for extension in ["nii.gz", "json"]:
-            output_path_dir = out_dir / sub_dir.name / "ses-02" / "anat"
+            output_path_dir = out_dir / sub_dir.name / "anat"
             os.makedirs(output_path_dir, exist_ok=True)
-            anat_files = list(
-                sub_dir.glob(f"ses-02/anat/*{protocol}.{extension}")
-            )
+            anat_files = list(sub_dir.glob(f"anat/*{protocol}.{extension}"))
             anat_files.sort()
             print(anat_files)
             for anat_file in anat_files:
                 output_path_anat = output_path_dir / (
-                    f"{sub_dir.name}_ses-02_{protocol}.{extension}"
+                    f"{sub_dir.name}_{protocol}.{extension}"
                 )
                 if not dry:
                     # copy the file to the output directory
