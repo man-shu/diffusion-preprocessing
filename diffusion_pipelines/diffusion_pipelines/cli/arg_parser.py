@@ -81,17 +81,6 @@ def get_parser():
         'found, the behavior will be similar to "first-lex"',
     )
     g_bids.add_argument(
-        "--acquisition",
-        action="store",
-        help="Specify the acquisition type (the string after acq- in file BIDS names).",
-    )
-    g_bids.add_argument(
-        "--phase-encoding-direction",
-        "-ped",
-        action="store",
-        help="Specify the phase encoding direction (the string after dir- in file BIDS names).",
-    )
-    g_bids.add_argument(
         "--bids-filter-file",
         action="store",
         type=Path,
