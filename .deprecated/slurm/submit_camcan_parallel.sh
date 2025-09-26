@@ -27,7 +27,6 @@ srun singularity exec \
 --omp-nthreads 10 \
 --participant-label ${dirs[${SLURM_ARRAY_TASK_ID}]:86} \
 --no-msm \
---fs-no-resume \
 --no-submm-recon \
 --preproc \
 --recon \
