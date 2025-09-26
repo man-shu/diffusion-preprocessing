@@ -5,8 +5,18 @@ on:
   push:
     branches: ["master", "main", "maint/*", "gha-docker-build"]
     tags: "*"
+    paths:
+      - "Dockerfile"
+      - ".github/workflows/**"
+      - "docker/**"
+      - "diffusion_pipelines/**"
   pull_request:
     branches: ["master", "main", "maint/*"]
+    paths:
+      - "Dockerfile"
+      - ".github/workflows/**"
+      - "docker/**"
+      - "diffusion_pipelines/**"
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
