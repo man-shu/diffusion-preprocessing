@@ -45,16 +45,13 @@
     --nprocs 1 \
     --omp-nthreads 8 \
     --participant-label sub-01187 \
-    --acquisition AxCaliber1 \
     --no-msm \
-    --fs-no-resume \
     --no-submm-recon \
     --recon \
     --preproc 
     ```
 
-  - If you already have surface reconstruction results and just want to run diffusion preprocessing,
-    you can provide the preprocessed T1w image, the mask and FreeSurfer native to T1w transformation matrix as arguments:
+  - If you already have surface reconstruction results and just want to run diffusion preprocessing, just specify the `--preproc` flag:
 
     ```bash
     docker container run --rm --interactive \
@@ -67,11 +64,7 @@
     --nprocs 1 \
     --omp-nthreads 8 \
     --participant-label sub-01187 \
-    --acquisition AxCaliber1 \
-    --preproc \
-    --preproc-t1 /home/input/WAND-downsampled/derivatives/smriprep/sub-01187/ses-02/anat/sub-01187_ses-02_desc-preproc_T1w.nii.gz \
-    --preproc-t1-mask /home/input/WAND-downsampled/derivatives/smriprep/sub-01187/ses-02/anat/sub-01187_ses-02_desc-brain_mask.nii.gz \
-    --fs-native-to-t1w-xfm /home/input/WAND-downsampled/derivatives/smriprep/sub-01187/ses-02/anat/sub-01187_ses-02_from-fsnative_to-T1w_mode-image_xfm.txt \
+    --preproc
     ```
 
   - If you're using a machine with ARM architecture (for example, Apple M1), you may need to specify the platform explicitly
@@ -90,13 +83,39 @@
     --nprocs 1 \
     --omp-nthreads 8 \
     --participant-label sub-01187 \
-    --acquisition AxCaliber1 \
     --no-msm \
-    --fs-no-resume \
     --no-submm-recon \
     --recon \
     --preproc 
     ```
+
+- If you want to filter certain files from the BIDS dataset, you can use the `--bids-filter-file` flag to specify a JSON file with the filtering criteria.
+  For example, to include only diffusion-weighted images (DWIs) with the acquisition label `AxCaliber1`, create a file named `bids_filter.json` with the following content:
+
+  ```json
+  {"dwi" : {"acquisition": "AxCaliber1"},
+   "bval": {"acquisition": "AxCaliber1"}, 
+   "bvec": {"acquisition": "AxCaliber1"}}
+  ```
+
+- Then, run the container with the `--bids-filter-file` flag:
+
+  ```bash
+    docker container run --rm --interactive \
+    --user "$(id -u):$(id -g)" \
+    --mount type=bind,source=/data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data,target=/home/input \
+    ghcr.io/man-shu/diffusion-preprocessing:main /home/input/WAND-downsampled \
+    /home/input/WAND-downsampled/derivatives \
+    --work-dir /home/input/cache \
+    --output-spaces fsLR:den-32k MNI152NLin6Asym T1w fsaverage5 \
+    --nprocs 1 \
+    --omp-nthreads 8 \
+    --participant-label sub-01187 \
+    --bids-filter-file /home/input/bids_filter.json \
+    --preproc
+  ```
+
+- See here for details about `--bids-filter-file`: <https://fmriprep.org/en/25.1.4/faq.html#how-do-i-select-only-certain-files-to-be-input-to-fmriprep>
 
 ## Using Singularity
 
@@ -122,9 +141,7 @@
   --nprocs 1 \
   --omp-nthreads 8 \
   --participant-label sub-01187 \
-  --acquisition AxCaliber1 \
   --no-msm \
-  --fs-no-resume \
   --no-submm-recon \
   --recon \
   --preproc 
