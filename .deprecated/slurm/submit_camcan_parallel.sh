@@ -25,7 +25,7 @@ srun singularity exec \
 --cifti-output 91k \
 --nprocs 1 \
 --omp-nthreads 10 \
---participant-label ${dirs[${SLURM_ARRAY_TASK_ID}]:87} \
+--participant-label ${dirs[${SLURM_ARRAY_TASK_ID}]:86} \
 --preproc \
 --recon \
 --debug
