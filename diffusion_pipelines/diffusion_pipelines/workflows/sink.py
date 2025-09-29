@@ -54,6 +54,7 @@ def init_sink_wf(config, name="sink_wf"):
 
         # add root directory in substitutions
         for i, (src, dst) in enumerate(substitutions):
+            breakpoint()
             if bids_entities["session"]:
                 prefix = os.path.join(
                     "sub-" + bids_entities["subject"],
