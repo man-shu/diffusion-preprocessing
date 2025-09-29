@@ -33,18 +33,6 @@ def init_sink_wf(config, name="sink_wf"):
 
         substitutions = [
             (
-                (
-                    f"_session_id_{bids_entities['session']}"
-                    f"_subject_id_{bids_entities['subject']}"
-                ),
-                str(
-                    Path(
-                        f"sub-{bids_entities['subject']}/"
-                        f"ses-{bids_entities['session']}/dwi/"
-                    )
-                ),
-            ),
-            (
                 "initial_mean_bzero_brain_mask_warped",
                 f"{bids_name}_space-individualT1_desc-mask+bbreg_dwi",
             ),
@@ -63,6 +51,20 @@ def init_sink_wf(config, name="sink_wf"):
                 f"{bids_name}_desc-rotated_dwi.bvec",
             ),
         ]
+
+        # add root directory in substitutions
+        for i, (src, dst) in enumerate(substitutions):
+            if bids_entities["session"]:
+                prefix = os.path.join(
+                    "sub-" + bids_entities["subject"],
+                    "ses-" + bids_entities["session"],
+                    "dwi",
+                )
+            else:
+                prefix = os.path.join("sub-" + bids_entities["subject"], "dwi")
+
+            substitutions[i] = (src, os.path.join(prefix, dst))
+
         return substitutions
 
     BuildSubstitutions = Function(
