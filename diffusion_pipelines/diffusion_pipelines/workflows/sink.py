@@ -52,8 +52,6 @@ def init_sink_wf(config, name="sink_wf"):
             ),
         ]
 
-        breakpoint()
-
         # add root directory in substitutions
         for i, (src, dst) in enumerate(substitutions):
             if bids_entities.get("session"):
