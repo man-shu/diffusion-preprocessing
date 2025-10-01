@@ -6,9 +6,9 @@
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=10
 #SBATCH --time=90:00:00
-#SBATCH --array=0-58%100
+#SBATCH --array=0-27%100
 
-dirs=(/data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data/abide/BNI_1/sub-*)
+dirs=(/data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data/abide/NYU_2/sub-*)
 echo ${dirs[${SLURM_ARRAY_TASK_ID}]:91}
 
 module load singularity
@@ -18,8 +18,8 @@ srun singularity exec \
 --bind /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/data:/home/input \
 /data/parietal/store3/work/haggarwa/diffusion/diffusion-preprocessing/diffusion-preprocessing_main_singularity.sif \
 /opt/miniconda3/bin/diffusion_pipelines \
-/home/input/abide/BNI_1 \
-/home/input/abide/BNI_1/derivatives \
+/home/input/abide/NYU_2 \
+/home/input/abide/NYU_2/derivatives \
 --work-dir /home/input/cache \
 --output-spaces fsLR:den-32k MNI152NLin6Asym T1w fsaverage5 \
 --cifti-output 91k \
