@@ -13,6 +13,7 @@ from pathlib import Path
 from niworkflows.anat.coregistration import init_bbreg_wf
 from niworkflows.interfaces.bids import BIDSFreeSurferDir
 import os
+from sdcflows.workflows.ancillary import init_brainextraction_wf
 
 
 def _set_inputs_outputs(config, preproc_wf):
@@ -276,6 +277,8 @@ def _preprocess_wf(
     bet.inputs.mask = True
     bet.inputs.frac = bet_frac
 
+    brainextraction_wf = init_brainextraction_wf()
+
     eddycorrect = create_eddy_correct_pipeline("eddycorrect")
     eddycorrect.inputs.inputnode.ref_num = 0
 
@@ -309,13 +312,25 @@ def _preprocess_wf(
             (input_subject, get_intial_mean_bzero, [("dwi", "dwi_file")]),
             (input_subject, get_intial_mean_bzero, [("bval", "bval")]),
             # get mask from the mean b=0 volumes
-            (get_intial_mean_bzero, bet, [("out", "in_file")]),
+            (
+                get_intial_mean_bzero,
+                brainextraction_wf,
+                [("out", "inputnode.in_file")],
+            ),
             # apply mask to mean b=0 output
             (get_intial_mean_bzero, strip_mean_bzero, [("out", "in_file")]),
-            (bet, strip_mean_bzero, [("mask_file", "mask_file")]),
+            (
+                brainextraction_wf,
+                strip_mean_bzero,
+                [("outputnode.out_mask", "mask_file")],
+            ),
             # apply the mask to the dwi
             (input_subject, strip_dwi, [("dwi", "in_file")]),
-            (bet, strip_dwi, [("mask_file", "mask_file")]),
+            (
+                brainextraction_wf,
+                strip_dwi,
+                [("outputnode.out_mask", "mask_file")],
+            ),
             # apply mask to the preprocessed subject T1
             (input_subject, strip_t1, [("preprocessed_t1", "in_file")]),
             (input_subject, strip_t1, [("preprocessed_t1_mask", "mask_file")]),
@@ -392,7 +407,11 @@ def _preprocess_wf(
                 apply_registration_mask,
                 [("out_lta_file", "lta_file")],
             ),
-            (bet, apply_registration_mask, [("mask_file", "source_file")]),
+            (
+                brainextraction_wf,
+                apply_registration_mask,
+                [("outputnode.out_mask", "source_file")],
+            ),
             (
                 strip_t1,
                 apply_registration_mask,
@@ -436,7 +455,11 @@ def _preprocess_wf(
                 [("rotated_gradients", "bvec_rotated")],
             ),
             (input_subject, output, [("bval", "bval")]),
-            (bet, output, [("mask_file", "bet_mask")]),
+            (
+                brainextraction_wf,
+                output,
+                [("outputnode.mask_file", "bet_mask")],
+            ),
             (apply_registration_mask, output, [("transformed_file", "mask")]),
             (
                 eddycorrect,
