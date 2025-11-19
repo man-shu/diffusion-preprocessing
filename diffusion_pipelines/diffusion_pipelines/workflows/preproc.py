@@ -484,7 +484,7 @@ def _preprocess_wf(
             (
                 brainextraction_wf,
                 output,
-                [("outputnode.mask_file", "bet_mask")],
+                [("outputnode.out_mask", "bet_mask")],
             ),
             (apply_registration_mask, output, [("transformed_file", "mask")]),
             (
