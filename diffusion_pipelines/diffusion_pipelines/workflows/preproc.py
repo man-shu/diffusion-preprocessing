@@ -118,8 +118,8 @@ def _preprocess_wf(
         import numpy as np
 
         bvals = np.loadtxt(bval)
-        zero_indexes = np.where(bvals <= bval_threshold)[0].tolist()
-        return zero_indexes
+        zero_indexes = bvals <= bval_threshold
+        return zero_indexes.tolist()
 
     GetZeroIndexes = Function(
         input_names=["bval", "bval_threshold"],
