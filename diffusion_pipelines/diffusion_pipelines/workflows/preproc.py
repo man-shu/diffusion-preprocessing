@@ -313,17 +313,30 @@ def _preprocess_wf(
     workflow = Workflow(name=name, base_dir=output_dir)
     workflow.connect(
         [
-            # get mean of b=0 volumes of the input dwi file
-            (input_subject, get_initial_mean_bzero, [("dwi", "dwi_file")]),
             (input_subject, get_initial_zero_indexes, [("bval", "bval")]),
-            # get mask from the mean b=0 volumes
+            # get mean of b=0 volumes of the input dwi file
+            (
+                input_subject,
+                get_initial_mean_bzero,
+                [("dwi", "inputnode.in_files")],
+            ),
             (
                 get_initial_zero_indexes,
+                get_initial_mean_bzero,
+                [("zero_indexes", "inputnode.t_masks")],
+            ),
+            # get mask from the mean b=0 volumes
+            (
+                get_initial_mean_bzero,
                 brainextraction_wf,
-                [("out", "inputnode.in_file")],
+                [("outputnode.epi_ref_file", "inputnode.in_file")],
             ),
             # apply mask to mean b=0 output
-            (get_initial_zero_indexes, strip_mean_bzero, [("out", "in_file")]),
+            (
+                get_initial_mean_bzero,
+                strip_mean_bzero,
+                [("outputnode.epi_ref_file", "in_file")],
+            ),
             (
                 brainextraction_wf,
                 strip_mean_bzero,
@@ -345,14 +358,18 @@ def _preprocess_wf(
             (
                 eddycorrect,
                 get_eddy_mean_bzero,
-                [("outputnode.eddy_corrected", "dwi_file")],
+                [("outputnode.eddy_corrected", "inputnode.in_files")],
             ),
-            (input_subject, get_eddy_mean_bzero, [("bval", "bval")]),
+            (
+                get_initial_zero_indexes,
+                get_eddy_mean_bzero,
+                [("zero_indexes", "inputnode.t_masks")],
+            ),
             # register the skull-stripped dwi to the skull-stripped subject T1
             (
                 get_eddy_mean_bzero,
                 bbreg_wf,
-                [("out", "inputnode.in_file")],
+                [("outputnode.epi_ref_file", "inputnode.in_file")],
             ),
             (
                 input_subject,
@@ -403,9 +420,13 @@ def _preprocess_wf(
             (
                 apply_registration,
                 get_registered_mean_bzero,
-                [("transformed_file", "dwi_file")],
+                [("transformed_file", "inputnode.in_files")],
             ),
-            (input_subject, get_registered_mean_bzero, [("bval", "bval")]),
+            (
+                get_initial_zero_indexes,
+                get_registered_mean_bzero,
+                [("zero_indexes", "inputnode.t_masks")],
+            ),
             # also apply the registration to the mask
             (
                 bbreg_wf.get_node("bbregister"),
@@ -476,17 +497,17 @@ def _preprocess_wf(
             (
                 get_registered_mean_bzero,
                 output,
-                [("out", "registered_mean_bzero")],
+                [("outputnode.epi_ref_file", "registered_mean_bzero")],
             ),
             (
                 get_intial_mean_bzero,
                 output,
-                [("out", "initial_mean_bzero")],
+                [("outputnode.epi_ref_file", "initial_mean_bzero")],
             ),
             (
                 get_eddy_mean_bzero,
                 output,
-                [("out", "eddy_mean_bzero")],
+                [("outputnode.epi_ref_file", "eddy_mean_bzero")],
             ),
             # connect the report workflow
             (
