@@ -121,6 +121,9 @@ ENV PATH="$INSTALL_DIR/Convert3D/c3d-1.0.0-Linux-x86_64/bin:$PATH"
 # Install workbench
 RUN conda install --yes conda-forge::connectome-workbench-cli=2.0
 
+# Install sdcflows
+RUN pip install sdcflows
+
 # Install diffusion-pipelines
 COPY diffusion_pipelines $INSTALL_DIR/diffusion_pipelines
 RUN cd $INSTALL_DIR/diffusion_pipelines && \
