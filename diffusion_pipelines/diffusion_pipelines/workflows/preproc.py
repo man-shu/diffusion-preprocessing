@@ -11,6 +11,7 @@ from .bids import init_bidsdata_wf
 from .sink import init_sink_wf
 from pathlib import Path
 from niworkflows.anat.coregistration import init_bbreg_wf
+from niworkflows.workflows.epi.refmap import init_epi_reference_wf
 from niworkflows.interfaces.bids import BIDSFreeSurferDir
 import os
 from sdcflows.workflows.ancillary import init_brainextraction_wf
@@ -112,46 +113,50 @@ def _preprocess_wf(
     config, name="diffusion_preprocess", bet_frac=0.34, output_dir="."
 ):
 
-    def _get_mean_bzero(dwi_file, bval, prefix, bval_threshold):
-        """Mean of the b=0 volumes of the input dwi file."""
-        import os
-        from nilearn.image import index_img, mean_img
-
+    def _get_zero_indexes(bval, bval_threshold):
+        """Get the indexes of the b=0 volumes."""
         import numpy as np
 
         bvals = np.loadtxt(bval)
-        # get the index of the b=0 volumes
-        bzero_index = np.where(bvals <= bval_threshold)[0]
-        # get the mean image of the b=0 volumes
-        mean_bzero_img = mean_img(index_img(dwi_file, bzero_index))
-        # save the mean image
-        out_file = os.path.join(os.getcwd(), f"{prefix}_mean_bzero.nii.gz")
-        mean_bzero_img.to_filename(out_file)
+        zero_indexes = np.where(bvals <= bval_threshold)[0].tolist()
+        return zero_indexes
 
-        return out_file
-
-    # define a function to get the mean of b=0 of the input dwi file
-    MeanBZero = Function(
-        input_names=["dwi_file", "bval", "prefix", "bval_threshold"],
-        output_names=["out"],
-        function=_get_mean_bzero,
+    GetZeroIndexes = Function(
+        input_names=["bval", "bval_threshold"],
+        output_names=["zero_indexes"],
+        function=_get_zero_indexes,
     )
-    # this node is used to get the mean of b=0 of the input dwi file
-    get_intial_mean_bzero = Node(MeanBZero, name="get_intial_mean_bzero")
-    get_intial_mean_bzero.inputs.prefix = "initial"
-    get_intial_mean_bzero.inputs.bval_threshold = config.b0_threshold
 
-    # this node is used to get the mean of b=0 of the eddy-corrected dwi file
-    get_eddy_mean_bzero = get_intial_mean_bzero.clone("get_eddy_mean_bzero")
-    get_eddy_mean_bzero.inputs.prefix = "eddy"
-    get_eddy_mean_bzero.inputs.bval_threshold = config.b0_threshold
-
-    # this node is used to get the mean of b=0 of the eddy-corrected and registered dwi file
-    get_registered_mean_bzero = get_intial_mean_bzero.clone(
-        "get_registered_mean_bzero"
+    get_initial_zero_indexes = Node(
+        GetZeroIndexes, name="get_intial_zero_indexes"
     )
-    get_registered_mean_bzero.inputs.prefix = "registered"
-    get_registered_mean_bzero.inputs.bval_threshold = config.b0_threshold
+    get_initial_zero_indexes.inputs.bval_threshold = config.b0_threshold
+
+    get_eddy_zero_indexes = get_intial_zero_indexes.clone(
+        "get_eddy_zero_indexes"
+    )
+    get_eddy_zero_indexes.inputs.bval_threshold = config.b0_threshold
+
+    get_registered_zero_indexes = get_intial_zero_indexes.clone(
+        "get_registered_zero_indexes"
+    )
+    get_registered_zero_indexes.inputs.bval_threshold = config.b0_threshold
+
+    get_initial_mean_bzero = init_epi_reference_wf(
+        name="get_initial_mean_bzero",
+        omp_nthreads=config.omp_nthreads,
+        auto_bold_nss=False,
+    )
+    get_eddy_mean_bzero = init_epi_reference_wf(
+        name="get_eddy_mean_bzero",
+        omp_nthreads=config.omp_nthreads,
+        auto_bold_nss=False,
+    )
+    get_registered_mean_bzero = init_epi_reference_wf(
+        name="get_registered_mean_bzero",
+        omp_nthreads=config.omp_nthreads,
+        auto_bold_nss=False,
+    )
 
     def get_subject_id(bids_entities):
         """Get the subject id from the BIDS entities."""
@@ -309,16 +314,16 @@ def _preprocess_wf(
     workflow.connect(
         [
             # get mean of b=0 volumes of the input dwi file
-            (input_subject, get_intial_mean_bzero, [("dwi", "dwi_file")]),
-            (input_subject, get_intial_mean_bzero, [("bval", "bval")]),
+            (input_subject, get_initial_mean_bzero, [("dwi", "dwi_file")]),
+            (input_subject, get_initial_zero_indexes, [("bval", "bval")]),
             # get mask from the mean b=0 volumes
             (
-                get_intial_mean_bzero,
+                get_initial_zero_indexes,
                 brainextraction_wf,
                 [("out", "inputnode.in_file")],
             ),
             # apply mask to mean b=0 output
-            (get_intial_mean_bzero, strip_mean_bzero, [("out", "in_file")]),
+            (get_initial_zero_indexes, strip_mean_bzero, [("out", "in_file")]),
             (
                 brainextraction_wf,
                 strip_mean_bzero,
