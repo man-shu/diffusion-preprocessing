@@ -124,6 +124,34 @@ RUN conda install --yes conda-forge::connectome-workbench-cli=2.0
 # Install sdcflows
 RUN pip install sdcflows
 
+# Dependencies for AFNI; requires a discontinued multiarch-support package from bionic (18.04)
+RUN apt-get update -qq \
+    && apt-get install -y -q --no-install-recommends \
+    ed \
+    gsl-bin \
+    libglib2.0-0 \
+    libglu1-mesa-dev \
+    libglw1-mesa \
+    libgomp1 \
+    libjpeg62 \
+    libpng12-0 \
+    libxm4 \
+    libxp6 \
+    netpbm \
+    tcsh \
+    xfonts-base \
+    xvfb \
+    && curl -sSL --retry 5 -o /tmp/multiarch.deb http://archive.ubuntu.com/ubuntu/pool/main/g/glibc/multiarch-support_2.27-3ubuntu1.5_amd64.deb \
+    && dpkg -i /tmp/multiarch.deb \
+    && rm /tmp/multiarch.deb \
+    && apt-get install -f \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+    && gsl2_path="$(find / -name 'libgsl.so.19' || printf '')" \
+    && if [ -n "$gsl2_path" ]; then \
+    ln -sfv "$gsl2_path" "$(dirname $gsl2_path)/libgsl.so.0"; \
+    fi \
+    && ldconfig
+
 # AFNI
 # Bump the date to current to update AFNI
 RUN echo "2024.03.08"
