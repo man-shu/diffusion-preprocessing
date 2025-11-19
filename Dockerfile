@@ -124,6 +124,30 @@ RUN conda install --yes conda-forge::connectome-workbench-cli=2.0
 # Install sdcflows
 RUN pip install sdcflows
 
+# AFNI
+# Bump the date to current to update AFNI
+RUN echo "2024.03.08"
+RUN mkdir -p $INSTALL_DIR/afni-latest \
+    && curl -fsSL --retry 5 https://afni.nimh.nih.gov/pub/dist/tgz/linux_openmp_64.tgz \
+    | tar -xz -C $INSTALL_DIR/afni-latest --strip-components 1 \
+    --exclude "linux_openmp_64/*.gz" \
+    --exclude "linux_openmp_64/funstuff" \
+    --exclude "linux_openmp_64/shiny" \
+    --exclude "linux_openmp_64/afnipy" \
+    --exclude "linux_openmp_64/lib/RetroTS" \
+    --exclude "linux_openmp_64/lib_RetroTS" \
+    --exclude "linux_openmp_64/meica.libs" \
+    # Keep only what we use
+    && find $INSTALL_DIR/afni-latest -type f -not \( \
+    -name "3dTshift" -or \
+    -name "3dUnifize" -or \
+    -name "3dAutomask" -or \
+    -name "3dvolreg" \) -delete
+# AFNI config
+ENV PATH="$INSTALL_DIR/afni-latest:$PATH" \
+    AFNI_IMSAVE_WARNINGS="NO" \
+    AFNI_PLUGINPATH="$INSTALL_DIR/afni-latest"
+
 # Install diffusion-pipelines
 COPY diffusion_pipelines $INSTALL_DIR/diffusion_pipelines
 RUN cd $INSTALL_DIR/diffusion_pipelines && \
