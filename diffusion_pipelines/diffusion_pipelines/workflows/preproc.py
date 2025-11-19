@@ -128,16 +128,16 @@ def _preprocess_wf(
     )
 
     get_initial_zero_indexes = Node(
-        GetZeroIndexes, name="get_intial_zero_indexes"
+        GetZeroIndexes, name="get_initial_zero_indexes"
     )
     get_initial_zero_indexes.inputs.bval_threshold = config.b0_threshold
 
-    get_eddy_zero_indexes = get_intial_zero_indexes.clone(
+    get_eddy_zero_indexes = get_initial_zero_indexes.clone(
         "get_eddy_zero_indexes"
     )
     get_eddy_zero_indexes.inputs.bval_threshold = config.b0_threshold
 
-    get_registered_zero_indexes = get_intial_zero_indexes.clone(
+    get_registered_zero_indexes = get_initial_zero_indexes.clone(
         "get_registered_zero_indexes"
     )
     get_registered_zero_indexes.inputs.bval_threshold = config.b0_threshold
@@ -500,7 +500,7 @@ def _preprocess_wf(
                 [("outputnode.epi_ref_file", "registered_mean_bzero")],
             ),
             (
-                get_intial_mean_bzero,
+                get_initial_zero_indexes,
                 output,
                 [("outputnode.epi_ref_file", "initial_mean_bzero")],
             ),
