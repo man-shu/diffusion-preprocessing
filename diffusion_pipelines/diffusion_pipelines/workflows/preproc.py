@@ -500,7 +500,7 @@ def _preprocess_wf(
                 [("outputnode.epi_ref_file", "registered_mean_bzero")],
             ),
             (
-                get_initial_zero_indexes,
+                get_initial_mean_bzero,
                 output,
                 [("outputnode.epi_ref_file", "initial_mean_bzero")],
             ),
