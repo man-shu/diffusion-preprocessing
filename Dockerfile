@@ -124,6 +124,12 @@ RUN conda install --yes conda-forge::connectome-workbench-cli=2.0
 # Install sdcflows
 RUN pip install sdcflows
 
+# Configure PPAs for libpng12 and libxp6
+RUN GNUPGHOME=/tmp gpg --keyserver hkps://keyserver.ubuntu.com --no-default-keyring --keyring /usr/share/keyrings/linuxuprising.gpg --recv 0xEA8CACC073C3DB2A \
+    && GNUPGHOME=/tmp gpg --keyserver hkps://keyserver.ubuntu.com --no-default-keyring --keyring /usr/share/keyrings/zeehio.gpg --recv 0xA1301338A3A48C4A \
+    && echo "deb [signed-by=/usr/share/keyrings/linuxuprising.gpg] https://ppa.launchpadcontent.net/linuxuprising/libpng12/ubuntu jammy main" > /etc/apt/sources.list.d/linuxuprising.list \
+    && echo "deb [signed-by=/usr/share/keyrings/zeehio.gpg] https://ppa.launchpadcontent.net/zeehio/libxp/ubuntu jammy main" > /etc/apt/sources.list.d/zeehio.list
+
 # Dependencies for AFNI; requires a discontinued multiarch-support package from bionic (18.04)
 RUN apt-get update -qq \
     && apt-get install -y -q --no-install-recommends \
