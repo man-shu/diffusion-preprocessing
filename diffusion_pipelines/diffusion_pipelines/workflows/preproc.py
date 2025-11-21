@@ -328,8 +328,8 @@ def _preprocess_wf(
             # get mask from the mean b=0 volumes
             (
                 get_initial_mean_bzero,
-                brainextraction_wf,
-                [("outputnode.epi_ref_file", "inputnode.in_file")],
+                bet,
+                [("outputnode.epi_ref_file", "in_file")],
             ),
             # apply mask to mean b=0 output
             (
@@ -338,16 +338,16 @@ def _preprocess_wf(
                 [("outputnode.epi_ref_file", "in_file")],
             ),
             (
-                brainextraction_wf,
+                bet,
                 strip_mean_bzero,
-                [("outputnode.out_mask", "mask_file")],
+                [("mask_file", "mask_file")],
             ),
             # apply the mask to the dwi
             (input_subject, strip_dwi, [("dwi", "in_file")]),
             (
-                brainextraction_wf,
+                bet,
                 strip_dwi,
-                [("outputnode.out_mask", "mask_file")],
+                [("mask_file", "mask_file")],
             ),
             # apply mask to the preprocessed subject T1
             (input_subject, strip_t1, [("preprocessed_t1", "in_file")]),
@@ -434,9 +434,9 @@ def _preprocess_wf(
                 [("out_lta_file", "lta_file")],
             ),
             (
-                brainextraction_wf,
+                bet,
                 apply_registration_mask,
-                [("outputnode.out_mask", "source_file")],
+                [("mask_file", "source_file")],
             ),
             (
                 strip_t1,
@@ -482,9 +482,9 @@ def _preprocess_wf(
             ),
             (input_subject, output, [("bval", "bval")]),
             (
-                brainextraction_wf,
+                bet,
                 output,
-                [("outputnode.out_mask", "bet_mask")],
+                [("mask_file", "bet_mask")],
             ),
             (apply_registration_mask, output, [("transformed_file", "mask")]),
             (
