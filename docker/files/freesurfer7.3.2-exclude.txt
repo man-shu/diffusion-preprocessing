@@ -573,7 +573,6 @@ freesurfer/bin/mris_warp
 freesurfer/bin/mris_wm_volume
 freesurfer/bin/mris_w_to_curv
 freesurfer/bin/mri_synthesize
-freesurfer/bin/mri_synthstrip
 freesurfer/bin/mri_threshold
 freesurfer/bin/mri_topologycorrection
 freesurfer/bin/mri_train
