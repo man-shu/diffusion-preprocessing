@@ -186,7 +186,7 @@ ENV PATH="$INSTALL_DIR/afni-latest:$PATH" \
     AFNI_PLUGINPATH="$INSTALL_DIR/afni-latest"
 
 RUN pip install --user --index-url https://download.pytorch.org/whl/cpu \
-    torch==2.1.2
+    torch==2.5.0+cpu
 
 # Install diffusion-pipelines
 COPY diffusion_pipelines $INSTALL_DIR/diffusion_pipelines
