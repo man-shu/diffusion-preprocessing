@@ -185,8 +185,11 @@ ENV PATH="$INSTALL_DIR/afni-latest:$PATH" \
     AFNI_IMSAVE_WARNINGS="NO" \
     AFNI_PLUGINPATH="$INSTALL_DIR/afni-latest"
 
+# Install synthstrip deps
 RUN pip install torch torchvision --index-url \
     https://download.pytorch.org/whl/cpu
+
+RUN pip install surfa
 
 # Install diffusion-pipelines
 COPY diffusion_pipelines $INSTALL_DIR/diffusion_pipelines
