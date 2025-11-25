@@ -77,7 +77,7 @@ ENV PERL5LIB="$MINC_LIB_DIR/perl5/5.8.5" \
 
 # Install conda
 RUN cd $INSTALL_DIR/miniconda3 && \
-    wget https://repo.anaconda.com/miniconda/Miniconda3-py312_25.5.1-0-Linux-x86_64.sh -O $INSTALL_DIR/miniconda3/miniconda.sh && \
+    wget https://repo.anaconda.com/miniconda/Miniconda3-py310_25.5.1-0-Linux-x86_64.sh -O $INSTALL_DIR/miniconda3/miniconda.sh && \
     bash $INSTALL_DIR/miniconda3/miniconda.sh -b -u -p $INSTALL_DIR/miniconda3 && \
     rm $INSTALL_DIR/miniconda3/miniconda.sh
 
