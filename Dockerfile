@@ -186,10 +186,10 @@ ENV PATH="$INSTALL_DIR/afni-latest:$PATH" \
     AFNI_PLUGINPATH="$INSTALL_DIR/afni-latest"
 
 # Install synthstrip deps
-RUN pip install torch torchvision --index-url \
+RUN pip install torch==2.0.1 torchvision==0.15.2 --index-url \
     https://download.pytorch.org/whl/cpu
 
-RUN pip install surfa
+RUN pip install "scipy<1.11.0" surfa==0.5.0
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libstdc++6 \
