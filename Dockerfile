@@ -186,7 +186,7 @@ ENV PATH="$INSTALL_DIR/afni-latest:$PATH" \
     AFNI_PLUGINPATH="$INSTALL_DIR/afni-latest"
 
 # Install synthstrip deps
-RUN pip install torch==2.2.0 torchvision==0.15.2 --index-url \
+RUN pip install torch==2.2.0 torchvision==0.17.0 --index-url \
     https://download.pytorch.org/whl/cpu
 
 RUN pip install "scipy<1.11.0" surfa==0.5.0
