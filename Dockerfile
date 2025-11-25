@@ -191,6 +191,11 @@ RUN pip install torch torchvision --index-url \
 
 RUN pip install surfa
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libstdc++6 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+
 # Install diffusion-pipelines
 COPY diffusion_pipelines $INSTALL_DIR/diffusion_pipelines
 RUN cd $INSTALL_DIR/diffusion_pipelines && \
