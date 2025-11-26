@@ -486,7 +486,7 @@ def _preprocess_wf(
                 [("out_lta_file", "lta_file")],
             ),
             (
-                bet,
+                synthstrip,
                 apply_registration_mask,
                 [("mask_file", "source_file")],
             ),
@@ -534,7 +534,7 @@ def _preprocess_wf(
             ),
             (input_subject, output, [("bval", "bval")]),
             (
-                bet,
+                synthstrip,
                 output,
                 [("mask_file", "bet_mask")],
             ),
