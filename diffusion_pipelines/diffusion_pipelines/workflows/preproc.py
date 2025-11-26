@@ -16,6 +16,58 @@ from niworkflows.interfaces.bids import BIDSFreeSurferDir
 import os
 from sdcflows.workflows.ancillary import init_brainextraction_wf
 
+from nipype.interfaces.base import (
+    TraitedSpec,
+    CommandLineInputSpec,
+    CommandLine,
+    File,
+)
+
+
+class SynthStripInputSpec(CommandLineInputSpec):
+    in_file = File(
+        desc="Input image to skullstrip",
+        exists=True,
+        mandatory=True,
+        argstr="--image %s",
+    )
+    out_file = File(
+        desc="Output skullstripped image",
+        mandatory=True,
+        argstr="--out %s",
+        name_source="in_file",
+        name_template="%s_stripped",
+        keep_extension=True,
+    )
+    mask_file = File(
+        desc="Output brain mask",
+        mandatory=True,
+        argstr="--mask %s",
+        name_source="in_file",
+        name_template="%s_mask",
+        keep_extension=True,
+    )
+
+
+class SynthStripOutputSpec(TraitedSpec):
+    out_file = File(desc="Save stripped image to path.")
+    mask_file = File(desc="Save brain mask to path.")
+
+
+class SynthStrip(CommandLine):
+    input_spec = SynthStripInputSpec
+    output_spec = SynthStripOutputSpec
+    _cmd = "python /opt/freesurfer/freesurfer/python/scripts/mri_synthstrip"
+
+    def _list_outputs(self):
+        outputs = self.output_spec().get()
+        for name in outputs.keys():
+            value = getattr(self.inputs, name)
+            value = str(value)
+            if value is not None:
+                outputs[name] = os.path.abspath(value)
+        return outputs
+
 
 def _set_inputs_outputs(config, preproc_wf):
     # bids dataset
@@ -282,7 +334,7 @@ def _preprocess_wf(
     bet.inputs.mask = True
     bet.inputs.frac = bet_frac
 
-    brainextraction_wf = init_brainextraction_wf()
+    synthstrip = Node(interface=SynthStrip(), name="synthstrip")
 
     eddycorrect = create_eddy_correct_pipeline("eddycorrect")
     eddycorrect.inputs.inputnode.ref_num = 0
@@ -328,7 +380,7 @@ def _preprocess_wf(
             # get mask from the mean b=0 volumes
             (
                 get_initial_mean_bzero,
-                bet,
+                synthstrip,
                 [("outputnode.epi_ref_file", "in_file")],
             ),
             # apply mask to mean b=0 output
@@ -338,14 +390,14 @@ def _preprocess_wf(
                 [("outputnode.epi_ref_file", "in_file")],
             ),
             (
-                bet,
+                synthstrip,
                 strip_mean_bzero,
                 [("mask_file", "mask_file")],
             ),
             # apply the mask to the dwi
             (input_subject, strip_dwi, [("dwi", "in_file")]),
             (
-                bet,
+                synthstrip,
                 strip_dwi,
                 [("mask_file", "mask_file")],
             ),
