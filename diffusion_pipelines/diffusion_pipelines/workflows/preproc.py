@@ -33,7 +33,6 @@ class SynthStripInputSpec(CommandLineInputSpec):
     )
     out_file = File(
         desc="Output skullstripped image",
-        mandatory=True,
         argstr="--out %s",
         name_source="in_file",
         name_template="%s_stripped",
@@ -41,7 +40,6 @@ class SynthStripInputSpec(CommandLineInputSpec):
     )
     mask_file = File(
         desc="Output brain mask",
-        mandatory=True,
         argstr="--mask %s",
         name_source="in_file",
         name_template="%s_mask",
