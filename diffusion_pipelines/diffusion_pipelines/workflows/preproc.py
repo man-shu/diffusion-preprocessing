@@ -368,6 +368,24 @@ def _preprocess_wf(
         interface=fs.ApplyVolTransform(), name="apply_registration_mask"
     )
 
+    # Add renaming node for registered mean bzero
+    def rename_registered_mean_bzero(in_file):
+        import os
+        import shutil
+
+        output_name = os.path.join(os.getcwd(), "registered_mean_bzero.nii.gz")
+        shutil.copy(in_file, output_name)
+        return output_name
+
+    RenameRegisteredMeanBzero = Function(
+        input_names=["in_file"],
+        output_names=["out_file"],
+        function=rename_registered_mean_bzero,
+    )
+    rename_registered_bzero = Node(
+        RenameRegisteredMeanBzero, name="rename_registered_bzero"
+    )
+
     bbreg_wf = init_bbreg_wf(
         name="bbreg_wf",
         omp_nthreads=config.omp_nthreads,
@@ -496,6 +514,12 @@ def _preprocess_wf(
                 get_registered_mean_bzero,
                 [("zero_indexes", "inputnode.t_masks")],
             ),
+            # rename the registered mean bzero for proper sink substitution
+            (
+                get_registered_mean_bzero,
+                rename_registered_bzero,
+                [("outputnode.epi_ref_file", "in_file")],
+            ),
             # also apply the registration to the mask
             (
                 bbreg_wf.get_node("bbregister"),
@@ -564,9 +588,9 @@ def _preprocess_wf(
             (input_subject, output, [("dwi", "dwi_initial")]),
             (input_subject, output, [("ribbon_mask", "ribbon_mask")]),
             (
-                get_registered_mean_bzero,
+                rename_registered_bzero,
                 output,
-                [("outputnode.epi_ref_file", "registered_mean_bzero")],
+                [("out_file", "registered_mean_bzero")],
             ),
             (
                 get_initial_mean_bzero,

@@ -33,7 +33,7 @@ def init_sink_wf(config, name="sink_wf"):
 
         substitutions = [
             (
-                "initial_mean_bzero_brain_mask_warped",
+                "clipped_mask",
                 f"{bids_name}_space-individualT1_desc-mask+bbreg_dwi",
             ),
             (
