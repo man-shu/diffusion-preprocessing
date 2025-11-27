@@ -1,4 +1,4 @@
-PATH=/opt/Convert3D/c3d-1.0.0-Linux-x86_64/bin:/opt/miniconda3/bin:/opt/freesurfer/freesurfer/bin:/opt/freesurfer/freesurfer/tktools:/opt/freesurfer/freesurfer/mni/bin:/opt/ANTS/ants-2.4.4/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+PATH=/opt/afni-latest:/opt/Convert3D/c3d-1.0.0-Linux-x86_64/bin:/opt/miniconda3/bin:/opt/freesurfer/freesurfer/bin:/opt/freesurfer/freesurfer/tktools:/opt/freesurfer/freesurfer/mni/bin:/opt/ANTS/ants-2.4.4/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 DEBIAN_FRONTEND=noninteractive
 INSTALL_DIR=/opt
 ANTSPATH=/opt/ANTS/ants-2.4.4/bin
@@ -23,3 +23,5 @@ FSLDIR=/opt/miniconda3
 FSLOUTPUTTYPE=NIFTI_GZ
 FSLMULTIFILEQUIT=TRUE
 FSLGECUDAQ=cuda.q
+AFNI_IMSAVE_WARNINGS=NO
+AFNI_PLUGINPATH=/opt/afni-latest
