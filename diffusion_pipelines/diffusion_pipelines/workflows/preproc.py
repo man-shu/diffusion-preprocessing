@@ -11,8 +11,79 @@ from .bids import init_bidsdata_wf
 from .sink import init_sink_wf
 from pathlib import Path
 from niworkflows.anat.coregistration import init_bbreg_wf
+from niworkflows.workflows.epi.refmap import init_epi_reference_wf
 from niworkflows.interfaces.bids import BIDSFreeSurferDir
 import os
+from sdcflows.workflows.ancillary import init_brainextraction_wf
+
+from nipype.interfaces.base import (
+    TraitedSpec,
+    CommandLineInputSpec,
+    CommandLine,
+    File,
+)
+
+
+class SynthStripInputSpec(CommandLineInputSpec):
+    in_file = File(
+        desc="Input image to skullstrip",
+        exists=True,
+        mandatory=True,
+        argstr="--image %s",
+    )
+    out_file = File(
+        desc="Output skullstripped image",
+        argstr="--out %s",
+        name_source="in_file",
+        name_template="%s_stripped",
+        keep_extension=True,
+    )
+    mask_file = File(
+        desc="Output brain mask",
+        argstr="--mask %s",
+        name_source="in_file",
+        name_template="%s_mask",
+        keep_extension=True,
+    )
+
+
+class SynthStripOutputSpec(TraitedSpec):
+    out_file = File(desc="Save stripped image to path.")
+    mask_file = File(desc="Save brain mask to path.")
+
+
+class SynthStrip(CommandLine):
+    input_spec = SynthStripInputSpec
+    output_spec = SynthStripOutputSpec
+    _cmd = "python /opt/freesurfer/freesurfer/python/scripts/mri_synthstrip"
+
+    def _list_outputs(self):
+        outputs = self.output_spec().get()
+
+        # Generate output file paths based on input file and templates
+        if self.inputs.in_file:
+            from nipype.utils.filemanip import split_filename
+
+            # Get the input file path and split it
+            in_file = self.inputs.in_file
+            path, fname, ext = split_filename(in_file)
+
+            # Generate output file paths using the name templates
+            outputs["out_file"] = os.path.join(
+                os.getcwd(), f"{fname}_stripped{ext}"
+            )
+            outputs["mask_file"] = os.path.join(
+                os.getcwd(), f"{fname}_mask{ext}"
+            )
+
+            # If explicit output paths were provided in inputs
+            # use those instead
+            if hasattr(self.inputs, "out_file") and self.inputs.out_file:
+                outputs["out_file"] = os.path.abspath(self.inputs.out_file)
+            if hasattr(self.inputs, "mask_file") and self.inputs.mask_file:
+                outputs["mask_file"] = os.path.abspath(self.inputs.mask_file)
+
+        return outputs
 
 
 def _set_inputs_outputs(config, preproc_wf):
@@ -111,46 +182,50 @@ def _preprocess_wf(
     config, name="diffusion_preprocess", bet_frac=0.34, output_dir="."
 ):
 
-    def _get_mean_bzero(dwi_file, bval, prefix, bval_threshold):
-        """Mean of the b=0 volumes of the input dwi file."""
-        import os
-        from nilearn.image import index_img, mean_img
-
+    def _get_zero_indexes(bval, bval_threshold):
+        """Get the indexes of the b=0 volumes."""
         import numpy as np
 
         bvals = np.loadtxt(bval)
-        # get the index of the b=0 volumes
-        bzero_index = np.where(bvals <= bval_threshold)[0]
-        # get the mean image of the b=0 volumes
-        mean_bzero_img = mean_img(index_img(dwi_file, bzero_index))
-        # save the mean image
-        out_file = os.path.join(os.getcwd(), f"{prefix}_mean_bzero.nii.gz")
-        mean_bzero_img.to_filename(out_file)
+        zero_indexes = bvals <= bval_threshold
+        return zero_indexes.tolist()
 
-        return out_file
-
-    # define a function to get the mean of b=0 of the input dwi file
-    MeanBZero = Function(
-        input_names=["dwi_file", "bval", "prefix", "bval_threshold"],
-        output_names=["out"],
-        function=_get_mean_bzero,
+    GetZeroIndexes = Function(
+        input_names=["bval", "bval_threshold"],
+        output_names=["zero_indexes"],
+        function=_get_zero_indexes,
     )
-    # this node is used to get the mean of b=0 of the input dwi file
-    get_intial_mean_bzero = Node(MeanBZero, name="get_intial_mean_bzero")
-    get_intial_mean_bzero.inputs.prefix = "initial"
-    get_intial_mean_bzero.inputs.bval_threshold = config.b0_threshold
 
-    # this node is used to get the mean of b=0 of the eddy-corrected dwi file
-    get_eddy_mean_bzero = get_intial_mean_bzero.clone("get_eddy_mean_bzero")
-    get_eddy_mean_bzero.inputs.prefix = "eddy"
-    get_eddy_mean_bzero.inputs.bval_threshold = config.b0_threshold
-
-    # this node is used to get the mean of b=0 of the eddy-corrected and registered dwi file
-    get_registered_mean_bzero = get_intial_mean_bzero.clone(
-        "get_registered_mean_bzero"
+    get_initial_zero_indexes = Node(
+        GetZeroIndexes, name="get_initial_zero_indexes"
     )
-    get_registered_mean_bzero.inputs.prefix = "registered"
-    get_registered_mean_bzero.inputs.bval_threshold = config.b0_threshold
+    get_initial_zero_indexes.inputs.bval_threshold = config.b0_threshold
+
+    get_eddy_zero_indexes = get_initial_zero_indexes.clone(
+        "get_eddy_zero_indexes"
+    )
+    get_eddy_zero_indexes.inputs.bval_threshold = config.b0_threshold
+
+    get_registered_zero_indexes = get_initial_zero_indexes.clone(
+        "get_registered_zero_indexes"
+    )
+    get_registered_zero_indexes.inputs.bval_threshold = config.b0_threshold
+
+    get_initial_mean_bzero = init_epi_reference_wf(
+        name="get_initial_mean_bzero",
+        omp_nthreads=config.omp_nthreads,
+        auto_bold_nss=False,
+    )
+    get_eddy_mean_bzero = init_epi_reference_wf(
+        name="get_eddy_mean_bzero",
+        omp_nthreads=config.omp_nthreads,
+        auto_bold_nss=False,
+    )
+    get_registered_mean_bzero = init_epi_reference_wf(
+        name="get_registered_mean_bzero",
+        omp_nthreads=config.omp_nthreads,
+        auto_bold_nss=False,
+    )
 
     def get_subject_id(bids_entities):
         """Get the subject id from the BIDS entities."""
@@ -276,6 +351,8 @@ def _preprocess_wf(
     bet.inputs.mask = True
     bet.inputs.frac = bet_frac
 
+    synthstrip = Node(interface=SynthStrip(), name="synthstrip")
+
     eddycorrect = create_eddy_correct_pipeline("eddycorrect")
     eddycorrect.inputs.inputnode.ref_num = 0
 
@@ -289,6 +366,24 @@ def _preprocess_wf(
 
     apply_registration_mask = Node(
         interface=fs.ApplyVolTransform(), name="apply_registration_mask"
+    )
+
+    # Add renaming node for registered mean bzero
+    def rename_registered_mean_bzero(in_file):
+        import os
+        import shutil
+
+        output_name = os.path.join(os.getcwd(), "registered_mean_bzero.nii.gz")
+        shutil.copy(in_file, output_name)
+        return output_name
+
+    RenameRegisteredMeanBzero = Function(
+        input_names=["in_file"],
+        output_names=["out_file"],
+        function=rename_registered_mean_bzero,
+    )
+    rename_registered_bzero = Node(
+        RenameRegisteredMeanBzero, name="rename_registered_bzero"
     )
 
     bbreg_wf = init_bbreg_wf(
@@ -305,17 +400,42 @@ def _preprocess_wf(
     workflow = Workflow(name=name, base_dir=output_dir)
     workflow.connect(
         [
+            (input_subject, get_initial_zero_indexes, [("bval", "bval")]),
             # get mean of b=0 volumes of the input dwi file
-            (input_subject, get_intial_mean_bzero, [("dwi", "dwi_file")]),
-            (input_subject, get_intial_mean_bzero, [("bval", "bval")]),
+            (
+                input_subject,
+                get_initial_mean_bzero,
+                [("dwi", "inputnode.in_files")],
+            ),
+            (
+                get_initial_zero_indexes,
+                get_initial_mean_bzero,
+                [("zero_indexes", "inputnode.t_masks")],
+            ),
             # get mask from the mean b=0 volumes
-            (get_intial_mean_bzero, bet, [("out", "in_file")]),
+            (
+                get_initial_mean_bzero,
+                synthstrip,
+                [("outputnode.epi_ref_file", "in_file")],
+            ),
             # apply mask to mean b=0 output
-            (get_intial_mean_bzero, strip_mean_bzero, [("out", "in_file")]),
-            (bet, strip_mean_bzero, [("mask_file", "mask_file")]),
+            (
+                get_initial_mean_bzero,
+                strip_mean_bzero,
+                [("outputnode.epi_ref_file", "in_file")],
+            ),
+            (
+                synthstrip,
+                strip_mean_bzero,
+                [("mask_file", "mask_file")],
+            ),
             # apply the mask to the dwi
             (input_subject, strip_dwi, [("dwi", "in_file")]),
-            (bet, strip_dwi, [("mask_file", "mask_file")]),
+            (
+                synthstrip,
+                strip_dwi,
+                [("mask_file", "mask_file")],
+            ),
             # apply mask to the preprocessed subject T1
             (input_subject, strip_t1, [("preprocessed_t1", "in_file")]),
             (input_subject, strip_t1, [("preprocessed_t1_mask", "mask_file")]),
@@ -325,14 +445,18 @@ def _preprocess_wf(
             (
                 eddycorrect,
                 get_eddy_mean_bzero,
-                [("outputnode.eddy_corrected", "dwi_file")],
+                [("outputnode.eddy_corrected", "inputnode.in_files")],
             ),
-            (input_subject, get_eddy_mean_bzero, [("bval", "bval")]),
+            (
+                get_initial_zero_indexes,
+                get_eddy_mean_bzero,
+                [("zero_indexes", "inputnode.t_masks")],
+            ),
             # register the skull-stripped dwi to the skull-stripped subject T1
             (
                 get_eddy_mean_bzero,
                 bbreg_wf,
-                [("out", "inputnode.in_file")],
+                [("outputnode.epi_ref_file", "inputnode.in_file")],
             ),
             (
                 input_subject,
@@ -383,16 +507,30 @@ def _preprocess_wf(
             (
                 apply_registration,
                 get_registered_mean_bzero,
-                [("transformed_file", "dwi_file")],
+                [("transformed_file", "inputnode.in_files")],
             ),
-            (input_subject, get_registered_mean_bzero, [("bval", "bval")]),
+            (
+                get_initial_zero_indexes,
+                get_registered_mean_bzero,
+                [("zero_indexes", "inputnode.t_masks")],
+            ),
+            # rename the registered mean bzero for proper sink substitution
+            (
+                get_registered_mean_bzero,
+                rename_registered_bzero,
+                [("outputnode.epi_ref_file", "in_file")],
+            ),
             # also apply the registration to the mask
             (
                 bbreg_wf.get_node("bbregister"),
                 apply_registration_mask,
                 [("out_lta_file", "lta_file")],
             ),
-            (bet, apply_registration_mask, [("mask_file", "source_file")]),
+            (
+                synthstrip,
+                apply_registration_mask,
+                [("mask_file", "source_file")],
+            ),
             (
                 strip_t1,
                 apply_registration_mask,
@@ -436,7 +574,11 @@ def _preprocess_wf(
                 [("rotated_gradients", "bvec_rotated")],
             ),
             (input_subject, output, [("bval", "bval")]),
-            (bet, output, [("mask_file", "bet_mask")]),
+            (
+                synthstrip,
+                output,
+                [("mask_file", "bet_mask")],
+            ),
             (apply_registration_mask, output, [("transformed_file", "mask")]),
             (
                 eddycorrect,
@@ -446,19 +588,19 @@ def _preprocess_wf(
             (input_subject, output, [("dwi", "dwi_initial")]),
             (input_subject, output, [("ribbon_mask", "ribbon_mask")]),
             (
-                get_registered_mean_bzero,
+                rename_registered_bzero,
                 output,
-                [("out", "registered_mean_bzero")],
+                [("out_file", "registered_mean_bzero")],
             ),
             (
-                get_intial_mean_bzero,
+                get_initial_mean_bzero,
                 output,
-                [("out", "initial_mean_bzero")],
+                [("outputnode.epi_ref_file", "initial_mean_bzero")],
             ),
             (
                 get_eddy_mean_bzero,
                 output,
-                [("out", "eddy_mean_bzero")],
+                [("outputnode.epi_ref_file", "eddy_mean_bzero")],
             ),
             # connect the report workflow
             (

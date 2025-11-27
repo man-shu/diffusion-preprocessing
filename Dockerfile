@@ -25,6 +25,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cmake \
     graphviz \
     tcsh \
+    gnupg \
+    lsb-release \
+    netbase \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set HOME explicitly
@@ -74,7 +77,7 @@ ENV PERL5LIB="$MINC_LIB_DIR/perl5/5.8.5" \
 
 # Install conda
 RUN cd $INSTALL_DIR/miniconda3 && \
-    wget https://repo.anaconda.com/miniconda/Miniconda3-py313_25.5.1-0-Linux-x86_64.sh -O $INSTALL_DIR/miniconda3/miniconda.sh && \
+    wget https://repo.anaconda.com/miniconda/Miniconda3-py310_25.5.1-0-Linux-x86_64.sh -O $INSTALL_DIR/miniconda3/miniconda.sh && \
     bash $INSTALL_DIR/miniconda3/miniconda.sh -b -u -p $INSTALL_DIR/miniconda3 && \
     rm $INSTALL_DIR/miniconda3/miniconda.sh
 
@@ -120,6 +123,78 @@ ENV PATH="$INSTALL_DIR/Convert3D/c3d-1.0.0-Linux-x86_64/bin:$PATH"
 
 # Install workbench
 RUN conda install --yes conda-forge::connectome-workbench-cli=2.0
+
+# Install sdcflows
+RUN pip install sdcflows
+
+# Configure PPAs for libpng12 and libxp6
+RUN GNUPGHOME=/tmp gpg --keyserver hkps://keyserver.ubuntu.com --no-default-keyring --keyring /usr/share/keyrings/linuxuprising.gpg --recv 0xEA8CACC073C3DB2A \
+    && GNUPGHOME=/tmp gpg --keyserver hkps://keyserver.ubuntu.com --no-default-keyring --keyring /usr/share/keyrings/zeehio.gpg --recv 0xA1301338A3A48C4A \
+    && echo "deb [signed-by=/usr/share/keyrings/linuxuprising.gpg] https://ppa.launchpadcontent.net/linuxuprising/libpng12/ubuntu jammy main" > /etc/apt/sources.list.d/linuxuprising.list \
+    && echo "deb [signed-by=/usr/share/keyrings/zeehio.gpg] https://ppa.launchpadcontent.net/zeehio/libxp/ubuntu jammy main" > /etc/apt/sources.list.d/zeehio.list
+
+# Dependencies for AFNI; requires a discontinued multiarch-support package from bionic (18.04)
+RUN apt-get update -qq \
+    && apt-get install -y -q --no-install-recommends \
+    ed \
+    gsl-bin \
+    libglib2.0-0 \
+    libglu1-mesa-dev \
+    libglw1-mesa \
+    libgomp1 \
+    libjpeg62 \
+    libpng12-0 \
+    libxm4 \
+    libxp6 \
+    netpbm \
+    tcsh \
+    xfonts-base \
+    xvfb \
+    && curl -sSL --retry 5 -o /tmp/multiarch.deb http://archive.ubuntu.com/ubuntu/pool/main/g/glibc/multiarch-support_2.27-3ubuntu1.5_amd64.deb \
+    && dpkg -i /tmp/multiarch.deb \
+    && rm /tmp/multiarch.deb \
+    && apt-get install -f \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+    && gsl2_path="$(find / -name 'libgsl.so.19' || printf '')" \
+    && if [ -n "$gsl2_path" ]; then \
+    ln -sfv "$gsl2_path" "$(dirname $gsl2_path)/libgsl.so.0"; \
+    fi \
+    && ldconfig
+
+# AFNI
+# Bump the date to current to update AFNI
+RUN echo "2024.03.08"
+RUN mkdir -p $INSTALL_DIR/afni-latest \
+    && curl -fsSL --retry 5 https://afni.nimh.nih.gov/pub/dist/tgz/linux_openmp_64.tgz \
+    | tar -xz -C $INSTALL_DIR/afni-latest --strip-components 1 \
+    --exclude "linux_openmp_64/*.gz" \
+    --exclude "linux_openmp_64/funstuff" \
+    --exclude "linux_openmp_64/shiny" \
+    --exclude "linux_openmp_64/afnipy" \
+    --exclude "linux_openmp_64/lib/RetroTS" \
+    --exclude "linux_openmp_64/lib_RetroTS" \
+    --exclude "linux_openmp_64/meica.libs" \
+    # Keep only what we use
+    && find $INSTALL_DIR/afni-latest -type f -not \( \
+    -name "3dTshift" -or \
+    -name "3dUnifize" -or \
+    -name "3dAutomask" -or \
+    -name "3dvolreg" \) -delete
+# AFNI config
+ENV PATH="$INSTALL_DIR/afni-latest:$PATH" \
+    AFNI_IMSAVE_WARNINGS="NO" \
+    AFNI_PLUGINPATH="$INSTALL_DIR/afni-latest"
+
+# Install synthstrip deps
+RUN pip install torch torchvision --index-url \
+    https://download.pytorch.org/whl/cpu
+
+RUN pip install surfa
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libstdc++6 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 
 # Install diffusion-pipelines
 COPY diffusion_pipelines $INSTALL_DIR/diffusion_pipelines
