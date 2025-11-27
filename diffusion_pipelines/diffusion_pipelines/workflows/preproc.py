@@ -59,11 +59,30 @@ class SynthStrip(CommandLine):
 
     def _list_outputs(self):
         outputs = self.output_spec().get()
-        for name in outputs.keys():
-            value = getattr(self.inputs, name)
-            value = str(value)
-            if value is not None:
-                outputs[name] = os.path.abspath(value)
+
+        # Generate output file paths based on input file and templates
+        if self.inputs.in_file:
+            from nipype.utils.filemanip import split_filename
+
+            # Get the input file path and split it
+            in_file = self.inputs.in_file
+            path, fname, ext = split_filename(in_file)
+
+            # Generate output file paths using the name templates
+            outputs["out_file"] = os.path.join(
+                os.getcwd(), f"{fname}_stripped{ext}"
+            )
+            outputs["mask_file"] = os.path.join(
+                os.getcwd(), f"{fname}_mask{ext}"
+            )
+
+            # If explicit output paths were provided in inputs
+            # use those instead
+            if hasattr(self.inputs, "out_file") and self.inputs.out_file:
+                outputs["out_file"] = os.path.abspath(self.inputs.out_file)
+            if hasattr(self.inputs, "mask_file") and self.inputs.mask_file:
+                outputs["mask_file"] = os.path.abspath(self.inputs.mask_file)
+
         return outputs
 
 
