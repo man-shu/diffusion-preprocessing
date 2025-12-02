@@ -203,7 +203,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
 
     # Create a Merge node to combine the outputs of plot_bet,
     # plot_before_after_eddy, and plot_transformed
-    merge_node = Node(Merge(8), name="merge_node")
+    merge_node = Node(Merge(10), name="merge_node")
 
     # embed plots in a html template
     CreateHTML = Function(
@@ -314,6 +314,8 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 [("plot_recon_segmentations_on_t1", "in7")],
             ),
             (plot_ribbon_on_dwi, merge_node, [("out_file", "in8")]),
+            (plot_before_after_mppca, merge_node, [("out_report", "in9")]),
+            (plot_before_after_gibbs, merge_node, [("out_report", "in10")]),
             # input the bids_entities
             (inputnode, create_html, [("bids_entities", "bids_entities")]),
             # create the html report
