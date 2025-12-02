@@ -116,6 +116,8 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 "eddy_mean_bzero",
                 "registered_mean_bzero",
                 "ribbon_mask",
+                "mppca_denoised",
+                "gibbs_unringed_denoised",
             ]
         ),
         name="report_inputnode",
@@ -124,12 +126,30 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
         IdentityInterface(fields=["out_file"]),
         name="report_outputnode",
     )
+    # MPPCA
+    plot_before_after_mppca = Node(
+        SimpleBeforeAfter(), name="plot_before_after_mppca"
+    )
+    plot_before_after_mppca.inputs.before_label = "Before MP-PCA (Initial DWI)"
+    plot_before_after_mppca.inputs.after_label = "After MP-PCA"
+
+    # Gibbs Unringing
+    plot_before_after_gibbs = Node(
+        SimpleBeforeAfter(), name="plot_before_after_gibbs"
+    )
+    plot_before_after_gibbs.inputs.before_label = (
+        "Before Gibbs Unringing (MP-PCA Denoised)"
+    )
+    plot_before_after_gibbs.inputs.after_label = "After Gibbs Unringing"
+
     # this node plots the before and after images of the eddy correction
     plot_before_after_eddy = Node(
         SimpleBeforeAfter(), name="plot_before_after_eddy"
     )
     # set labels for the before and after images
-    plot_before_after_eddy.inputs.before_label = "Distorted DWI"
+    plot_before_after_eddy.inputs.before_label = (
+        "Before Eddy Correction (Gibbs Unringed + MP-PCA Denoised)"
+    )
     plot_before_after_eddy.inputs.after_label = "Eddy Corrected DWI"
     # this node plots before and after images of masking T1 template
     plot_before_after_mask_t1 = Node(
@@ -215,11 +235,31 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                     ("dwi_initial", "background_file"),
                 ],
             ),
+            (
+                inputnode,
+                plot_before_after_mppca,
+                [("initial_mean_bzero", "before")],
+            ),
+            (
+                inputnode,
+                plot_before_after_mppca,
+                [("mppca_mean_bzero", "after")],
+            ),
+            (
+                inputnode,
+                plot_before_after_gibbs,
+                [("mppca_denoised", "before")],
+            ),
+            (
+                inputnode,
+                plot_before_after_gibbs,
+                [("gibbs_unringed_denoised", "after")],
+            ),
             # plot the initial dwi as before
             (
                 inputnode,
                 plot_before_after_eddy,
-                [("initial_mean_bzero", "before")],
+                [("gibbs_unringed_denoised", "before")],
             ),
             # plot the eddy corrected dwi as after
             (
