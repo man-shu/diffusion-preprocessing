@@ -109,7 +109,7 @@ class MPPCAOutputSpec(TraitedSpec):
 class MPPCA(CommandLine):
     input_spec = MPPCAInputSpec
     output_spec = MPPCAOutputSpec
-    _cmd = "python dipy_denoise_mppca"
+    _cmd = "dipy_denoise_mppca"
 
     def _list_outputs(self):
         outputs = self.output_spec().get()
@@ -158,7 +158,7 @@ class UnringOutputSpec(TraitedSpec):
 class Unring(CommandLine):
     input_spec = UnringInputSpec
     output_spec = UnringOutputSpec
-    _cmd = "python dipy_gibbs_ringing"
+    _cmd = "dipy_gibbs_ringing"
 
     def _list_outputs(self):
         outputs = self.output_spec().get()
