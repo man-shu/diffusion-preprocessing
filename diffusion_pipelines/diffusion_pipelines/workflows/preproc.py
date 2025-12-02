@@ -276,9 +276,7 @@ def _set_inputs_outputs(config, preproc_wf):
     return preproc_wf
 
 
-def _preprocess_wf(
-    config, name="diffusion_preprocess", bet_frac=0.34, output_dir="."
-):
+def _preprocess_wf(config, name="diffusion_preprocess", output_dir="."):
 
     def _get_zero_indexes(bval, bval_threshold):
         """Get the indexes of the b=0 volumes."""
@@ -791,6 +789,14 @@ def _preprocess_wf(
                         "report_inputnode.registered_mean_bzero",
                     ),
                     ("ribbon_mask", "report_inputnode.ribbon_mask"),
+                    (
+                        "mppca_denoised",
+                        "report_inputnode.mppca_denoised",
+                    ),
+                    (
+                        "gibbs_unringed_denoised",
+                        "report_inputnode.gibbs_unringed_denoised",
+                    ),
                 ],
             ),
         ]
