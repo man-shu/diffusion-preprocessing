@@ -243,7 +243,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
             (
                 inputnode,
                 plot_before_after_mppca,
-                [("mppca_mean_bzero", "after")],
+                [("mppca_denoised", "after")],
             ),
             (
                 inputnode,
