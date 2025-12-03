@@ -38,13 +38,16 @@ def init_sink_wf(config, name="sink_wf"):
             ),
             (
                 "vol0000_flirt_merged_warped",
-                f"{bids_name}_space-individualT1_desc-eddycorrected+bbreg_dwi",
+                f"{bids_name}_space-individualT1_desc-mppcadenoised+gibbsunringed+eddycorrected+bbreg_dwi",
             ),
-            ("vol0000_flirt_merged", f"{bids_name}_desc-eddycorrected_dwi"),
+            (
+                "vol0000_flirt_merged",
+                f"{bids_name}_desc-mppcadenoised+gibbsunringed+eddycorrected_dwi",
+            ),
             (
                 f"registered_mean_bzero",
                 f"{bids_name}_space-individualT1_"
-                "desc-eddycorrected+bbreg+meanb0_dwi",
+                "desc-mppcadenoised+gibbsunringed+eddycorrected+bbreg+meanb0_dwi",
             ),
             (
                 f"{bids_name}_dwi_rot.bvec",

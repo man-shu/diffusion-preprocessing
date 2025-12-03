@@ -10,7 +10,13 @@
     <hr />
     <h2 style="background-color: rgb(153, 153, 153);color: white;">Brain extraction of diffusion image</h2>
     ${plot_bet}
-    <h2 style="background-color: rgb(153, 153, 153);color: white;">Eddy correction and coregistration of diffusion image
+    <h2 style="background-color: rgb(153, 153, 153);color: white;">MP-PCA denoising of diffusion image</h2>
+    ${plot_before_after_mppca}
+    <h2 style="background-color: rgb(153, 153, 153);color: white;">Gibbs unringing of MP-PCA denoised diffusion image
+    </h2>
+    ${plot_before_after_gibbs}
+    <h2 style="background-color: rgb(153, 153, 153);color: white;">Eddy correction and coregistration of Gibbs unringed
+        and MP-PCA denoised diffusion image
     </h2>
     ${plot_before_after_eddy}
     <h2 style="background-color: rgb(153, 153, 153);color: white;">Subject T1 masking</h2>

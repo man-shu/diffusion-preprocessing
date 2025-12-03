@@ -196,6 +196,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 
+# Install dipy for MP-PCA denoising and Gibbs unringing
+RUN pip install dipy
+
 # Install diffusion-pipelines
 COPY diffusion_pipelines $INSTALL_DIR/diffusion_pipelines
 RUN cd $INSTALL_DIR/diffusion_pipelines && \

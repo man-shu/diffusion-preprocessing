@@ -86,6 +86,104 @@ class SynthStrip(CommandLine):
         return outputs
 
 
+class MPPCAInputSpec(CommandLineInputSpec):
+    in_file = File(
+        desc="Input image to skullstrip",
+        exists=True,
+        mandatory=True,
+        argstr="%s",
+    )
+    out_file = File(
+        desc="Output skullstripped image",
+        argstr="--out_denoised %s",
+        name_source="in_file",
+        name_template="%s_mppca",
+        keep_extension=True,
+    )
+
+
+class MPPCAOutputSpec(TraitedSpec):
+    out_file = File(desc="Save MPPCA denoised image to path.")
+
+
+class MPPCA(CommandLine):
+    input_spec = MPPCAInputSpec
+    output_spec = MPPCAOutputSpec
+    _cmd = "dipy_denoise_mppca"
+
+    def _list_outputs(self):
+        outputs = self.output_spec().get()
+
+        # Generate output file paths based on input file and templates
+        if self.inputs.in_file:
+            from nipype.utils.filemanip import split_filename
+
+            # Get the input file path and split it
+            in_file = self.inputs.in_file
+            path, fname, ext = split_filename(in_file)
+
+            # Generate output file paths using the name templates
+            outputs["out_file"] = os.path.join(
+                os.getcwd(), f"{fname}_mppca{ext}"
+            )
+
+            # If explicit output paths were provided in inputs
+            # use those instead
+            if hasattr(self.inputs, "out_file") and self.inputs.out_file:
+                outputs["out_file"] = os.path.abspath(self.inputs.out_file)
+
+        return outputs
+
+
+class UnringInputSpec(CommandLineInputSpec):
+    in_file = File(
+        desc="Input image to unring",
+        exists=True,
+        mandatory=True,
+        argstr="%s",
+    )
+    out_file = File(
+        desc="Output Gibbs unringed image",
+        argstr="--out_unring %s",
+        name_source="in_file",
+        name_template="%s_unring",
+        keep_extension=True,
+    )
+
+
+class UnringOutputSpec(TraitedSpec):
+    out_file = File(desc="Save Gibbs unringed denoised image to path.")
+
+
+class Unring(CommandLine):
+    input_spec = UnringInputSpec
+    output_spec = UnringOutputSpec
+    _cmd = "dipy_gibbs_ringing"
+
+    def _list_outputs(self):
+        outputs = self.output_spec().get()
+
+        # Generate output file paths based on input file and templates
+        if self.inputs.in_file:
+            from nipype.utils.filemanip import split_filename
+
+            # Get the input file path and split it
+            in_file = self.inputs.in_file
+            path, fname, ext = split_filename(in_file)
+
+            # Generate output file paths using the name templates
+            outputs["out_file"] = os.path.join(
+                os.getcwd(), f"{fname}_unring{ext}"
+            )
+
+            # If explicit output paths were provided in inputs
+            # use those instead
+            if hasattr(self.inputs, "out_file") and self.inputs.out_file:
+                outputs["out_file"] = os.path.abspath(self.inputs.out_file)
+
+        return outputs
+
+
 def _set_inputs_outputs(config, preproc_wf):
     # bids dataset
     bidsdata_wf = init_bidsdata_wf(config=config)
@@ -178,9 +276,7 @@ def _set_inputs_outputs(config, preproc_wf):
     return preproc_wf
 
 
-def _preprocess_wf(
-    config, name="diffusion_preprocess", bet_frac=0.34, output_dir="."
-):
+def _preprocess_wf(config, name="diffusion_preprocess", output_dir="."):
 
     def _get_zero_indexes(bval, bval_threshold):
         """Get the indexes of the b=0 volumes."""
@@ -216,6 +312,19 @@ def _preprocess_wf(
         omp_nthreads=config.omp_nthreads,
         auto_bold_nss=False,
     )
+
+    get_mppca_mean_bzero = init_epi_reference_wf(
+        name="get_mppca_mean_bzero",
+        omp_nthreads=config.omp_nthreads,
+        auto_bold_nss=False,
+    )
+
+    get_gibbs_unringed_mean_bzero = init_epi_reference_wf(
+        name="get_gibbs_unringed_mean_bzero",
+        omp_nthreads=config.omp_nthreads,
+        auto_bold_nss=False,
+    )
+
     get_eddy_mean_bzero = init_epi_reference_wf(
         name="get_eddy_mean_bzero",
         omp_nthreads=config.omp_nthreads,
@@ -332,6 +441,8 @@ def _preprocess_wf(
                 "initial_mean_bzero",
                 "eddy_mean_bzero",
                 "registered_mean_bzero",
+                "gibbs_unringed_denoised",
+                "mppca_denoised",
             ]
         ),
         name="output",
@@ -347,11 +458,11 @@ def _preprocess_wf(
 
     strip_t1 = Node(interface=fsl.ApplyMask(), name="strip_t1")
 
-    bet = Node(interface=fsl.BET(), name="bet")
-    bet.inputs.mask = True
-    bet.inputs.frac = bet_frac
-
     synthstrip = Node(interface=SynthStrip(), name="synthstrip")
+
+    mppca = Node(interface=MPPCA(), name="mppca")
+
+    gibbs_unring = Node(interface=Unring(), name="gibbs_unring")
 
     eddycorrect = create_eddy_correct_pipeline("eddycorrect")
     eddycorrect.inputs.inputnode.ref_num = 0
@@ -439,8 +550,12 @@ def _preprocess_wf(
             # apply mask to the preprocessed subject T1
             (input_subject, strip_t1, [("preprocessed_t1", "in_file")]),
             (input_subject, strip_t1, [("preprocessed_t1_mask", "mask_file")]),
-            # edddy correct the skull-stripped dwi
-            (strip_dwi, eddycorrect, [("out_file", "inputnode.in_file")]),
+            # denoise the skull-stripped dwi with MP-PCA
+            (strip_dwi, mppca, [("out_file", "in_file")]),
+            # Gibbs unring the denoised dwi
+            (mppca, gibbs_unring, [("out_file", "in_file")]),
+            # eddycorrect the unringed dwi
+            (gibbs_unring, eddycorrect, [("out_file", "inputnode.in_file")]),
             # compute the mean of the b=0 eddycorrected volumes
             (
                 eddycorrect,
@@ -602,6 +717,36 @@ def _preprocess_wf(
                 output,
                 [("outputnode.epi_ref_file", "eddy_mean_bzero")],
             ),
+            (
+                mppca,
+                get_mppca_mean_bzero,
+                [("out_file", "inputnode.in_files")],
+            ),
+            (
+                get_initial_zero_indexes,
+                get_mppca_mean_bzero,
+                [("zero_indexes", "inputnode.t_masks")],
+            ),
+            (
+                gibbs_unring,
+                get_gibbs_unringed_mean_bzero,
+                [("out_file", "inputnode.in_files")],
+            ),
+            (
+                get_initial_zero_indexes,
+                get_gibbs_unringed_mean_bzero,
+                [("zero_indexes", "inputnode.t_masks")],
+            ),
+            (
+                get_mppca_mean_bzero,
+                output,
+                [("outputnode.epi_ref_file", "mppca_denoised")],
+            ),
+            (
+                get_gibbs_unringed_mean_bzero,
+                output,
+                [("outputnode.epi_ref_file", "gibbs_unringed_denoised")],
+            ),
             # connect the report workflow
             (
                 output,
@@ -644,6 +789,14 @@ def _preprocess_wf(
                         "report_inputnode.registered_mean_bzero",
                     ),
                     ("ribbon_mask", "report_inputnode.ribbon_mask"),
+                    (
+                        "mppca_denoised",
+                        "report_inputnode.mppca_denoised",
+                    ),
+                    (
+                        "gibbs_unringed_denoised",
+                        "report_inputnode.gibbs_unringed_denoised",
+                    ),
                 ],
             ),
         ]

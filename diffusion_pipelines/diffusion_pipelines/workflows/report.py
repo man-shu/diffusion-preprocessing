@@ -116,6 +116,8 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 "eddy_mean_bzero",
                 "registered_mean_bzero",
                 "ribbon_mask",
+                "mppca_denoised",
+                "gibbs_unringed_denoised",
             ]
         ),
         name="report_inputnode",
@@ -124,12 +126,30 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
         IdentityInterface(fields=["out_file"]),
         name="report_outputnode",
     )
+    # MPPCA
+    plot_before_after_mppca = Node(
+        SimpleBeforeAfter(), name="plot_before_after_mppca"
+    )
+    plot_before_after_mppca.inputs.before_label = "Before MP-PCA (Initial DWI)"
+    plot_before_after_mppca.inputs.after_label = "After MP-PCA"
+
+    # Gibbs Unringing
+    plot_before_after_gibbs = Node(
+        SimpleBeforeAfter(), name="plot_before_after_gibbs"
+    )
+    plot_before_after_gibbs.inputs.before_label = (
+        "Before Gibbs Unringing (MP-PCA Denoised)"
+    )
+    plot_before_after_gibbs.inputs.after_label = "After Gibbs Unringing"
+
     # this node plots the before and after images of the eddy correction
     plot_before_after_eddy = Node(
         SimpleBeforeAfter(), name="plot_before_after_eddy"
     )
     # set labels for the before and after images
-    plot_before_after_eddy.inputs.before_label = "Distorted DWI"
+    plot_before_after_eddy.inputs.before_label = (
+        "Before Eddy Correction (Gibbs Unringed + MP-PCA Denoised)"
+    )
     plot_before_after_eddy.inputs.after_label = "Eddy Corrected DWI"
     # this node plots before and after images of masking T1 template
     plot_before_after_mask_t1 = Node(
@@ -183,7 +203,7 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
 
     # Create a Merge node to combine the outputs of plot_bet,
     # plot_before_after_eddy, and plot_transformed
-    merge_node = Node(Merge(8), name="merge_node")
+    merge_node = Node(Merge(10), name="merge_node")
 
     # embed plots in a html template
     CreateHTML = Function(
@@ -215,11 +235,31 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                     ("dwi_initial", "background_file"),
                 ],
             ),
+            (
+                inputnode,
+                plot_before_after_mppca,
+                [("initial_mean_bzero", "before")],
+            ),
+            (
+                inputnode,
+                plot_before_after_mppca,
+                [("mppca_denoised", "after")],
+            ),
+            (
+                inputnode,
+                plot_before_after_gibbs,
+                [("mppca_denoised", "before")],
+            ),
+            (
+                inputnode,
+                plot_before_after_gibbs,
+                [("gibbs_unringed_denoised", "after")],
+            ),
             # plot the initial dwi as before
             (
                 inputnode,
                 plot_before_after_eddy,
-                [("initial_mean_bzero", "before")],
+                [("gibbs_unringed_denoised", "before")],
             ),
             # plot the eddy corrected dwi as after
             (
@@ -274,6 +314,8 @@ def init_report_wf(calling_wf_name, output_dir, name="report"):
                 [("plot_recon_segmentations_on_t1", "in7")],
             ),
             (plot_ribbon_on_dwi, merge_node, [("out_file", "in8")]),
+            (plot_before_after_mppca, merge_node, [("out_report", "in9")]),
+            (plot_before_after_gibbs, merge_node, [("out_report", "in10")]),
             # input the bids_entities
             (inputnode, create_html, [("bids_entities", "bids_entities")]),
             # create the html report
