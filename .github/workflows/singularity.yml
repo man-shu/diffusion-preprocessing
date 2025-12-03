@@ -47,7 +47,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Set up Go 1.13 for Singularity
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v6
         with:
           go-version: 1.13
         id: go
