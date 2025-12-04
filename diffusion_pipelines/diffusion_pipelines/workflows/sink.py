@@ -53,18 +53,27 @@ def init_sink_wf(config, name="sink_wf"):
                 f"{bids_name}_dwi_rot.bvec",
                 f"{bids_name}_desc-rotated_dwi.bvec",
             ),
+            (
+                f"{bids_name}_report.html",
+                f"{bids_name}_report.html",
+            ),
         ]
 
         # add root directory in substitutions
         for i, (src, dst) in enumerate(substitutions):
+
+            modality = dst.split("_")[-1].split(".")[0]
+
             if bids_entities.get("session"):
                 prefix = os.path.join(
                     "sub-" + bids_entities["subject"],
                     "ses-" + bids_entities["session"],
-                    "dwi",
+                    modality,
                 )
             else:
-                prefix = os.path.join("sub-" + bids_entities["subject"], "dwi")
+                prefix = os.path.join(
+                    "sub-" + bids_entities["subject"], modality
+                )
 
             substitutions[i] = (src, os.path.join(prefix, dst))
 
