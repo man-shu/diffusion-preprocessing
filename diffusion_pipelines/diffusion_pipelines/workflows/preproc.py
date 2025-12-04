@@ -267,7 +267,7 @@ def _set_inputs_outputs(config, preproc_wf):
                 [
                     (
                         "report_outputnode.out_file",
-                        "diffusion_preprocess.@report",
+                        "diffusion_preprocess.reports.@report",
                     )
                 ],
             ),
