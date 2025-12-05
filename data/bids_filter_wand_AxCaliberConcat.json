@@ -1,0 +1,11 @@
+{
+    "dwi": {
+        "acquisition": "AxCaliberConcat"
+    },
+    "bval": {
+        "acquisition": "AxCaliberConcat"
+    },
+    "bvec": {
+        "acquisition": "AxCaliberConcat"
+    }
+}
