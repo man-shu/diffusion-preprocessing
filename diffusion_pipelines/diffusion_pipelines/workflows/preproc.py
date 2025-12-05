@@ -261,7 +261,16 @@ def _set_inputs_outputs(config, preproc_wf):
                     ("bvec_rotated", "diffusion_preprocess.@bvec_rotated"),
                 ],
             ),
-        ]
+            (
+                preproc_wf.get_node("report"),
+                sink_wf.get_node("sink"),
+                [
+                    (
+                        "report_outputnode.out_file",
+                        "diffusion_preprocess.@report",
+                    )
+                ],
+            ),
     )
     return preproc_wf
 
