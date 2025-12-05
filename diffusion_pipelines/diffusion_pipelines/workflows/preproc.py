@@ -271,6 +271,7 @@ def _set_inputs_outputs(config, preproc_wf):
                     )
                 ],
             ),
+        ]
     )
     return preproc_wf
 
