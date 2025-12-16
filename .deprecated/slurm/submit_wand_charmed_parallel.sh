@@ -26,10 +26,6 @@ srun singularity exec \
 --nprocs 1 \
 --omp-nthreads 10 \
 --participant-label ${dirs[${SLURM_ARRAY_TASK_ID}]:91} \
---acquisition CHARMED \
---phase-encoding-direction AP \
+--bids-filter-file /home/input/bids_filter_wand_CHARMED.json \
 --preproc \
---preproc-t1 /home/input/WAND-concat/derivatives/smriprep/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:91}/ses-02/anat/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:91}_ses-02_desc-preproc_T1w.nii.gz \
---preproc-t1-mask /home/input/WAND-concat/derivatives/smriprep/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:91}/ses-02/anat/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:91}_ses-02_desc-brain_mask.nii.gz \
---fs-native-to-t1w-xfm /home/input/WAND-concat/derivatives/smriprep/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:91}/ses-02/anat/sub-${dirs[${SLURM_ARRAY_TASK_ID}]:91}_ses-02_from-fsnative_to-T1w_mode-image_xfm.txt \
 --debug
