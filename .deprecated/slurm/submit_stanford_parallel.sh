@@ -6,7 +6,7 @@
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=10
 #SBATCH --time=48:00:00
-#SBATCH --array=0-181%100
+#SBATCH --array=0-95
 
 dirs=(/data/parietal/store3/work/haggarwa/diffusion/data/stanford-bids/sub-*)
 echo ${dirs[${SLURM_ARRAY_TASK_ID}]:69}
@@ -26,4 +26,5 @@ srun singularity exec \
 --participant-label ${dirs[${SLURM_ARRAY_TASK_ID}]:69} \
 --recon \
 --preproc \
+--no-msm \
 --debug
