@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=preproc_stanford
+#SBATCH --job-name=prep_ses01_stanford
 #SBATCH --output=log_slurm/jobid_%A_%a.out 
 #SBATCH --error=log_slurm/jobid_%A_%a.err
 #SBATCH --partition=normal,parietal
@@ -24,6 +24,7 @@ srun singularity exec \
 --nprocs 1 \
 --omp-nthreads 10 \
 --participant-label ${dirs[${SLURM_ARRAY_TASK_ID}]:69} \
+--session-label ses-01 \
 --recon \
 --preproc \
 --no-msm \
