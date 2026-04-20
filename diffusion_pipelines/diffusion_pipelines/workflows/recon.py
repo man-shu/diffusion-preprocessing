@@ -2,6 +2,7 @@
 from pathlib import Path
 from smriprep.workflows.base import init_smriprep_wf
 from bids.layout import BIDSLayout
+from niworkflows.utils.bids import collect_participants
 
 
 def _subject_session_list(config):
