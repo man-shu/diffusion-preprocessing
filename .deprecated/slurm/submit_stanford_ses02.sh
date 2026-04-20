@@ -25,6 +25,7 @@ srun singularity exec \
 --omp-nthreads 10 \
 --participant-label ${dirs[${SLURM_ARRAY_TASK_ID}]:69} \
 --session-label ses-02 \
+--session-anatomical-reference sessionwise \
 --recon \
 --preproc \
 --no-msm \
