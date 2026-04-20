@@ -55,7 +55,6 @@ def init_recon_wf(output_dir, config):
     wf = init_smriprep_wf(
         output_dir=str(config.output_dir),
         work_dir=str(config.work_dir),
-        subject_list=config.participant_label,
         layout=layout,
         # other parameters
         sloppy=config.sloppy,
