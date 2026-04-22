@@ -338,6 +338,9 @@ def _preprocess_wf(config, name="diffusion_preprocess", output_dir="."):
 
     def get_subject_id(bids_entities):
         """Get the subject id from the BIDS entities."""
+        if config.session_label is not None:
+            return f"sub-{bids_entities['subject']}"
+            "_ses-{bids_entities['session']}"
         return f"sub-{bids_entities['subject']}"
 
     GetSubjectID = Function(
