@@ -344,11 +344,12 @@ def _preprocess_wf(config, name="diffusion_preprocess", output_dir="."):
         return f"sub-{bids_entities['subject']}"
 
     GetSubjectID = Function(
-        input_names=["bids_entities"],
+        input_names=["bids_entities", "config"],
         output_names=["subject_id"],
         function=get_subject_id,
     )
     get_subject_id_node = Node(GetSubjectID, name="get_subject_id")
+    get_subject_id_node.inputs.config = config
 
     def rotate_gradients_lta(lta_file, gradient_file):
         import os
